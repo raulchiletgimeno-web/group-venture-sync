@@ -4,46 +4,69 @@
 
 ### Resumen
 
-Activar Lovable Cloud (Supabase integrado), implementar autenticacion con email/password, crear la estructura de base de datos para viajes y miembros, y desarrollar el flujo completo de crear viaje, unirse por invite link y listar viajes del usuario.
+Activar Lovable Cloud, implementar autenticacion email/password, crear tablas con RLS, y desarrollar los flujos de crear viaje, unirse por invite link y listar viajes reales.
 
 ---
 
 ### Paso 1 -- Activar Lovable Cloud
 
-Activar el backend integrado de Lovable (Supabase Cloud) para disponer de base de datos, autenticacion y storage.
+Activar el backend integrado (Supabase Cloud) para base de datos, autenticacion y storage.
 
 ---
 
 ### Paso 2 -- Migracion: Tablas base y seguridad
 
-Crear la primera migracion con las tablas fundamentales y las politicas RLS.
+Crear la migracion inicial con tablas, funciones helper y politicas RLS.
 
-**Tablas a crear:**
+**Tablas:**
 
-- `profiles` (id uuid PK referencing auth.users, name, email, avatar_url, created_at)
-- `trips` (id uuid PK, title, destination, start_date, end_date, created_by FK profiles, status enum, invite_code unique, created_at)
-- `trip_members` (id uuid PK, trip_id FK trips, user_id FK profiles, role enum creator/member, joined_at)
+- `profiles` (id uuid PK -> auth.users ON DELETE CASCADE, name text, email text, avatar_url text, created_at timestamptz)
+- `trips` (id uuid PK, title text, destination text, start_date date, end_date date, created_by uuid FK -> profiles, status text CHECK upcoming/active/finished, invite_code text UNIQUE, created_at timestamptz)
+- `trip_members` (id uuid PK, trip_id uuid FK -> trips ON DELETE CASCADE, user_id uuid FK -> profiles ON DELETE CASCADE, role text CHECK creator/member, joined_at timestamptz, UNIQUE(trip_id, user_id))
 
 **Funciones helper (SECURITY DEFINER):**
 
-- `is_trip_member(trip_id uuid)` -- verifica si auth.uid() es miembro del viaje
-- `is_trip_creator(trip_id uuid)` -- verifica si auth.uid() es creador del viaje
+```text
+is_trip_member(p_trip_id uuid) -> boolean
+  Retorna true si auth.uid() existe en trip_members para ese trip
+
+is_trip_creator(p_trip_id uuid) -> boolean
+  Retorna true si auth.uid() tiene role='creator' en trip_members para ese trip
+```
 
 **Trigger:**
 
-- `handle_new_user` -- al registrarse un usuario, crea automaticamente su fila en `profiles`
+- `handle_new_user`: Al insertar en auth.users, crea fila en profiles con id, email y name (desde raw_user_meta_data)
 
 **Politicas RLS:**
 
-- `profiles`: SELECT para todos los autenticados, UPDATE solo el propio usuario
-- `trips`: SELECT/INSERT/UPDATE solo miembros, DELETE solo creador
-- `trip_members`: SELECT para miembros del viaje, INSERT controlado
+```text
+profiles:
+  SELECT  -> auth.uid() = id (solo ver su propio perfil)
+  INSERT  -> auth.uid() = id (para el trigger)
+  UPDATE  -> auth.uid() = id
+
+trips:
+  SELECT  -> is_trip_member(id)
+  INSERT  -> auth.uid() = created_by
+  UPDATE  -> is_trip_member(id)
+  DELETE  -> is_trip_creator(id)
+
+trip_members:
+  SELECT  -> is_trip_member(trip_id)
+  INSERT  -> is_trip_creator(trip_id) OR user_id = auth.uid()
+  DELETE  -> is_trip_creator(trip_id)
+```
+
+Nota sobre INSERT en trip_members: se permite que el creador anada miembros, y que un usuario se anada a si mismo (para el flujo de join por invite code, que valida el codigo antes de insertar).
 
 ---
 
 ### Paso 3 -- Cliente Supabase
 
-Crear `src/lib/supabase.ts` con la inicializacion del cliente Supabase usando las variables de entorno del proyecto Cloud.
+Crear `src/integrations/supabase/client.ts` con la inicializacion del cliente usando las variables de entorno inyectadas por Lovable Cloud.
+
+Crear `src/integrations/supabase/types.ts` con los tipos TypeScript generados para las tablas.
 
 ---
 
@@ -51,10 +74,11 @@ Crear `src/lib/supabase.ts` con la inicializacion del cliente Supabase usando la
 
 Crear `src/contexts/AuthContext.tsx`:
 
-- Provider que envuelve la app
-- Escucha `onAuthStateChange` (configurado ANTES de `getSession`)
-- Expone: `user`, `session`, `loading`, `signUp`, `signIn`, `signOut`
-- Estado global accesible via `useAuth()` hook
+- Provider que envuelve toda la app
+- Configura `onAuthStateChange` ANTES de llamar a `getSession()`
+- Expone: user, session, loading, profile, signUp, signIn, signOut
+- signUp envia name en `raw_user_meta_data` para que el trigger lo use
+- Hook `useAuth()` para consumir el contexto
 
 ---
 
@@ -62,16 +86,18 @@ Crear `src/contexts/AuthContext.tsx`:
 
 **`src/pages/Auth.tsx`:**
 
-- Formulario con dos modos: Login / Registro
-- Campos: email, password (y nombre en registro)
-- Validacion con feedback visual
+- Dos modos: Login y Registro (toggle con tabs o boton)
+- Campos: email, password, nombre (solo en registro)
+- Validacion visual con estados de error
 - Redireccion a `/` tras login exitoso
-- Estilo coherente con el design system (gradientes, cards, tipografia)
+- Estilo con gradiente hero y cards del design system
 
 **`src/pages/ResetPassword.tsx`:**
 
-- Formulario para solicitar reset y para establecer nueva contrasena
-- Ruta `/reset-password`
+- Dos estados: solicitar reset (email) y establecer nueva contrasena
+- Detecta `type=recovery` en URL hash para mostrar formulario de nueva contrasena
+- Llama `updateUser({ password })` para completar el reset
+- Ruta publica `/reset-password`
 
 ---
 
@@ -79,15 +105,16 @@ Crear `src/contexts/AuthContext.tsx`:
 
 Crear `src/components/ProtectedRoute.tsx`:
 
-- Wrapper que verifica sesion activa
-- Si no hay sesion, redirige a `/auth`
-- Muestra loading spinner mientras verifica
+- Verifica sesion activa via useAuth()
+- Si loading: spinner centrado
+- Si no hay sesion: Navigate to `/auth`
+- Si hay sesion: renderiza children
 
 Actualizar `App.tsx`:
 
-- Envolver rutas protegidas (home, trip) con `ProtectedRoute`
-- Dejar `/auth` y `/reset-password` como rutas publicas
-- Envolver todo con `AuthProvider`
+- Envolver con AuthProvider
+- Rutas publicas: `/auth`, `/reset-password`
+- Rutas protegidas: `/`, `/trip/:tripId/*`, `/join/:inviteCode`
 
 ---
 
@@ -95,104 +122,114 @@ Actualizar `App.tsx`:
 
 **`src/components/CreateTripDialog.tsx`:**
 
-- Dialog/Sheet con formulario: titulo, destino, fecha inicio, fecha fin
-- Genera `invite_code` aleatorio (8 caracteres alfanumericos)
-- Inserta en `trips` y automaticamente crea una fila en `trip_members` con role `creator`
-- Toast de confirmacion y redireccion al dashboard del viaje
+- Dialog con formulario: titulo, destino, fecha inicio, fecha fin
+- Al submit:
+  1. Genera invite_code de 8 caracteres alfanumericos
+  2. Inserta en `trips` con created_by = auth.uid()
+  3. Inserta en `trip_members` con role = 'creator'
+  4. Toast de exito
+  5. Navega a `/trip/{id}`
 
 ---
 
-### Paso 8 -- Unirse a viaje por invite link
+### Paso 8 -- Unirse a viaje
+
+**`src/components/JoinTripDialog.tsx`:**
+
+- Dialog simple con input para pegar codigo de invitacion
+- Busca trip por invite_code
+- Si existe y el usuario no es miembro, inserta en trip_members
 
 **`src/pages/JoinTrip.tsx`:**
 
 - Ruta `/join/:inviteCode`
-- Busca el viaje por `invite_code`
-- Si el usuario ya es miembro, redirige al viaje
-- Si no, lo anade como `member` en `trip_members`
-- Muestra confirmacion y redirige al dashboard del viaje
-
-**Flujo de invitacion:**
-
-- En el dashboard del viaje, el boton "Invitar amigos" copia al portapapeles el link `{origin}/join/{invite_code}`
+- Automaticamente busca viaje por codigo
+- Si ya es miembro: redirige al viaje
+- Si no: lo anade y redirige
+- Maneja errores (codigo invalido, viaje no encontrado)
 
 ---
 
-### Paso 9 -- Listar viajes reales del usuario
+### Paso 9 -- Listar viajes reales
 
 Actualizar `src/pages/Index.tsx`:
 
-- Reemplazar `mockTrips` por query real a Supabase
-- Consultar `trips` donde el usuario es miembro (via `trip_members`)
-- Mostrar `EmptyState` si no tiene viajes
-- Conectar boton "Crear viaje" al dialog
-- Conectar boton "Unirse" a un dialog que pida el codigo de invitacion
+- Reemplazar mockTrips por query a Supabase
+- Query: `trips` con join inner a `trip_members` filtrado por user.id
+- Mostrar EmptyState si no hay viajes
+- Conectar boton "Crear viaje" al CreateTripDialog
+- Conectar boton "Unirse" al JoinTripDialog
+- Mostrar nombre del usuario y boton logout en el header
 
-Actualizar `src/components/TripLayout.tsx` y `src/pages/TripDashboard.tsx`:
+Actualizar `src/components/TripLayout.tsx`:
 
-- Cargar datos reales del viaje desde Supabase usando `tripId` de la URL
-- Mostrar titulo, destino, fechas y miembros reales
+- Cargar datos reales del viaje desde Supabase por tripId
+- Mostrar titulo real en el header
+
+Actualizar `src/pages/TripDashboard.tsx`:
+
+- Cargar datos del viaje y miembros reales
+- Boton "Invitar amigos" copia link al portapapeles
 
 ---
 
-### Paso 10 -- Header con sesion de usuario
+### Paso 10 -- Header con usuario
 
-Actualizar la pagina principal para mostrar:
+En Index.tsx, agregar al hero section:
 
-- Nombre/avatar del usuario en el header
-- Boton de cerrar sesion
-- Navegacion contextual
+- Avatar/nombre del usuario logueado
+- Boton de cerrar sesion (icono LogOut)
 
 ---
 
 ### Detalles tecnicos
 
-**Estructura de archivos nuevos:**
+**Archivos nuevos:**
 
 ```text
-src/
-  lib/
-    supabase.ts
-  contexts/
-    AuthContext.tsx
-  components/
-    ProtectedRoute.tsx
-    CreateTripDialog.tsx
-    JoinTripDialog.tsx
-  pages/
-    Auth.tsx
-    ResetPassword.tsx
-    JoinTrip.tsx
+src/integrations/supabase/client.ts
+src/integrations/supabase/types.ts
+src/contexts/AuthContext.tsx
+src/components/ProtectedRoute.tsx
+src/components/CreateTripDialog.tsx
+src/components/JoinTripDialog.tsx
+src/pages/Auth.tsx
+src/pages/ResetPassword.tsx
+src/pages/JoinTrip.tsx
 ```
 
-**Rutas actualizadas:**
+**Archivos modificados:**
 
 ```text
-/auth              -- Login/Registro (publica)
-/reset-password    -- Reset contrasena (publica)
-/join/:inviteCode  -- Unirse a viaje (protegida)
-/                  -- Home con lista de viajes (protegida)
-/trip/:tripId/*    -- Dashboard y secciones (protegida)
+src/App.tsx          -- AuthProvider + rutas nuevas + ProtectedRoute
+src/pages/Index.tsx  -- datos reales + dialogs + header usuario
+src/components/TripLayout.tsx   -- datos reales del viaje
+src/pages/TripDashboard.tsx     -- datos reales + boton invitar
+```
+
+**Rutas finales:**
+
+```text
+/auth              -- publica
+/reset-password    -- publica
+/                  -- protegida (lista de viajes)
+/trip/:tripId/*    -- protegida (dashboard + secciones)
+/join/:inviteCode  -- protegida (unirse a viaje)
 ```
 
 **Generacion de invite_code:**
 
-```typescript
-const generateInviteCode = () =>
-  Array.from(crypto.getRandomValues(new Uint8Array(6)))
-    .map(b => b.toString(36).padStart(2, '0'))
-    .join('')
-    .slice(0, 8)
-    .toUpperCase();
+```text
+8 caracteres alfanumericos en mayusculas
+Generados con crypto.getRandomValues
 ```
 
-**Consulta de viajes del usuario:**
+**Query de viajes del usuario:**
 
-```typescript
-const { data } = await supabase
+```text
+supabase
   .from('trips')
-  .select(`*, trip_members!inner(user_id)`)
+  .select('*, trip_members!inner(user_id, role)')
   .eq('trip_members.user_id', user.id)
-  .order('start_date', { ascending: true });
+  .order('start_date', { ascending: true })
 ```
-
