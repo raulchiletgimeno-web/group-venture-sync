@@ -113,7 +113,7 @@ const Index = () => {
             <Button
               size="lg"
               variant="outline"
-              className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10 font-semibold"
+              className="border-primary-foreground/60 text-primary-foreground bg-primary-foreground/15 hover:bg-primary-foreground/25 font-semibold backdrop-blur-sm"
               onClick={() => setJoinOpen(true)}
             >
               <UserPlus className="h-4 w-4 mr-2" />
