@@ -63,10 +63,10 @@ const Auth = () => {
         <div className="relative px-5 pt-14 pb-8 text-center">
           <div className="flex items-center justify-center gap-2 mb-2">
             <Compass className="h-6 w-6 text-primary-foreground" />
-            <span className="text-sm font-semibold tracking-wider text-primary-foreground/80 uppercase">TripMate</span>
+            <span className="text-sm font-semibold tracking-wider text-primary-foreground/80 uppercase">Nuestro viaje</span>
           </div>
           <h1 className="text-2xl font-extrabold text-primary-foreground">
-            {mode === "login" ? "Bienvenido de vuelta" : "Crea tu cuenta"}
+            {mode === "login" ? "Vamos a disfrutar" : "Crea tu cuenta"}
           </h1>
         </div>
       </div>
