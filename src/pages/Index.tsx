@@ -82,12 +82,12 @@ const Index = () => {
             </div>
             <div className="flex items-center gap-2">
               {profile?.name && (
-                <span className="text-xs font-medium text-primary-foreground/70">{profile.name}</span>
+                <span className="text-xs font-medium text-foreground">Usuario: {profile.name}</span>
               )}
               <Button
                 size="icon"
                 variant="ghost"
-                className="h-8 w-8 text-primary-foreground/70 hover:text-primary-foreground hover:bg-primary-foreground/10"
+                className="h-8 w-8 text-foreground hover:text-foreground hover:bg-foreground/10"
                 onClick={signOut}
               >
                 <LogOut className="h-4 w-4" />
@@ -113,7 +113,7 @@ const Index = () => {
             <Button
               size="lg"
               variant="outline"
-              className="border-primary-foreground/60 text-foreground bg-primary-foreground/15 hover:bg-primary-foreground/25 font-semibold backdrop-blur-sm"
+              className="border-primary-foreground/60 text-foreground bg-card hover:bg-card/90 font-semibold shadow-card-hover"
               onClick={() => setJoinOpen(true)}
             >
               <UserPlus className="h-4 w-4 mr-2" />
