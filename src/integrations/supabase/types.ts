@@ -38,6 +38,50 @@ export type Database = {
         }
         Relationships: []
       }
+      trip_accommodation: {
+        Row: {
+          address: string | null
+          booking_reference: string | null
+          check_in: string
+          check_out: string
+          created_at: string
+          id: string
+          name: string
+          notes: string | null
+          trip_id: string
+        }
+        Insert: {
+          address?: string | null
+          booking_reference?: string | null
+          check_in: string
+          check_out: string
+          created_at?: string
+          id?: string
+          name: string
+          notes?: string | null
+          trip_id: string
+        }
+        Update: {
+          address?: string | null
+          booking_reference?: string | null
+          check_in?: string
+          check_out?: string
+          created_at?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          trip_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_accommodation_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trip_members: {
         Row: {
           id: string
@@ -73,6 +117,94 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trip_schedule: {
+        Row: {
+          created_at: string
+          date: string
+          description: string | null
+          id: string
+          location: string | null
+          time: string | null
+          title: string
+          trip_id: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          description?: string | null
+          id?: string
+          location?: string | null
+          time?: string | null
+          title: string
+          trip_id: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          description?: string | null
+          id?: string
+          location?: string | null
+          time?: string | null
+          title?: string
+          trip_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_schedule_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trip_transport: {
+        Row: {
+          arrival_datetime: string | null
+          arrival_location: string
+          booking_reference: string | null
+          created_at: string
+          departure_datetime: string
+          departure_location: string
+          id: string
+          notes: string | null
+          trip_id: string
+          type: string
+        }
+        Insert: {
+          arrival_datetime?: string | null
+          arrival_location: string
+          booking_reference?: string | null
+          created_at?: string
+          departure_datetime: string
+          departure_location: string
+          id?: string
+          notes?: string | null
+          trip_id: string
+          type?: string
+        }
+        Update: {
+          arrival_datetime?: string | null
+          arrival_location?: string
+          booking_reference?: string | null
+          created_at?: string
+          departure_datetime?: string
+          departure_location?: string
+          id?: string
+          notes?: string | null
+          trip_id?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_transport_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
             referencedColumns: ["id"]
           },
         ]
