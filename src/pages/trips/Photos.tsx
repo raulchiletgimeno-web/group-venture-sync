@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { useParams } from "react-router-dom";
-import { Camera, Loader2, Trash2, ImagePlus } from "lucide-react";
+import { Camera, Loader2, Trash2, Image } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -14,7 +14,8 @@ const Photos = () => {
   const { user } = useAuth();
   const { isCreator } = useTripRole(tripId);
   const queryClient = useQueryClient();
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
 
   const { data: photos = [], isLoading } = useQuery({
@@ -51,7 +52,7 @@ const Photos = () => {
     onError: () => toast.error("Error al eliminar la foto"),
   });
 
-  const handleCapture = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !tripId || !user) return;
 
@@ -76,7 +77,8 @@ const Photos = () => {
       toast.error("Error al subir la foto");
     } finally {
       setUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
+      if (cameraInputRef.current) cameraInputRef.current.value = "";
+      if (galleryInputRef.current) galleryInputRef.current.value = "";
     }
   };
 
@@ -90,9 +92,23 @@ const Photos = () => {
         <div className="flex gap-2">
           <Button
             size="icon"
+            variant="outline"
+            disabled={uploading}
+            onClick={() => galleryInputRef.current?.click()}
+            title="Subir desde galería"
+          >
+            {uploading ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : (
+              <Image className="h-5 w-5" />
+            )}
+          </Button>
+          <Button
+            size="icon"
             className="gradient-hero text-primary-foreground border-0"
             disabled={uploading}
-            onClick={() => fileInputRef.current?.click()}
+            onClick={() => cameraInputRef.current?.click()}
+            title="Tomar foto"
           >
             {uploading ? (
               <Loader2 className="h-5 w-5 animate-spin" />
@@ -102,12 +118,19 @@ const Photos = () => {
           </Button>
         </div>
         <input
-          ref={fileInputRef}
+          ref={cameraInputRef}
           type="file"
           accept="image/*"
           capture="environment"
           className="hidden"
-          onChange={handleCapture}
+          onChange={handleFileUpload}
+        />
+        <input
+          ref={galleryInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={handleFileUpload}
         />
       </div>
 
@@ -119,17 +142,7 @@ const Photos = () => {
         <EmptyState
           icon={Camera}
           title="Sin fotos aún"
-          description="Toma fotos del viaje y compártelas con el grupo."
-          action={
-            <Button
-              className="gradient-hero text-primary-foreground border-0"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploading}
-            >
-              <ImagePlus className="h-4 w-4 mr-2" />
-              Tomar foto
-            </Button>
-          }
+          description="Toma fotos del viaje o súbelas desde tu galería."
         />
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
