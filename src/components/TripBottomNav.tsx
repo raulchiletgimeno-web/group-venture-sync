@@ -1,20 +1,7 @@
 import { useLocation, Link } from "react-router-dom";
-import {
-  Plane,
-  Hotel,
-  Receipt,
-  Camera,
-  MessageCircle,
-  CloudSun,
-  CalendarDays,
-} from "lucide-react";
+import { CloudSun, CalendarDays } from "lucide-react";
 
 const navItems = [
-  { path: "transport", label: "Transporte", icon: Plane },
-  { path: "accommodation", label: "Alojamiento", icon: Hotel },
-  { path: "expenses", label: "Gastos", icon: Receipt },
-  { path: "photos", label: "Fotos", icon: Camera },
-  { path: "chat", label: "Chat", icon: MessageCircle },
   { path: "weather", label: "Tiempo", icon: CloudSun },
   { path: "schedule", label: "Horario", icon: CalendarDays },
 ];
