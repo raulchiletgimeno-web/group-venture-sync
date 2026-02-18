@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import { Link, Outlet, useParams } from "react-router-dom";
-import TripBottomNav from "./TripBottomNav";
 import { supabase } from "@/integrations/supabase/client";
 
 const TripLayout = () => {
@@ -21,7 +20,7 @@ const TripLayout = () => {
   }, [tripId]);
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-40 bg-card/80 backdrop-blur-lg border-b border-border">
         <div className="flex items-center gap-3 px-4 h-14">
           <Link to="/" className="text-muted-foreground hover:text-foreground transition-colors">
@@ -33,7 +32,6 @@ const TripLayout = () => {
       <main className="container max-w-lg mx-auto px-4 py-4">
         <Outlet />
       </main>
-      {tripId && <TripBottomNav tripId={tripId} />}
     </div>
   );
 };
