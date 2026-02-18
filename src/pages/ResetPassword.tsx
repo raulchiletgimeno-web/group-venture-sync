@@ -53,7 +53,7 @@ const ResetPassword = () => {
     <div className="min-h-screen bg-background flex flex-col items-center pt-20 px-5">
       <div className="flex items-center gap-2 mb-6">
         <Compass className="h-6 w-6 text-primary" />
-        <span className="text-sm font-semibold tracking-wider text-muted-foreground uppercase">TripMate</span>
+        <span className="text-sm font-semibold tracking-wider text-muted-foreground uppercase">Nuestro viaje</span>
       </div>
 
       <div className="bg-card rounded-xl shadow-card p-6 max-w-sm w-full">
