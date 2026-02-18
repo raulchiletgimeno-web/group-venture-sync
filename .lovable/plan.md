@@ -1,22 +1,23 @@
 
 
-## Cambiar color de texto del boton "Unirse"
+## Mostrar/ocultar contraseña en el formulario de autenticacion
 
-Cambiar el color del texto del boton "Unirse" en el hero de `src/pages/Index.tsx` de `text-primary-foreground` a `text-foreground` (negro) para que sea legible sobre el fondo semi-transparente.
+Se agregara un boton con icono de ojo dentro del campo de contraseña para alternar entre ver el texto plano y los puntos ocultos.
 
-### Cambio
+### Cambios
 
-**Archivo:** `src/pages/Index.tsx` (linea 116)
+**Archivo:** `src/pages/Auth.tsx`
 
-Reemplazar:
-```
-className="border-primary-foreground/60 text-primary-foreground bg-primary-foreground/15 hover:bg-primary-foreground/25 font-semibold backdrop-blur-sm"
-```
+1. Importar el icono `Eye` y `EyeOff` de `lucide-react`
+2. Agregar un estado `showPassword` (boolean, inicializado en `false`)
+3. En el input de contraseña:
+   - Cambiar `type` de `"password"` fijo a `showPassword ? "text" : "password"`
+   - Agregar un boton a la derecha del input con el icono `Eye` o `EyeOff` segun el estado
+   - Ajustar padding derecho del input (`pr-10`) para dejar espacio al boton
 
-Por:
-```
-className="border-primary-foreground/60 text-foreground bg-primary-foreground/15 hover:bg-primary-foreground/25 font-semibold backdrop-blur-sm"
-```
+### Detalles tecnicos
 
-Solo se cambia `text-primary-foreground` a `text-foreground` para que el texto se muestre en negro.
+- El boton sera de tipo `button` (no `submit`) para evitar enviar el formulario
+- Se usara posicionamiento absoluto (`absolute right-3 top-1/2 -translate-y-1/2`) igual que el icono izquierdo
+- El icono cambiara entre `Eye` (cuando la contraseña esta oculta) y `EyeOff` (cuando esta visible)
 
