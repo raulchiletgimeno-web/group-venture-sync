@@ -1,17 +1,414 @@
-import { MessageCircle } from "lucide-react";
-import EmptyState from "@/components/EmptyState";
+import { useEffect, useRef, useState } from "react";
+import { useParams } from "react-router-dom";
+import { Send, Camera, Mic, Square, Image as ImageIcon, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
+
+interface Message {
+  id: string;
+  user_id: string;
+  content: string | null;
+  type: "text" | "audio" | "image";
+  file_path: string | null;
+  created_at: string;
+}
+
+interface Member {
+  user_id: string;
+  name: string;
+}
 
 const Chat = () => {
+  const { tripId } = useParams();
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [members, setMembers] = useState<Member[]>([]);
+  const [text, setText] = useState("");
+  const [sending, setSending] = useState(false);
+  const [recording, setRecording] = useState(false);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+
+  // Fetch members
+  useEffect(() => {
+    if (!tripId) return;
+    supabase
+      .from("trip_members")
+      .select("user_id, profiles:user_id(name)")
+      .eq("trip_id", tripId)
+      .then(({ data }) => {
+        if (data) {
+          setMembers(
+            data.map((m: any) => ({
+              user_id: m.user_id,
+              name: m.profiles?.name || "Usuario",
+            }))
+          );
+        }
+      });
+  }, [tripId]);
+
+  // Fetch messages
+  useEffect(() => {
+    if (!tripId) return;
+    supabase
+      .from("trip_messages")
+      .select("*")
+      .eq("trip_id", tripId)
+      .order("created_at", { ascending: true })
+      .then(({ data }) => {
+        if (data) setMessages(data as Message[]);
+      });
+  }, [tripId]);
+
+  // Realtime subscription
+  useEffect(() => {
+    if (!tripId) return;
+    const channel = supabase
+      .channel(`chat-${tripId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "trip_messages",
+          filter: `trip_id=eq.${tripId}`,
+        },
+        (payload) => {
+          setMessages((prev) => {
+            if (prev.some((m) => m.id === payload.new.id)) return prev;
+            return [...prev, payload.new as Message];
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [tripId]);
+
+  // Auto-scroll
+  useEffect(() => {
+    scrollRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  const getMemberName = (userId: string) =>
+    members.find((m) => m.user_id === userId)?.name || "Usuario";
+
+  const getInitials = (name: string) =>
+    name
+      .split(" ")
+      .map((w) => w[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+
+  const getFileUrl = (path: string) => {
+    const { data } = supabase.storage.from("trip-photos").getPublicUrl(path);
+    return data.publicUrl;
+  };
+
+  // Send text message
+  const sendText = async () => {
+    if (!text.trim() || !user || !tripId || sending) return;
+    setSending(true);
+    const { error } = await supabase.from("trip_messages").insert({
+      trip_id: tripId,
+      user_id: user.id,
+      content: text.trim(),
+      type: "text",
+    });
+    if (error) {
+      toast({ title: "Error al enviar", variant: "destructive" });
+    }
+    setText("");
+    setSending(false);
+  };
+
+  // Send image
+  const sendImage = async (file: File) => {
+    if (!user || !tripId) return;
+    setSending(true);
+    const ext = file.name.split(".").pop();
+    const path = `chat/${tripId}/${Date.now()}.${ext}`;
+    const { error: uploadError } = await supabase.storage
+      .from("trip-photos")
+      .upload(path, file, { upsert: true });
+    if (uploadError) {
+      toast({ title: "Error al subir imagen", variant: "destructive" });
+      setSending(false);
+      return;
+    }
+    await supabase.from("trip_messages").insert({
+      trip_id: tripId,
+      user_id: user.id,
+      type: "image",
+      file_path: path,
+    });
+    setImagePreview(null);
+    setImageFile(null);
+    setSending(false);
+  };
+
+  // Handle image selection
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+    e.target.value = "";
+  };
+
+  // Audio recording
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      chunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunksRef.current.push(e.data);
+      };
+
+      mediaRecorder.onstop = async () => {
+        stream.getTracks().forEach((t) => t.stop());
+        const blob = new Blob(chunksRef.current, { type: "audio/webm" });
+        if (!user || !tripId) return;
+        setSending(true);
+        const path = `chat/${tripId}/${Date.now()}.webm`;
+        const { error: uploadError } = await supabase.storage
+          .from("trip-photos")
+          .upload(path, blob, { upsert: true, contentType: "audio/webm" });
+        if (uploadError) {
+          toast({ title: "Error al subir audio", variant: "destructive" });
+          setSending(false);
+          return;
+        }
+        await supabase.from("trip_messages").insert({
+          trip_id: tripId,
+          user_id: user.id,
+          type: "audio",
+          file_path: path,
+        });
+        setSending(false);
+      };
+
+      mediaRecorder.start();
+      setRecording(true);
+    } catch {
+      toast({ title: "No se pudo acceder al micrófono", variant: "destructive" });
+    }
+  };
+
+  const stopRecording = () => {
+    mediaRecorderRef.current?.stop();
+    setRecording(false);
+  };
+
+  const formatTime = (dateStr: string) => {
+    const d = new Date(dateStr);
+    return d.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
+  };
+
+  const formatDateSeparator = (dateStr: string) => {
+    const d = new Date(dateStr);
+    const today = new Date();
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    if (d.toDateString() === today.toDateString()) return "Hoy";
+    if (d.toDateString() === yesterday.toDateString()) return "Ayer";
+    return d.toLocaleDateString("es-ES", { day: "numeric", month: "long" });
+  };
+
+  const shouldShowDateSep = (idx: number) => {
+    if (idx === 0) return true;
+    const curr = new Date(messages[idx].created_at).toDateString();
+    const prev = new Date(messages[idx - 1].created_at).toDateString();
+    return curr !== prev;
+  };
+
   return (
-    <div className="animate-fade-in">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-bold text-foreground">Chat</h2>
+    <div className="animate-fade-in flex flex-col" style={{ height: "calc(100vh - 7rem)" }}>
+      {/* Messages area */}
+      <ScrollArea className="flex-1 px-2">
+        <div className="flex flex-col gap-1 py-2">
+          {messages.map((msg, idx) => {
+            const isOwn = msg.user_id === user?.id;
+            return (
+              <div key={msg.id}>
+                {shouldShowDateSep(idx) && (
+                  <div className="flex justify-center my-3">
+                    <span className="text-xs bg-muted text-muted-foreground px-3 py-1 rounded-full">
+                      {formatDateSeparator(msg.created_at)}
+                    </span>
+                  </div>
+                )}
+                <div className={`flex gap-2 ${isOwn ? "justify-end" : "justify-start"}`}>
+                  {!isOwn && (
+                    <Avatar className="h-7 w-7 mt-1 shrink-0">
+                      <AvatarFallback className="text-[10px] bg-primary/10 text-primary">
+                        {getInitials(getMemberName(msg.user_id))}
+                      </AvatarFallback>
+                    </Avatar>
+                  )}
+                  <div
+                    className={`max-w-[75%] rounded-2xl px-3 py-2 ${
+                      isOwn
+                        ? "bg-primary text-primary-foreground rounded-br-md"
+                        : "bg-muted text-foreground rounded-bl-md"
+                    }`}
+                  >
+                    {!isOwn && (
+                      <p className="text-[11px] font-semibold mb-0.5 opacity-80">
+                        {getMemberName(msg.user_id)}
+                      </p>
+                    )}
+
+                    {msg.type === "text" && (
+                      <p className="text-sm whitespace-pre-wrap break-words">{msg.content}</p>
+                    )}
+
+                    {msg.type === "image" && msg.file_path && (
+                      <img
+                        src={getFileUrl(msg.file_path)}
+                        alt="Imagen"
+                        className="rounded-lg max-w-full max-h-60 object-cover cursor-pointer"
+                        onClick={() => window.open(getFileUrl(msg.file_path!), "_blank")}
+                      />
+                    )}
+
+                    {msg.type === "audio" && msg.file_path && (
+                      <audio
+                        controls
+                        src={getFileUrl(msg.file_path)}
+                        className="max-w-[220px] h-8"
+                      />
+                    )}
+
+                    <p
+                      className={`text-[10px] mt-0.5 ${
+                        isOwn ? "text-primary-foreground/70 text-right" : "text-muted-foreground"
+                      }`}
+                    >
+                      {formatTime(msg.created_at)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+          <div ref={scrollRef} />
+        </div>
+      </ScrollArea>
+
+      {/* Image preview */}
+      {imagePreview && (
+        <div className="px-3 py-2 border-t border-border bg-card">
+          <div className="relative inline-block">
+            <img src={imagePreview} alt="Preview" className="h-20 rounded-lg object-cover" />
+            <button
+              onClick={() => {
+                setImagePreview(null);
+                setImageFile(null);
+              }}
+              className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-0.5"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Input bar */}
+      <div className="border-t border-border bg-card px-2 py-2 flex items-center gap-1.5">
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={handleImageSelect}
+        />
+        <Button
+          variant="ghost"
+          size="icon"
+          className="shrink-0 h-9 w-9"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={sending || recording}
+        >
+          <Camera className="h-5 w-5 text-muted-foreground" />
+        </Button>
+
+        {recording ? (
+          <div className="flex-1 flex items-center gap-2">
+            <div className="flex-1 flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-destructive animate-pulse" />
+              <span className="text-sm text-muted-foreground">Grabando audio...</span>
+            </div>
+            <Button
+              variant="destructive"
+              size="icon"
+              className="h-9 w-9 shrink-0"
+              onClick={stopRecording}
+            >
+              <Square className="h-4 w-4" />
+            </Button>
+          </div>
+        ) : (
+          <>
+            <Input
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              placeholder="Escribe un mensaje..."
+              className="flex-1 h-9 text-sm"
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  if (imageFile) sendImage(imageFile);
+                  else sendText();
+                }
+              }}
+              disabled={sending}
+            />
+            {text.trim() || imageFile ? (
+              <Button
+                size="icon"
+                className="shrink-0 h-9 w-9"
+                onClick={() => {
+                  if (imageFile) sendImage(imageFile);
+                  else sendText();
+                }}
+                disabled={sending}
+              >
+                <Send className="h-4 w-4" />
+              </Button>
+            ) : (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="shrink-0 h-9 w-9"
+                onClick={startRecording}
+                disabled={sending}
+              >
+                <Mic className="h-5 w-5 text-muted-foreground" />
+              </Button>
+            )}
+          </>
+        )}
       </div>
-      <EmptyState
-        icon={MessageCircle}
-        title="Sin mensajes aún"
-        description="Inicia la conversación con tu grupo de viaje."
-      />
     </div>
   );
 };
