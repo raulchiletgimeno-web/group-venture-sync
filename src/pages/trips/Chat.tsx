@@ -272,11 +272,11 @@ const Chat = () => {
                         : "bg-muted text-foreground rounded-bl-md"
                     }`}
                   >
-                    {!isOwn && (
-                      <p className="text-[11px] font-semibold mb-0.5 opacity-80">
-                        {getMemberName(msg.user_id)}
-                      </p>
-                    )}
+                    <p className={`text-[11px] font-semibold mb-0.5 ${
+                      isOwn ? "text-primary-foreground/80 text-right" : "text-primary opacity-90"
+                    }`}>
+                      {isOwn ? "Tú" : getMemberName(msg.user_id)}
+                    </p>
 
                     {msg.type === "text" && (
                       <p className="text-sm whitespace-pre-wrap break-words">{msg.content}</p>
