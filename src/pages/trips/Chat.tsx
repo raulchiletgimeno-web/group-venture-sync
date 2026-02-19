@@ -295,7 +295,8 @@ const Chat = () => {
                       <audio
                         controls
                         src={getFileUrl(msg.file_path)}
-                        className="max-w-[220px] h-8"
+                        className="max-w-[260px] h-10"
+                        ref={(el) => { if (el) el.volume = 1.0; }}
                       />
                     )}
 
