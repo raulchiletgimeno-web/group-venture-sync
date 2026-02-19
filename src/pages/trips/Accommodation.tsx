@@ -171,11 +171,9 @@ const Accommodation = () => {
                   <div className="flex gap-1">
                     {item.website && (
                       <Tooltip><TooltipTrigger asChild>
-                        <a href={item.website.startsWith("http") ? item.website : `https://${item.website}`} target="_blank" rel="noopener noreferrer">
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-primary">
-                            <Globe className="h-4 w-4" />
-                          </Button>
-                        </a>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={() => window.open(item.website!.startsWith("http") ? item.website! : `https://${item.website}`, '_blank')}>
+                          <Globe className="h-4 w-4" />
+                        </Button>
                       </TooltipTrigger><TooltipContent>Web</TooltipContent></Tooltip>
                     )}
                     {item.address && (
