@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { CalendarDays, Plus, Trash2, ExternalLink, Pencil } from "lucide-react";
+import { CalendarDays, Plus, Trash2, Pencil, Globe, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import EmptyState from "@/components/EmptyState";
 import { supabase } from "@/integrations/supabase/client";
 import { useTripRole } from "@/hooks/use-trip-role";
@@ -36,6 +37,7 @@ const Schedule = () => {
     title: "",
     description: "",
     location: "",
+    address: "",
     website: "",
   });
 
@@ -83,7 +85,7 @@ const Schedule = () => {
   };
 
   const resetForm = () => {
-    setForm({ date: "", time: "", title: "", description: "", location: "", website: "" });
+    setForm({ date: "", time: "", title: "", description: "", location: "", address: "", website: "" });
     setEditingId(null);
   };
 
@@ -94,6 +96,7 @@ const Schedule = () => {
       title: item.title,
       description: item.description || "",
       location: item.location || "",
+      address: item.location || "",
       website: item.website || "",
     });
     setEditingId(item.id);
@@ -137,7 +140,8 @@ const Schedule = () => {
                   <div><Label>Fecha</Label><Input type="date" required value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} /></div>
                   <div><Label>Hora</Label><Input type="time" value={form.time} onChange={(e) => setForm({ ...form, time: e.target.value })} /></div>
                 </div>
-                <div><Label>Lugar</Label><Input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} /></div>
+                <div><Label>Lugar</Label><Input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} placeholder="Nombre del lugar" /></div>
+                <div><Label>Dirección</Label><Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="Calle, número, ciudad..." /></div>
                 <div><Label>Descripción</Label><Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
                 <div><Label>Página web</Label><Input type="url" value={form.website} onChange={(e) => setForm({ ...form, website: e.target.value })} placeholder="https://..." /></div>
                 <Button type="submit" className="w-full gradient-hero text-primary-foreground border-0">{editingId ? "Actualizar" : "Guardar"}</Button>
@@ -169,25 +173,39 @@ const Schedule = () => {
                         </div>
                         {item.location && <p className="text-xs text-muted-foreground mt-1">📍 {item.location}</p>}
                         {item.description && <p className="text-xs text-muted-foreground mt-1">{item.description}</p>}
-                        {item.website && (
-                          <button
-                            onClick={() => window.open(item.website!, "_blank")}
-                            className="flex items-center gap-1 text-xs text-primary mt-1.5 hover:underline"
-                          >
-                            <ExternalLink className="h-3 w-3" /> Ver página web
-                          </button>
+                      </div>
+                      <div className="flex flex-col items-end gap-1 shrink-0">
+                        <div className="flex gap-1">
+                          {item.website && (
+                            <Tooltip><TooltipTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={() => window.open(item.website!.startsWith("http") ? item.website! : `https://${item.website}`, '_blank')}>
+                                <Globe className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger><TooltipContent>Web</TooltipContent></Tooltip>
+                          )}
+                          {item.location && (
+                            <Tooltip><TooltipTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(item.location!)}`, '_blank')}>
+                                <MapPin className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger><TooltipContent>Cómo llegar</TooltipContent></Tooltip>
+                          )}
+                        </div>
+                        {isCreator && (
+                          <div className="flex gap-1">
+                            <Tooltip><TooltipTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={() => startEdit(item)}>
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger><TooltipContent>Editar</TooltipContent></Tooltip>
+                            <Tooltip><TooltipTrigger asChild>
+                              <Button variant="ghost" size="icon" className="text-destructive h-8 w-8" onClick={() => handleDelete(item.id)}>
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger><TooltipContent>Eliminar</TooltipContent></Tooltip>
+                          </div>
                         )}
                       </div>
-                      {isCreator && (
-                        <div className="flex items-center gap-1 shrink-0">
-                          <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground h-8 w-8" onClick={() => startEdit(item)}>
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="text-destructive h-8 w-8" onClick={() => handleDelete(item.id)}>
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      )}
                     </div>
                   </div>
                 ))}
