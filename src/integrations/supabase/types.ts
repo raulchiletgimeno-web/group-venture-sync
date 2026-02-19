@@ -124,6 +124,7 @@ export type Database = {
           created_at: string
           id: string
           paid_by: string
+          receipt_path: string | null
           title: string
           trip_id: string
         }
@@ -132,6 +133,7 @@ export type Database = {
           created_at?: string
           id?: string
           paid_by: string
+          receipt_path?: string | null
           title: string
           trip_id: string
         }
@@ -140,6 +142,7 @@ export type Database = {
           created_at?: string
           id?: string
           paid_by?: string
+          receipt_path?: string | null
           title?: string
           trip_id?: string
         }

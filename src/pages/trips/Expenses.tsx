@@ -1,6 +1,6 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { useParams } from "react-router-dom";
-import { Receipt, Plus, Trash2, Users, Pencil } from "lucide-react";
+import { Receipt, Plus, Trash2, Users, Pencil, Camera, ImageIcon, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,7 +24,8 @@ interface Expense {
   amount: number;
   paid_by: string;
   created_at: string;
-  splits: string[]; // user_ids
+  splits: string[];
+  receipt_path: string | null;
 }
 
 const Expenses = () => {
@@ -41,6 +42,10 @@ const Expenses = () => {
   const [amount, setAmount] = useState("");
   const [paidBy, setPaidBy] = useState("");
   const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
+  const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
+  const [existingReceiptPath, setExistingReceiptPath] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchMembers = async () => {
     if (!tripId) return;
@@ -96,6 +101,7 @@ const Expenses = () => {
         paid_by: e.paid_by,
         created_at: e.created_at,
         splits: splitMap.get(e.id) ?? [],
+        receipt_path: (e as any).receipt_path ?? null,
       }))
     );
     setLoading(false);
@@ -111,6 +117,9 @@ const Expenses = () => {
     setAmount("");
     setPaidBy(user?.id ?? "");
     setSelectedMembers(members.map((m) => m.user_id));
+    setReceiptFile(null);
+    setReceiptPreview(null);
+    setExistingReceiptPath(null);
     setOpen(true);
   };
 
@@ -120,7 +129,42 @@ const Expenses = () => {
     setAmount(exp.amount.toString());
     setPaidBy(exp.paid_by);
     setSelectedMembers(exp.splits);
+    setReceiptFile(null);
+    setReceiptPreview(null);
+    setExistingReceiptPath(exp.receipt_path);
     setOpen(true);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setReceiptFile(file);
+    setReceiptPreview(URL.createObjectURL(file));
+    setExistingReceiptPath(null);
+  };
+
+  const removeReceipt = () => {
+    setReceiptFile(null);
+    setReceiptPreview(null);
+    setExistingReceiptPath(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const uploadReceipt = async (expenseId: string): Promise<string | null> => {
+    if (!receiptFile || !tripId) return existingReceiptPath;
+    const ext = receiptFile.name.split(".").pop() ?? "jpg";
+    const path = `receipts/${tripId}/${expenseId}.${ext}`;
+    const { error } = await supabase.storage.from("trip-photos").upload(path, receiptFile, { upsert: true });
+    if (error) {
+      toast({ title: "Error subiendo foto", description: error.message, variant: "destructive" });
+      return existingReceiptPath;
+    }
+    return path;
+  };
+
+  const getReceiptUrl = (path: string) => {
+    const { data } = supabase.storage.from("trip-photos").getPublicUrl(path);
+    return data.publicUrl;
   };
 
   const toggleMember = (uid: string) => {
@@ -140,10 +184,13 @@ const Expenses = () => {
     }
 
     if (editingId) {
+      // Upload receipt if new file
+      const receiptPath = await uploadReceipt(editingId);
+
       // Update existing expense
       const { error } = await supabase
         .from("trip_expenses")
-        .update({ title: title.trim(), amount: parsedAmount, paid_by: paidBy })
+        .update({ title: title.trim(), amount: parsedAmount, paid_by: paidBy, receipt_path: receiptPath })
         .eq("id", editingId);
 
       if (error) {
@@ -171,6 +218,12 @@ const Expenses = () => {
       if (error || !inserted) {
         toast({ title: "Error", description: error?.message ?? "Error al guardar", variant: "destructive" });
         return;
+      }
+
+      // Upload receipt
+      const receiptPath = await uploadReceipt(inserted.id);
+      if (receiptPath) {
+        await supabase.from("trip_expenses").update({ receipt_path: receiptPath }).eq("id", inserted.id);
       }
 
       const splits = selectedMembers.map((uid) => ({ expense_id: inserted.id, user_id: uid }));
@@ -291,6 +344,44 @@ const Expenses = () => {
                   ))}
                 </div>
               </div>
+              <div>
+                <Label className="mb-2 block">Foto del ticket</Label>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="hidden"
+                  onChange={handleFileChange}
+                />
+                {receiptPreview || existingReceiptPath ? (
+                  <div className="relative inline-block">
+                    <img
+                      src={receiptPreview ?? (existingReceiptPath ? getReceiptUrl(existingReceiptPath) : "")}
+                      alt="Ticket"
+                      className="h-24 w-24 rounded-lg object-cover border border-border"
+                    />
+                    <button
+                      type="button"
+                      onClick={removeReceipt}
+                      className="absolute -top-2 -right-2 rounded-full bg-destructive text-destructive-foreground p-0.5"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="gap-2"
+                  >
+                    <Camera className="h-4 w-4" />
+                    Hacer foto
+                  </Button>
+                )}
+              </div>
               <Button type="submit" className="w-full gradient-hero text-primary-foreground border-0">
                 {editingId ? "Actualizar" : "Guardar"}
               </Button>
@@ -355,6 +446,14 @@ const Expenses = () => {
                     <p className="text-xs text-muted-foreground mt-0.5">
                       {(exp.amount / (exp.splits.length || 1)).toFixed(2)} € / persona
                     </p>
+                    {exp.receipt_path && (
+                      <img
+                        src={getReceiptUrl(exp.receipt_path)}
+                        alt="Ticket"
+                        className="mt-2 h-16 w-16 rounded-lg object-cover border border-border cursor-pointer"
+                        onClick={() => window.open(getReceiptUrl(exp.receipt_path!), '_blank')}
+                      />
+                    )}
                   </div>
                   {(exp.paid_by === user?.id) && (
                     <div className="flex gap-1">
