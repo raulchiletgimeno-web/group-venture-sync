@@ -180,11 +180,9 @@ const Accommodation = () => {
                     )}
                     {item.address && (
                       <Tooltip><TooltipTrigger asChild>
-                        <a href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(item.address)}`} target="_blank" rel="noopener noreferrer">
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-primary">
-                            <MapPin className="h-4 w-4" />
-                          </Button>
-                        </a>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(item.address!)}`, '_blank')}>
+                          <MapPin className="h-4 w-4" />
+                        </Button>
                       </TooltipTrigger><TooltipContent>Cómo llegar</TooltipContent></Tooltip>
                     )}
                   </div>
