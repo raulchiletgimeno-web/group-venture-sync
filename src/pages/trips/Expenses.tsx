@@ -1,23 +1,351 @@
-import { Receipt } from "lucide-react";
-import EmptyState from "@/components/EmptyState";
+import { useEffect, useState, useMemo } from "react";
+import { useParams } from "react-router-dom";
+import { Receipt, Plus, Trash2, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import EmptyState from "@/components/EmptyState";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
+
+interface Member {
+  user_id: string;
+  name: string;
+}
+
+interface Expense {
+  id: string;
+  title: string;
+  amount: number;
+  paid_by: string;
+  created_at: string;
+  splits: string[]; // user_ids
+}
 
 const Expenses = () => {
+  const { tripId } = useParams();
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [members, setMembers] = useState<Member[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [open, setOpen] = useState(false);
+
+  const [title, setTitle] = useState("");
+  const [amount, setAmount] = useState("");
+  const [paidBy, setPaidBy] = useState("");
+  const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
+
+  const fetchMembers = async () => {
+    if (!tripId) return;
+    const { data } = await supabase
+      .from("trip_members")
+      .select("user_id")
+      .eq("trip_id", tripId);
+    if (!data) return;
+
+    const userIds = data.map((m) => m.user_id);
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id, name")
+      .in("id", userIds);
+
+    setMembers(
+      (profiles ?? []).map((p) => ({ user_id: p.id, name: p.name || p.id.slice(0, 8) }))
+    );
+  };
+
+  const fetchExpenses = async () => {
+    if (!tripId) return;
+    const { data: expData } = await supabase
+      .from("trip_expenses")
+      .select("*")
+      .eq("trip_id", tripId)
+      .order("created_at", { ascending: false });
+
+    if (!expData) {
+      setExpenses([]);
+      setLoading(false);
+      return;
+    }
+
+    const expenseIds = expData.map((e) => e.id);
+    const { data: splitData } = await supabase
+      .from("trip_expense_splits")
+      .select("expense_id, user_id")
+      .in("expense_id", expenseIds);
+
+    const splitMap = new Map<string, string[]>();
+    (splitData ?? []).forEach((s) => {
+      const arr = splitMap.get(s.expense_id) ?? [];
+      arr.push(s.user_id);
+      splitMap.set(s.expense_id, arr);
+    });
+
+    setExpenses(
+      expData.map((e) => ({
+        id: e.id,
+        title: e.title,
+        amount: Number(e.amount),
+        paid_by: e.paid_by,
+        created_at: e.created_at,
+        splits: splitMap.get(e.id) ?? [],
+      }))
+    );
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchMembers().then(() => fetchExpenses());
+  }, [tripId]);
+
+  const openCreate = () => {
+    setTitle("");
+    setAmount("");
+    setPaidBy(user?.id ?? "");
+    setSelectedMembers(members.map((m) => m.user_id));
+    setOpen(true);
+  };
+
+  const toggleMember = (uid: string) => {
+    setSelectedMembers((prev) =>
+      prev.includes(uid) ? prev.filter((id) => id !== uid) : [...prev, uid]
+    );
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!tripId || !paidBy || selectedMembers.length === 0) return;
+
+    const parsedAmount = parseFloat(amount);
+    if (isNaN(parsedAmount) || parsedAmount <= 0) {
+      toast({ title: "Error", description: "Introduce una cantidad válida", variant: "destructive" });
+      return;
+    }
+
+    const { data: inserted, error } = await supabase
+      .from("trip_expenses")
+      .insert({ trip_id: tripId, title: title.trim(), amount: parsedAmount, paid_by: paidBy })
+      .select("id")
+      .single();
+
+    if (error || !inserted) {
+      toast({ title: "Error", description: error?.message ?? "Error al guardar", variant: "destructive" });
+      return;
+    }
+
+    const splits = selectedMembers.map((uid) => ({
+      expense_id: inserted.id,
+      user_id: uid,
+    }));
+
+    const { error: splitError } = await supabase.from("trip_expense_splits").insert(splits);
+    if (splitError) {
+      toast({ title: "Error", description: splitError.message, variant: "destructive" });
+      return;
+    }
+
+    setOpen(false);
+    fetchExpenses();
+    toast({ title: "Gasto añadido" });
+  };
+
+  const handleDelete = async (id: string) => {
+    await supabase.from("trip_expenses").delete().eq("id", id);
+    fetchExpenses();
+  };
+
+  const memberName = (uid: string) =>
+    members.find((m) => m.user_id === uid)?.name ?? uid.slice(0, 8);
+
+  // Calculate balances like Tricount
+  const balances = useMemo(() => {
+    const balanceMap = new Map<string, number>();
+    members.forEach((m) => balanceMap.set(m.user_id, 0));
+
+    expenses.forEach((exp) => {
+      const share = exp.amount / (exp.splits.length || 1);
+      // The payer gets credited
+      balanceMap.set(exp.paid_by, (balanceMap.get(exp.paid_by) ?? 0) + exp.amount);
+      // Each participant owes their share
+      exp.splits.forEach((uid) => {
+        balanceMap.set(uid, (balanceMap.get(uid) ?? 0) - share);
+      });
+    });
+
+    return balanceMap;
+  }, [expenses, members]);
+
+  const totalExpenses = useMemo(
+    () => expenses.reduce((sum, e) => sum + e.amount, 0),
+    [expenses]
+  );
+
+  if (loading) {
+    return (
+      <div className="flex justify-center py-10">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+
   return (
     <div className="animate-fade-in">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-bold text-foreground">Gastos Compartidos</h2>
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogTrigger asChild>
+            <Button size="sm" className="gradient-hero text-primary-foreground border-0" onClick={openCreate}>
+              <Plus className="h-4 w-4 mr-1" /> Añadir gasto
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Añadir gasto</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <Label>Título</Label>
+                <Input
+                  required
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="Cena, taxi, entradas..."
+                  maxLength={100}
+                />
+              </div>
+              <div>
+                <Label>Cantidad (€)</Label>
+                <Input
+                  required
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  placeholder="0.00"
+                />
+              </div>
+              <div>
+                <Label>Pagado por</Label>
+                <Select value={paidBy} onValueChange={setPaidBy}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona quién paga" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {members.map((m) => (
+                      <SelectItem key={m.user_id} value={m.user_id}>
+                        {m.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="mb-2 block">Compartido entre</Label>
+                <div className="space-y-2 max-h-40 overflow-y-auto">
+                  {members.map((m) => (
+                    <label key={m.user_id} className="flex items-center gap-2 cursor-pointer">
+                      <Checkbox
+                        checked={selectedMembers.includes(m.user_id)}
+                        onCheckedChange={() => toggleMember(m.user_id)}
+                      />
+                      <span className="text-sm text-foreground">{m.name}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <Button type="submit" className="w-full gradient-hero text-primary-foreground border-0">
+                Guardar
+              </Button>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
-      <EmptyState
-        icon={Receipt}
-        title="Sin gastos registrados"
-        description="Registra gastos y divide cuentas fácilmente entre los miembros del viaje."
-        action={
-          <Button className="gradient-hero text-primary-foreground border-0">
-            Añadir gasto
-          </Button>
-        }
-      />
+
+      {expenses.length === 0 ? (
+        <EmptyState
+          icon={Receipt}
+          title="Sin gastos registrados"
+          description="Registra gastos y divide cuentas fácilmente entre los miembros del viaje."
+        />
+      ) : (
+        <>
+          {/* Balance summary */}
+          <div className="rounded-xl bg-card p-4 shadow-card mb-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Users className="h-4 w-4 text-primary" />
+              <p className="text-sm font-semibold text-card-foreground">
+                Saldos — Total: {totalExpenses.toFixed(2)} €
+              </p>
+            </div>
+            <div className="space-y-2">
+              {members.map((m) => {
+                const bal = balances.get(m.user_id) ?? 0;
+                return (
+                  <div key={m.user_id} className="flex items-center justify-between text-sm">
+                    <span className="text-card-foreground">{m.name}</span>
+                    <span
+                      className={
+                        bal > 0.01
+                          ? "font-semibold text-green-600"
+                          : bal < -0.01
+                          ? "font-semibold text-destructive"
+                          : "text-muted-foreground"
+                      }
+                    >
+                      {bal > 0.01 ? "+" : ""}
+                      {bal.toFixed(2)} €
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Expense list */}
+          <div className="space-y-3">
+            {expenses.map((exp) => (
+              <div key={exp.id} className="rounded-xl bg-card p-4 shadow-card">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm font-semibold text-card-foreground">{exp.title}</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Pagado por {memberName(exp.paid_by)} — {exp.amount.toFixed(2)} €
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Compartido entre: {exp.splits.map(memberName).join(", ")}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {(exp.amount / (exp.splits.length || 1)).toFixed(2)} € / persona
+                    </p>
+                  </div>
+                  {(exp.paid_by === user?.id) && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-destructive h-8 w-8"
+                          onClick={() => handleDelete(exp.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Eliminar</TooltipContent>
+                    </Tooltip>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 };

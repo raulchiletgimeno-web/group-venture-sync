@@ -85,6 +85,81 @@ export type Database = {
           },
         ]
       }
+      trip_expense_splits: {
+        Row: {
+          expense_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          expense_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          expense_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_expense_splits_expense_id_fkey"
+            columns: ["expense_id"]
+            isOneToOne: false
+            referencedRelation: "trip_expenses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trip_expense_splits_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trip_expenses: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          paid_by: string
+          title: string
+          trip_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          paid_by: string
+          title: string
+          trip_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          paid_by?: string
+          title?: string
+          trip_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_expenses_paid_by_fkey"
+            columns: ["paid_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trip_expenses_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trip_members: {
         Row: {
           id: string
