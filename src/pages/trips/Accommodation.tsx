@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { Hotel, Plus, Trash2, Pencil } from "lucide-react";
+import { Hotel, Plus, Trash2, Pencil, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,6 +19,7 @@ interface AccommodationItem {
   check_out: string;
   booking_reference: string | null;
   notes: string | null;
+  website: string | null;
 }
 
 const Accommodation = () => {
@@ -37,6 +38,7 @@ const Accommodation = () => {
     check_out: "",
     booking_reference: "",
     notes: "",
+    website: "",
   };
 
   const [form, setForm] = useState(emptyForm);
@@ -69,6 +71,7 @@ const Accommodation = () => {
       check_out: item.check_out,
       booking_reference: item.booking_reference ?? "",
       notes: item.notes ?? "",
+      website: item.website ?? "",
     });
     setOpen(true);
   };
@@ -84,6 +87,7 @@ const Accommodation = () => {
       check_out: form.check_out,
       booking_reference: form.booking_reference || null,
       notes: form.notes || null,
+      website: form.website || null,
     };
 
     const { error } = editingId
@@ -135,6 +139,7 @@ const Accommodation = () => {
                   <div><Label>Check-out</Label><Input type="date" required value={form.check_out} onChange={(e) => setForm({ ...form, check_out: e.target.value })} /></div>
                 </div>
                 <div><Label>Referencia reserva</Label><Input value={form.booking_reference} onChange={(e) => setForm({ ...form, booking_reference: e.target.value })} /></div>
+                <div><Label>Página web</Label><Input type="url" value={form.website} onChange={(e) => setForm({ ...form, website: e.target.value })} placeholder="https://www.hotel.com" /></div>
                 <div><Label>Notas</Label><Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
                 <Button type="submit" className="w-full gradient-hero text-primary-foreground border-0">{editingId ? "Actualizar" : "Guardar"}</Button>
               </form>
@@ -160,6 +165,11 @@ const Accommodation = () => {
                   <p className="text-xs text-muted-foreground mt-1">{formatDate(item.check_in)} — {formatDate(item.check_out)}</p>
                   {item.booking_reference && <p className="text-xs text-muted-foreground mt-1">Ref: {item.booking_reference}</p>}
                   {item.notes && <p className="text-xs text-muted-foreground mt-1">{item.notes}</p>}
+                  {item.website && (
+                    <a href={item.website.startsWith("http") ? item.website : `https://${item.website}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 mt-2 text-xs font-medium text-primary hover:underline">
+                      <Globe className="h-3.5 w-3.5" /> Web
+                    </a>
+                  )}
                 </div>
                 {isCreator && (
                   <div className="flex gap-1">
