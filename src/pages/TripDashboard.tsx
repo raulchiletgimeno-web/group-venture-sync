@@ -65,7 +65,7 @@ const TripDashboard = () => {
     const link = `${window.location.origin}/join/${trip.invite_code}`;
     const text = `¡Únete a mi viaje "${trip.title}"! Usa este enlace: ${link}`;
     const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
-    window.open(whatsappUrl, "_blank");
+    window.location.href = whatsappUrl;
   };
 
   const formatDate = (d: string) => {
