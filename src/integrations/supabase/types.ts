@@ -49,6 +49,7 @@ export type Database = {
           name: string
           notes: string | null
           trip_id: string
+          website: string | null
         }
         Insert: {
           address?: string | null
@@ -60,6 +61,7 @@ export type Database = {
           name: string
           notes?: string | null
           trip_id: string
+          website?: string | null
         }
         Update: {
           address?: string | null
@@ -71,6 +73,7 @@ export type Database = {
           name?: string
           notes?: string | null
           trip_id?: string
+          website?: string | null
         }
         Relationships: [
           {

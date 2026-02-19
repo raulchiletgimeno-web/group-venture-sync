@@ -1,0 +1,1 @@
+ALTER TABLE public.trip_accommodation ADD COLUMN website text DEFAULT NULL;
