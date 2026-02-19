@@ -142,7 +142,7 @@ const Chat = () => {
     if (!user || !tripId) return;
     setSending(true);
     const ext = file.name.split(".").pop();
-    const path = `chat/${tripId}/${Date.now()}.${ext}`;
+    const path = `${tripId}/chat/${Date.now()}.${ext}`;
     const { error: uploadError } = await supabase.storage
       .from("trip-photos")
       .upload(path, file, { upsert: true });
@@ -188,7 +188,7 @@ const Chat = () => {
         const blob = new Blob(chunksRef.current, { type: "audio/webm" });
         if (!user || !tripId) return;
         setSending(true);
-        const path = `chat/${tripId}/${Date.now()}.webm`;
+        const path = `${tripId}/chat/${Date.now()}.webm`;
         const { error: uploadError } = await supabase.storage
           .from("trip-photos")
           .upload(path, blob, { upsert: true, contentType: "audio/webm" });
@@ -339,6 +339,7 @@ const Chat = () => {
           ref={fileInputRef}
           type="file"
           accept="image/*"
+          capture="environment"
           className="hidden"
           onChange={handleImageSelect}
         />
