@@ -95,7 +95,7 @@ const Schedule = () => {
   return (
     <div className="animate-fade-in">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-bold text-foreground">Horario</h2>
+        <h2 className="text-xl font-bold text-foreground">Actividades</h2>
         {isCreator && (
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
