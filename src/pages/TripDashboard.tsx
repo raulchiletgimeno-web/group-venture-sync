@@ -5,8 +5,8 @@ import {
   Users, MapPin, Calendar, Share2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useTripRole } from "@/hooks/use-trip-role";
 
 const sections = [
   { path: "transport", label: "Transporte", icon: Plane, color: "bg-primary/10 text-primary" },
@@ -35,7 +35,7 @@ interface TripData {
 
 const TripDashboard = () => {
   const { tripId } = useParams();
-  const { toast } = useToast();
+  const { isCreator } = useTripRole(tripId);
   const [trip, setTrip] = useState<TripData | null>(null);
   const [memberCount, setMemberCount] = useState(0);
 
@@ -63,8 +63,9 @@ const TripDashboard = () => {
   const handleShare = () => {
     if (!trip) return;
     const link = `${window.location.origin}/join/${trip.invite_code}`;
-    navigator.clipboard.writeText(link);
-    toast({ title: "Enlace copiado", description: "Comparte el enlace con tus amigos para que se unan." });
+    const text = `¡Únete a mi viaje "${trip.title}"! Usa este enlace: ${link}`;
+    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
+    window.open(whatsappUrl, "_blank");
   };
 
   const formatDate = (d: string) => {
@@ -103,19 +104,17 @@ const TripDashboard = () => {
             {statusLabels[trip.status] ?? trip.status}
           </span>
         </div>
-        <div className="mt-4 flex items-center gap-3">
-          <Button variant="outline" size="sm" className="text-sm" onClick={handleShare}>
-            <Share2 className="h-3.5 w-3.5 mr-1.5" />
-            Invitar amigos
-          </Button>
-          <button
-            onClick={handleShare}
-            className="inline-flex items-center gap-1.5 rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground hover:bg-muted/80 transition-colors cursor-pointer"
-            title="Pulsa para copiar el enlace de invitación"
-          >
-            Código: {trip.invite_code}
-          </button>
-        </div>
+        {isCreator && (
+          <div className="mt-4 flex items-center gap-3">
+            <Button variant="outline" size="sm" className="text-sm" onClick={handleShare}>
+              <Share2 className="h-3.5 w-3.5 mr-1.5" />
+              Invitar amigos
+            </Button>
+            <span className="inline-flex items-center rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
+              Código: {trip.invite_code}
+            </span>
+          </div>
+        )}
       </div>
 
       <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Secciones</h3>
