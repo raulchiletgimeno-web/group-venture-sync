@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { CalendarDays, Plus, Trash2, ExternalLink } from "lucide-react";
+import { CalendarDays, Plus, Trash2, ExternalLink, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,6 +27,7 @@ const Schedule = () => {
   const { toast } = useToast();
   const [items, setItems] = useState<ScheduleItem[]>([]);
   const [open, setOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const [form, setForm] = useState({
@@ -56,7 +57,7 @@ const Schedule = () => {
     e.preventDefault();
     if (!tripId) return;
 
-    const { error } = await supabase.from("trip_schedule").insert({
+    const payload = {
       trip_id: tripId,
       date: form.date,
       time: form.time || null,
@@ -64,17 +65,39 @@ const Schedule = () => {
       description: form.description || null,
       location: form.location || null,
       website: form.website || null,
-    });
+    };
+
+    const { error } = editingId
+      ? await supabase.from("trip_schedule").update(payload).eq("id", editingId)
+      : await supabase.from("trip_schedule").insert(payload);
 
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
       return;
     }
 
-    setForm({ date: "", time: "", title: "", description: "", location: "", website: "" });
+    resetForm();
     setOpen(false);
     fetchItems();
-    toast({ title: "Actividad añadida" });
+    toast({ title: editingId ? "Actividad actualizada" : "Actividad añadida" });
+  };
+
+  const resetForm = () => {
+    setForm({ date: "", time: "", title: "", description: "", location: "", website: "" });
+    setEditingId(null);
+  };
+
+  const startEdit = (item: ScheduleItem) => {
+    setForm({
+      date: item.date,
+      time: item.time || "",
+      title: item.title,
+      description: item.description || "",
+      location: item.location || "",
+      website: item.website || "",
+    });
+    setEditingId(item.id);
+    setOpen(true);
   };
 
   const handleDelete = async (id: string) => {
@@ -100,14 +123,14 @@ const Schedule = () => {
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-bold text-foreground">Actividades</h2>
         {isCreator && (
-          <Dialog open={open} onOpenChange={setOpen}>
+          <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
             <DialogTrigger asChild>
               <Button size="sm" className="gradient-hero text-primary-foreground border-0">
                 <Plus className="h-4 w-4 mr-1" /> Añadir
               </Button>
             </DialogTrigger>
             <DialogContent>
-              <DialogHeader><DialogTitle>Añadir actividad</DialogTitle></DialogHeader>
+              <DialogHeader><DialogTitle>{editingId ? "Editar actividad" : "Añadir actividad"}</DialogTitle></DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div><Label>Título</Label><Input required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Visita al museo, cena..." /></div>
                 <div className="grid grid-cols-2 gap-3">
@@ -117,7 +140,7 @@ const Schedule = () => {
                 <div><Label>Lugar</Label><Input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} /></div>
                 <div><Label>Descripción</Label><Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
                 <div><Label>Página web</Label><Input type="url" value={form.website} onChange={(e) => setForm({ ...form, website: e.target.value })} placeholder="https://..." /></div>
-                <Button type="submit" className="w-full gradient-hero text-primary-foreground border-0">Guardar</Button>
+                <Button type="submit" className="w-full gradient-hero text-primary-foreground border-0">{editingId ? "Actualizar" : "Guardar"}</Button>
               </form>
             </DialogContent>
           </Dialog>
@@ -156,9 +179,14 @@ const Schedule = () => {
                         )}
                       </div>
                       {isCreator && (
-                        <Button variant="ghost" size="icon" className="text-destructive h-8 w-8" onClick={() => handleDelete(item.id)}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground h-8 w-8" onClick={() => startEdit(item)}>
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="text-destructive h-8 w-8" onClick={() => handleDelete(item.id)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       )}
                     </div>
                   </div>
