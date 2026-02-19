@@ -193,9 +193,9 @@ const Transport = () => {
                   {item.notes && <p className="text-xs text-muted-foreground mt-1">{item.notes}</p>}
                 </div>
                 <div className="flex flex-col items-end gap-1 shrink-0">
-                  {(item as any).departure_address && (
+                  {((item as any).departure_address || item.departure_location) && (
                     <Tooltip><TooltipTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent((item as any).departure_address)}`, '_blank')}>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent((item as any).departure_address || item.departure_location)}`, '_blank')}>
                         <MapPin className="h-4 w-4" />
                       </Button>
                     </TooltipTrigger><TooltipContent>Cómo llegar</TooltipContent></Tooltip>
