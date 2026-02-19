@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useRef } from "react";
 import { useParams } from "react-router-dom";
-import { Receipt, Plus, Trash2, Users, Pencil, Camera, ImageIcon, X } from "lucide-react";
+import { Receipt, Plus, Trash2, Users, Pencil, Camera, ImageIcon, X, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,6 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import EmptyState from "@/components/EmptyState";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -270,6 +271,37 @@ const Expenses = () => {
     [expenses]
   );
 
+  // Calculate simplified debts (who owes whom)
+  const debts = useMemo(() => {
+    const debtors: { from: string; to: string; amount: number }[] = [];
+    const bals = new Map(balances);
+
+    // Get sorted arrays of creditors and debtors
+    const creditors = members
+      .filter((m) => (bals.get(m.user_id) ?? 0) > 0.01)
+      .map((m) => ({ uid: m.user_id, amount: bals.get(m.user_id)! }))
+      .sort((a, b) => b.amount - a.amount);
+
+    const debtorsList = members
+      .filter((m) => (bals.get(m.user_id) ?? 0) < -0.01)
+      .map((m) => ({ uid: m.user_id, amount: Math.abs(bals.get(m.user_id)!) }))
+      .sort((a, b) => b.amount - a.amount);
+
+    let ci = 0, di = 0;
+    while (ci < creditors.length && di < debtorsList.length) {
+      const transfer = Math.min(creditors[ci].amount, debtorsList[di].amount);
+      if (transfer > 0.01) {
+        debtors.push({ from: debtorsList[di].uid, to: creditors[ci].uid, amount: transfer });
+      }
+      creditors[ci].amount -= transfer;
+      debtorsList[di].amount -= transfer;
+      if (creditors[ci].amount < 0.01) ci++;
+      if (debtorsList[di].amount < 0.01) di++;
+    }
+
+    return debtors;
+  }, [balances, members]);
+
   if (loading) {
     return (
       <div className="flex justify-center py-10">
@@ -397,99 +429,121 @@ const Expenses = () => {
           description="Registra gastos y divide cuentas fácilmente entre los miembros del viaje."
         />
       ) : (
-        <>
-          {/* Balance summary */}
-          <div className="rounded-xl bg-card p-4 shadow-card mb-4">
-            <div className="flex items-center gap-2 mb-3">
-              <Users className="h-4 w-4 text-primary" />
-              <p className="text-sm font-semibold text-card-foreground">
-                Saldos — Total: {totalExpenses.toFixed(2)} €
-              </p>
-            </div>
-            <div className="space-y-2">
-              {members.map((m) => {
-                const bal = balances.get(m.user_id) ?? 0;
-                return (
-                  <div key={m.user_id} className="flex items-center justify-between text-sm">
-                    <span className="text-card-foreground">{m.name}</span>
-                    <span
-                      className={
-                        bal > 0.01
-                          ? "font-semibold text-green-600"
-                          : bal < -0.01
-                          ? "font-semibold text-destructive"
-                          : "text-muted-foreground"
-                      }
-                    >
-                      {bal > 0.01 ? "+" : ""}
-                      {bal.toFixed(2)} €
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+        <Tabs defaultValue="saldos" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 mb-4">
+            <TabsTrigger value="saldos">Saldos</TabsTrigger>
+            <TabsTrigger value="gastos">Gastos</TabsTrigger>
+          </TabsList>
 
-          {/* Expense list */}
-          <div className="space-y-3">
-            {expenses.map((exp) => (
-              <div key={exp.id} className="rounded-xl bg-card p-4 shadow-card">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-sm font-semibold text-card-foreground">{exp.title}</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Pagado por {memberName(exp.paid_by)} — {exp.amount.toFixed(2)} €
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      Compartido entre: {exp.splits.map(memberName).join(", ")}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {(exp.amount / (exp.splits.length || 1)).toFixed(2)} € / persona
-                    </p>
-                    {exp.receipt_path && (
-                      <img
-                        src={getReceiptUrl(exp.receipt_path)}
-                        alt="Ticket"
-                        className="mt-2 h-16 w-16 rounded-lg object-cover border border-border cursor-pointer"
-                        onClick={() => window.open(getReceiptUrl(exp.receipt_path!), '_blank')}
-                      />
-                    )}
-                  </div>
-                  {(exp.paid_by === user?.id) && (
-                    <div className="flex gap-1">
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="text-muted-foreground h-8 w-8"
-                            onClick={() => openEdit(exp)}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Editar</TooltipContent>
-                      </Tooltip>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="text-destructive h-8 w-8"
-                            onClick={() => handleDelete(exp.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Eliminar</TooltipContent>
-                      </Tooltip>
+          <TabsContent value="saldos" className="space-y-4">
+            {/* Total */}
+            <div className="rounded-xl bg-card p-4 shadow-card">
+              <p className="text-sm font-semibold text-card-foreground mb-3">
+                Total gastado: {totalExpenses.toFixed(2)} €
+              </p>
+              <div className="space-y-2">
+                {members.map((m) => {
+                  const bal = balances.get(m.user_id) ?? 0;
+                  return (
+                    <div key={m.user_id} className="flex items-center justify-between text-sm">
+                      <span className="text-card-foreground">{m.name}</span>
+                      <span
+                        className={
+                          bal > 0.01
+                            ? "font-semibold text-green-600"
+                            : bal < -0.01
+                            ? "font-semibold text-destructive"
+                            : "text-muted-foreground"
+                        }
+                      >
+                        {bal > 0.01 ? "+" : ""}
+                        {bal.toFixed(2)} €
+                      </span>
                     </div>
-                  )}
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Who owes whom */}
+            {debts.length > 0 && (
+              <div className="rounded-xl bg-card p-4 shadow-card">
+                <p className="text-sm font-semibold text-card-foreground mb-3">Quién debe a quién</p>
+                <div className="space-y-2">
+                  {debts.map((d, i) => (
+                    <div key={i} className="flex items-center gap-2 text-sm">
+                      <span className="text-destructive font-medium">{memberName(d.from)}</span>
+                      <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span className="text-green-600 font-medium">{memberName(d.to)}</span>
+                      <span className="ml-auto font-semibold text-card-foreground">{d.amount.toFixed(2)} €</span>
+                    </div>
+                  ))}
                 </div>
               </div>
-            ))}
-          </div>
-        </>
+            )}
+          </TabsContent>
+
+          <TabsContent value="gastos">
+            <div className="space-y-3">
+              {expenses.map((exp) => (
+                <div key={exp.id} className="rounded-xl bg-card p-4 shadow-card">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-sm font-semibold text-card-foreground">{exp.title}</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Pagado por {memberName(exp.paid_by)} — {exp.amount.toFixed(2)} €
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Compartido entre: {exp.splits.map(memberName).join(", ")}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {(exp.amount / (exp.splits.length || 1)).toFixed(2)} € / persona
+                      </p>
+                      {exp.receipt_path && (
+                        <img
+                          src={getReceiptUrl(exp.receipt_path)}
+                          alt="Ticket"
+                          className="mt-2 h-16 w-16 rounded-lg object-cover border border-border cursor-pointer"
+                          onClick={() => window.open(getReceiptUrl(exp.receipt_path!), '_blank')}
+                        />
+                      )}
+                    </div>
+                    {(exp.paid_by === user?.id) && (
+                      <div className="flex gap-1">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-muted-foreground h-8 w-8"
+                              onClick={() => openEdit(exp)}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Editar</TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-destructive h-8 w-8"
+                              onClick={() => handleDelete(exp.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Eliminar</TooltipContent>
+                        </Tooltip>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </TabsContent>
+        </Tabs>
       )}
     </div>
   );
