@@ -165,22 +165,26 @@ const Accommodation = () => {
                   <p className="text-xs text-muted-foreground mt-1">{formatDate(item.check_in)} — {formatDate(item.check_out)}</p>
                   {item.booking_reference && <p className="text-xs text-muted-foreground mt-1">Ref: {item.booking_reference}</p>}
                   {item.notes && <p className="text-xs text-muted-foreground mt-1">{item.notes}</p>}
+                </div>
+                <div className="flex flex-col items-end gap-1">
                   {item.website && (
-                    <a href={item.website.startsWith("http") ? item.website : `https://${item.website}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 mt-2 text-xs font-medium text-primary hover:underline">
-                      <Globe className="h-3.5 w-3.5" /> Web
+                    <a href={item.website.startsWith("http") ? item.website : `https://${item.website}`} target="_blank" rel="noopener noreferrer">
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-primary">
+                        <Globe className="h-4 w-4" />
+                      </Button>
                     </a>
                   )}
+                  {isCreator && (
+                    <div className="flex gap-1">
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={() => openEdit(item)}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="text-destructive h-8 w-8" onClick={() => handleDelete(item.id)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
                 </div>
-                {isCreator && (
-                  <div className="flex gap-1">
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={() => openEdit(item)}>
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="text-destructive h-8 w-8" onClick={() => handleDelete(item.id)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                )}
               </div>
             </div>
           ))}
