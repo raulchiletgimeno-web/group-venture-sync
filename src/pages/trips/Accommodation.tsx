@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import EmptyState from "@/components/EmptyState";
 import { supabase } from "@/integrations/supabase/client";
 import { useTripRole } from "@/hooks/use-trip-role";
@@ -168,20 +169,26 @@ const Accommodation = () => {
                 </div>
                 <div className="flex flex-col items-end gap-1">
                   {item.website && (
-                    <a href={item.website.startsWith("http") ? item.website : `https://${item.website}`} target="_blank" rel="noopener noreferrer">
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-primary">
-                        <Globe className="h-4 w-4" />
-                      </Button>
-                    </a>
+                    <Tooltip><TooltipTrigger asChild>
+                      <a href={item.website.startsWith("http") ? item.website : `https://${item.website}`} target="_blank" rel="noopener noreferrer">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-primary">
+                          <Globe className="h-4 w-4" />
+                        </Button>
+                      </a>
+                    </TooltipTrigger><TooltipContent>Web</TooltipContent></Tooltip>
                   )}
                   {isCreator && (
                     <div className="flex gap-1">
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={() => openEdit(item)}>
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="text-destructive h-8 w-8" onClick={() => handleDelete(item.id)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <Tooltip><TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={() => openEdit(item)}>
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger><TooltipContent>Editar</TooltipContent></Tooltip>
+                      <Tooltip><TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon" className="text-destructive h-8 w-8" onClick={() => handleDelete(item.id)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger><TooltipContent>Eliminar</TooltipContent></Tooltip>
                     </div>
                   )}
                 </div>
