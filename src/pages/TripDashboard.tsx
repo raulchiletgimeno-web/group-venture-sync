@@ -103,11 +103,18 @@ const TripDashboard = () => {
             {statusLabels[trip.status] ?? trip.status}
           </span>
         </div>
-        <div className="mt-4">
+        <div className="mt-4 flex items-center gap-3">
           <Button variant="outline" size="sm" className="text-sm" onClick={handleShare}>
             <Share2 className="h-3.5 w-3.5 mr-1.5" />
             Invitar amigos
           </Button>
+          <button
+            onClick={handleShare}
+            className="inline-flex items-center gap-1.5 rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground hover:bg-muted/80 transition-colors cursor-pointer"
+            title="Pulsa para copiar el enlace de invitación"
+          >
+            Código: {trip.invite_code}
+          </button>
         </div>
       </div>
 
