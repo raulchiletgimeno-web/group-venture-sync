@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { Hotel, Plus, Trash2 } from "lucide-react";
+import { Hotel, Plus, Trash2, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,15 +28,18 @@ const Accommodation = () => {
   const [items, setItems] = useState<AccommodationItem[]>([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
-  const [form, setForm] = useState({
+  const emptyForm = {
     name: "",
     address: "",
     check_in: "",
     check_out: "",
     booking_reference: "",
     notes: "",
-  });
+  };
+
+  const [form, setForm] = useState(emptyForm);
 
   const fetchItems = async () => {
     if (!tripId) return;
@@ -51,29 +54,52 @@ const Accommodation = () => {
 
   useEffect(() => { fetchItems(); }, [tripId]);
 
+  const openCreate = () => {
+    setEditingId(null);
+    setForm(emptyForm);
+    setOpen(true);
+  };
+
+  const openEdit = (item: AccommodationItem) => {
+    setEditingId(item.id);
+    setForm({
+      name: item.name,
+      address: item.address ?? "",
+      check_in: item.check_in,
+      check_out: item.check_out,
+      booking_reference: item.booking_reference ?? "",
+      notes: item.notes ?? "",
+    });
+    setOpen(true);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!tripId) return;
 
-    const { error } = await supabase.from("trip_accommodation").insert({
-      trip_id: tripId,
+    const payload = {
       name: form.name,
       address: form.address || null,
       check_in: form.check_in,
       check_out: form.check_out,
       booking_reference: form.booking_reference || null,
       notes: form.notes || null,
-    });
+    };
+
+    const { error } = editingId
+      ? await supabase.from("trip_accommodation").update(payload).eq("id", editingId)
+      : await supabase.from("trip_accommodation").insert({ ...payload, trip_id: tripId });
 
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
       return;
     }
 
-    setForm({ name: "", address: "", check_in: "", check_out: "", booking_reference: "", notes: "" });
+    setForm(emptyForm);
+    setEditingId(null);
     setOpen(false);
     fetchItems();
-    toast({ title: "Alojamiento añadido" });
+    toast({ title: editingId ? "Alojamiento actualizado" : "Alojamiento añadido" });
   };
 
   const handleDelete = async (id: string) => {
@@ -93,14 +119,14 @@ const Accommodation = () => {
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-bold text-foreground">Dónde Dormimos</h2>
         {isCreator && (
-          <Dialog open={open} onOpenChange={setOpen}>
+          <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setEditingId(null); }}>
             <DialogTrigger asChild>
-              <Button size="sm" className="gradient-hero text-primary-foreground border-0">
+              <Button size="sm" className="gradient-hero text-primary-foreground border-0" onClick={openCreate}>
                 <Plus className="h-4 w-4 mr-1" /> Añadir
               </Button>
             </DialogTrigger>
             <DialogContent>
-              <DialogHeader><DialogTitle>Añadir alojamiento</DialogTitle></DialogHeader>
+              <DialogHeader><DialogTitle>{editingId ? "Editar alojamiento" : "Añadir alojamiento"}</DialogTitle></DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div><Label>Nombre</Label><Input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Hotel, apartamento..." /></div>
                 <div><Label>Dirección</Label><Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} /></div>
@@ -110,7 +136,7 @@ const Accommodation = () => {
                 </div>
                 <div><Label>Referencia reserva</Label><Input value={form.booking_reference} onChange={(e) => setForm({ ...form, booking_reference: e.target.value })} /></div>
                 <div><Label>Notas</Label><Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
-                <Button type="submit" className="w-full gradient-hero text-primary-foreground border-0">Guardar</Button>
+                <Button type="submit" className="w-full gradient-hero text-primary-foreground border-0">{editingId ? "Actualizar" : "Guardar"}</Button>
               </form>
             </DialogContent>
           </Dialog>
@@ -136,9 +162,14 @@ const Accommodation = () => {
                   {item.notes && <p className="text-xs text-muted-foreground mt-1">{item.notes}</p>}
                 </div>
                 {isCreator && (
-                  <Button variant="ghost" size="icon" className="text-destructive h-8 w-8" onClick={() => handleDelete(item.id)}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  <div className="flex gap-1">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={() => openEdit(item)}>
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="text-destructive h-8 w-8" onClick={() => handleDelete(item.id)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 )}
               </div>
             </div>
