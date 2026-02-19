@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { CalendarDays, Plus, Trash2 } from "lucide-react";
+import { CalendarDays, Plus, Trash2, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,6 +18,7 @@ interface ScheduleItem {
   title: string;
   description: string | null;
   location: string | null;
+  website: string | null;
 }
 
 const Schedule = () => {
@@ -34,6 +35,7 @@ const Schedule = () => {
     title: "",
     description: "",
     location: "",
+    website: "",
   });
 
   const fetchItems = async () => {
@@ -61,6 +63,7 @@ const Schedule = () => {
       title: form.title,
       description: form.description || null,
       location: form.location || null,
+      website: form.website || null,
     });
 
     if (error) {
@@ -68,7 +71,7 @@ const Schedule = () => {
       return;
     }
 
-    setForm({ date: "", time: "", title: "", description: "", location: "" });
+    setForm({ date: "", time: "", title: "", description: "", location: "", website: "" });
     setOpen(false);
     fetchItems();
     toast({ title: "Actividad añadida" });
@@ -113,6 +116,7 @@ const Schedule = () => {
                 </div>
                 <div><Label>Lugar</Label><Input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} /></div>
                 <div><Label>Descripción</Label><Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
+                <div><Label>Página web</Label><Input type="url" value={form.website} onChange={(e) => setForm({ ...form, website: e.target.value })} placeholder="https://..." /></div>
                 <Button type="submit" className="w-full gradient-hero text-primary-foreground border-0">Guardar</Button>
               </form>
             </DialogContent>
@@ -142,6 +146,14 @@ const Schedule = () => {
                         </div>
                         {item.location && <p className="text-xs text-muted-foreground mt-1">📍 {item.location}</p>}
                         {item.description && <p className="text-xs text-muted-foreground mt-1">{item.description}</p>}
+                        {item.website && (
+                          <button
+                            onClick={() => window.open(item.website!, "_blank")}
+                            className="flex items-center gap-1 text-xs text-primary mt-1.5 hover:underline"
+                          >
+                            <ExternalLink className="h-3 w-3" /> Ver página web
+                          </button>
+                        )}
                       </div>
                       {isCreator && (
                         <Button variant="ghost" size="icon" className="text-destructive h-8 w-8" onClick={() => handleDelete(item.id)}>

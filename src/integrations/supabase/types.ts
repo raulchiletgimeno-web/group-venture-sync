@@ -296,6 +296,7 @@ export type Database = {
           time: string | null
           title: string
           trip_id: string
+          website: string | null
         }
         Insert: {
           created_at?: string
@@ -306,6 +307,7 @@ export type Database = {
           time?: string | null
           title: string
           trip_id: string
+          website?: string | null
         }
         Update: {
           created_at?: string
@@ -316,6 +318,7 @@ export type Database = {
           time?: string | null
           title?: string
           trip_id?: string
+          website?: string | null
         }
         Relationships: [
           {
