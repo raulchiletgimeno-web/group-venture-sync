@@ -15,7 +15,7 @@ const sections = [
   { path: "photos", label: "Fotos", icon: Camera, color: "bg-primary/10 text-primary" },
   { path: "chat", label: "Chat", icon: MessageCircle, color: "bg-accent/10 text-accent" },
   { path: "weather", label: "El Tiempo", icon: CloudSun, color: "bg-secondary text-secondary-foreground" },
-  { path: "schedule", label: "Horario", icon: CalendarDays, color: "bg-primary/10 text-primary" },
+  { path: "schedule", label: "Actividades", icon: CalendarDays, color: "bg-primary/10 text-primary" },
 ];
 
 const statusLabels: Record<string, string> = {
