@@ -1,0 +1,1 @@
+ALTER TABLE public.trip_transport ADD COLUMN departure_address text;

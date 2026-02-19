@@ -34,6 +34,7 @@ const typeLabels: Record<string, string> = {
 const emptyForm = {
   type: "flight",
   departure_location: "",
+  departure_address: "",
   arrival_location: "",
   departure_datetime: "",
   arrival_datetime: "",
@@ -76,6 +77,7 @@ const Transport = () => {
     setForm({
       type: item.type,
       departure_location: item.departure_location,
+      departure_address: (item as any).departure_address ?? "",
       arrival_location: item.arrival_location,
       departure_datetime: item.departure_datetime.slice(0, 16),
       arrival_datetime: item.arrival_datetime?.slice(0, 16) ?? "",
@@ -92,6 +94,7 @@ const Transport = () => {
     const payload = {
       type: form.type,
       departure_location: form.departure_location,
+      departure_address: form.departure_address || null,
       arrival_location: form.arrival_location,
       departure_datetime: form.departure_datetime,
       arrival_datetime: form.arrival_datetime || null,
@@ -156,6 +159,7 @@ const Transport = () => {
                   <div><Label>Origen</Label><Input required value={form.departure_location} onChange={(e) => setForm({ ...form, departure_location: e.target.value })} /></div>
                   <div><Label>Destino</Label><Input required value={form.arrival_location} onChange={(e) => setForm({ ...form, arrival_location: e.target.value })} /></div>
                 </div>
+                <div><Label>Dirección de salida</Label><Input value={form.departure_address} onChange={(e) => setForm({ ...form, departure_address: e.target.value })} placeholder="Calle, número, terminal..." /></div>
                 <div className="grid grid-cols-2 gap-3">
                   <div><Label>Salida</Label><Input type="datetime-local" required value={form.departure_datetime} onChange={(e) => setForm({ ...form, departure_datetime: e.target.value })} /></div>
                   <div><Label>Llegada</Label><Input type="datetime-local" value={form.arrival_datetime} onChange={(e) => setForm({ ...form, arrival_datetime: e.target.value })} /></div>

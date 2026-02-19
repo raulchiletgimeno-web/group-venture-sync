@@ -336,6 +336,7 @@ export type Database = {
           arrival_location: string
           booking_reference: string | null
           created_at: string
+          departure_address: string | null
           departure_datetime: string
           departure_location: string
           id: string
@@ -348,6 +349,7 @@ export type Database = {
           arrival_location: string
           booking_reference?: string | null
           created_at?: string
+          departure_address?: string | null
           departure_datetime: string
           departure_location: string
           id?: string
@@ -360,6 +362,7 @@ export type Database = {
           arrival_location?: string
           booking_reference?: string | null
           created_at?: string
+          departure_address?: string | null
           departure_datetime?: string
           departure_location?: string
           id?: string
