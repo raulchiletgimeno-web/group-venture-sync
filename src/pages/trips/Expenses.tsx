@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { useParams } from "react-router-dom";
-import { Receipt, Plus, Trash2, Users } from "lucide-react";
+import { Receipt, Plus, Trash2, Users, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -35,6 +35,7 @@ const Expenses = () => {
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const [title, setTitle] = useState("");
   const [amount, setAmount] = useState("");
@@ -105,10 +106,20 @@ const Expenses = () => {
   }, [tripId]);
 
   const openCreate = () => {
+    setEditingId(null);
     setTitle("");
     setAmount("");
     setPaidBy(user?.id ?? "");
     setSelectedMembers(members.map((m) => m.user_id));
+    setOpen(true);
+  };
+
+  const openEdit = (exp: Expense) => {
+    setEditingId(exp.id);
+    setTitle(exp.title);
+    setAmount(exp.amount.toString());
+    setPaidBy(exp.paid_by);
+    setSelectedMembers(exp.splits);
     setOpen(true);
   };
 
@@ -128,31 +139,51 @@ const Expenses = () => {
       return;
     }
 
-    const { data: inserted, error } = await supabase
-      .from("trip_expenses")
-      .insert({ trip_id: tripId, title: title.trim(), amount: parsedAmount, paid_by: paidBy })
-      .select("id")
-      .single();
+    if (editingId) {
+      // Update existing expense
+      const { error } = await supabase
+        .from("trip_expenses")
+        .update({ title: title.trim(), amount: parsedAmount, paid_by: paidBy })
+        .eq("id", editingId);
 
-    if (error || !inserted) {
-      toast({ title: "Error", description: error?.message ?? "Error al guardar", variant: "destructive" });
-      return;
+      if (error) {
+        toast({ title: "Error", description: error.message, variant: "destructive" });
+        return;
+      }
+
+      // Delete old splits and insert new ones
+      await supabase.from("trip_expense_splits").delete().eq("expense_id", editingId);
+      const splits = selectedMembers.map((uid) => ({ expense_id: editingId, user_id: uid }));
+      await supabase.from("trip_expense_splits").insert(splits);
+
+      setOpen(false);
+      setEditingId(null);
+      fetchExpenses();
+      toast({ title: "Gasto actualizado" });
+    } else {
+      // Create new expense
+      const { data: inserted, error } = await supabase
+        .from("trip_expenses")
+        .insert({ trip_id: tripId, title: title.trim(), amount: parsedAmount, paid_by: paidBy })
+        .select("id")
+        .single();
+
+      if (error || !inserted) {
+        toast({ title: "Error", description: error?.message ?? "Error al guardar", variant: "destructive" });
+        return;
+      }
+
+      const splits = selectedMembers.map((uid) => ({ expense_id: inserted.id, user_id: uid }));
+      const { error: splitError } = await supabase.from("trip_expense_splits").insert(splits);
+      if (splitError) {
+        toast({ title: "Error", description: splitError.message, variant: "destructive" });
+        return;
+      }
+
+      setOpen(false);
+      fetchExpenses();
+      toast({ title: "Gasto añadido" });
     }
-
-    const splits = selectedMembers.map((uid) => ({
-      expense_id: inserted.id,
-      user_id: uid,
-    }));
-
-    const { error: splitError } = await supabase.from("trip_expense_splits").insert(splits);
-    if (splitError) {
-      toast({ title: "Error", description: splitError.message, variant: "destructive" });
-      return;
-    }
-
-    setOpen(false);
-    fetchExpenses();
-    toast({ title: "Gasto añadido" });
   };
 
   const handleDelete = async (id: string) => {
@@ -198,7 +229,7 @@ const Expenses = () => {
     <div className="animate-fade-in">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-bold text-foreground">Gastos Compartidos</h2>
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setEditingId(null); }}>
           <DialogTrigger asChild>
             <Button size="sm" className="gradient-hero text-primary-foreground border-0" onClick={openCreate}>
               <Plus className="h-4 w-4 mr-1" /> Añadir gasto
@@ -206,7 +237,7 @@ const Expenses = () => {
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Añadir gasto</DialogTitle>
+              <DialogTitle>{editingId ? "Editar gasto" : "Añadir gasto"}</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
@@ -261,7 +292,7 @@ const Expenses = () => {
                 </div>
               </div>
               <Button type="submit" className="w-full gradient-hero text-primary-foreground border-0">
-                Guardar
+                {editingId ? "Actualizar" : "Guardar"}
               </Button>
             </form>
           </DialogContent>
@@ -326,19 +357,34 @@ const Expenses = () => {
                     </p>
                   </div>
                   {(exp.paid_by === user?.id) && (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-destructive h-8 w-8"
-                          onClick={() => handleDelete(exp.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>Eliminar</TooltipContent>
-                    </Tooltip>
+                    <div className="flex gap-1">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-muted-foreground h-8 w-8"
+                            onClick={() => openEdit(exp)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Editar</TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-destructive h-8 w-8"
+                            onClick={() => handleDelete(exp.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Eliminar</TooltipContent>
+                      </Tooltip>
+                    </div>
                   )}
                 </div>
               </div>
