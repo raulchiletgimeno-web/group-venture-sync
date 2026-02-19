@@ -1,0 +1,1 @@
+ALTER TABLE public.trip_schedule ADD COLUMN website TEXT DEFAULT NULL;
