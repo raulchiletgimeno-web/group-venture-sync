@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { Hotel, Plus, Trash2, Pencil, Globe } from "lucide-react";
+import { Hotel, Plus, Trash2, Pencil, Globe, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -168,15 +168,26 @@ const Accommodation = () => {
                   {item.notes && <p className="text-xs text-muted-foreground mt-1">{item.notes}</p>}
                 </div>
                 <div className="flex flex-col items-end gap-1">
-                  {item.website && (
-                    <Tooltip><TooltipTrigger asChild>
-                      <a href={item.website.startsWith("http") ? item.website : `https://${item.website}`} target="_blank" rel="noopener noreferrer">
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-primary">
-                          <Globe className="h-4 w-4" />
-                        </Button>
-                      </a>
-                    </TooltipTrigger><TooltipContent>Web</TooltipContent></Tooltip>
-                  )}
+                  <div className="flex gap-1">
+                    {item.website && (
+                      <Tooltip><TooltipTrigger asChild>
+                        <a href={item.website.startsWith("http") ? item.website : `https://${item.website}`} target="_blank" rel="noopener noreferrer">
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-primary">
+                            <Globe className="h-4 w-4" />
+                          </Button>
+                        </a>
+                      </TooltipTrigger><TooltipContent>Web</TooltipContent></Tooltip>
+                    )}
+                    {item.address && (
+                      <Tooltip><TooltipTrigger asChild>
+                        <a href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(item.address)}`} target="_blank" rel="noopener noreferrer">
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-primary">
+                            <MapPin className="h-4 w-4" />
+                          </Button>
+                        </a>
+                      </TooltipTrigger><TooltipContent>Cómo llegar</TooltipContent></Tooltip>
+                    )}
+                  </div>
                   {isCreator && (
                     <div className="flex gap-1">
                       <Tooltip><TooltipTrigger asChild>
