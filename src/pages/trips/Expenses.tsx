@@ -159,7 +159,7 @@ const Expenses = () => {
     const path = `receipts/${tripId}/${expenseId}.${ext}`;
     const { error } = await supabase.storage.from("trip-photos").upload(path, receiptFile, { upsert: true });
     if (error) {
-      toast({ title: "Error subiendo foto", description: error.message, variant: "destructive" });
+      toast({ title: t.errorUploading, description: error.message, variant: "destructive" });
       return existingReceiptPath;
     }
     return path;
@@ -182,7 +182,7 @@ const Expenses = () => {
 
     const parsedAmount = parseFloat(amount);
     if (isNaN(parsedAmount) || parsedAmount <= 0) {
-      toast({ title: "Error", description: "Introduce una cantidad válida", variant: "destructive" });
+      toast({ title: t.error, description: t.invalidAmount, variant: "destructive" });
       return;
     }
 
@@ -209,7 +209,7 @@ const Expenses = () => {
       setOpen(false);
       setEditingId(null);
       fetchExpenses();
-      toast({ title: "Gasto actualizado" });
+      toast({ title: t.expenseUpdated });
     } else {
       // Create new expense
       const { data: inserted, error } = await supabase
@@ -219,7 +219,7 @@ const Expenses = () => {
         .single();
 
       if (error || !inserted) {
-        toast({ title: "Error", description: error?.message ?? "Error al guardar", variant: "destructive" });
+        toast({ title: t.error, description: error?.message ?? t.error, variant: "destructive" });
         return;
       }
 
@@ -232,13 +232,13 @@ const Expenses = () => {
       const splits = selectedMembers.map((uid) => ({ expense_id: inserted.id, user_id: uid }));
       const { error: splitError } = await supabase.from("trip_expense_splits").insert(splits);
       if (splitError) {
-        toast({ title: "Error", description: splitError.message, variant: "destructive" });
+        toast({ title: t.error, description: splitError.message, variant: "destructive" });
         return;
       }
 
       setOpen(false);
       fetchExpenses();
-      toast({ title: "Gasto añadido" });
+      toast({ title: t.expenseAdded });
     }
   };
 
@@ -315,30 +315,30 @@ const Expenses = () => {
   return (
     <div className="animate-fade-in">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-bold text-foreground">Gastos Compartidos</h2>
+        <h2 className="text-xl font-bold text-foreground">{t.sharedExpenses}</h2>
         <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setEditingId(null); }}>
           <DialogTrigger asChild>
             <Button size="sm" className="gradient-hero text-primary-foreground border-0" onClick={openCreate}>
-              <Plus className="h-4 w-4 mr-1" /> Añadir gasto
+              <Plus className="h-4 w-4 mr-1" /> {t.addExpense}
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>{editingId ? "Editar gasto" : "Añadir gasto"}</DialogTitle>
+              <DialogTitle>{editingId ? t.editExpense : t.addExpense}</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <Label>Título</Label>
+                <Label>{t.expenseTitle}</Label>
                 <Input
                   required
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Cena, taxi, entradas..."
+                  placeholder={t.expensePlaceholder}
                   maxLength={100}
                 />
               </div>
               <div>
-                <Label>Cantidad (€)</Label>
+                <Label>{t.amount}</Label>
                 <Input
                   required
                   type="number"
@@ -350,10 +350,10 @@ const Expenses = () => {
                 />
               </div>
               <div>
-                <Label>Pagado por</Label>
+                <Label>{t.paidBy}</Label>
                 <Select value={paidBy} onValueChange={setPaidBy}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecciona quién paga" />
+                    <SelectValue placeholder={t.selectPayer} />
                   </SelectTrigger>
                   <SelectContent>
                     {members.map((m) => (
@@ -365,7 +365,7 @@ const Expenses = () => {
                 </Select>
               </div>
               <div>
-                <Label className="mb-2 block">Compartido entre</Label>
+                <Label className="mb-2 block">{t.sharedAmong}</Label>
                 <div className="space-y-2 max-h-40 overflow-y-auto">
                   {members.map((m) => (
                     <label key={m.user_id} className="flex items-center gap-2 cursor-pointer">
@@ -379,7 +379,7 @@ const Expenses = () => {
                 </div>
               </div>
               <div>
-                <Label className="mb-2 block">Foto del ticket</Label>
+                <Label className="mb-2 block">{t.ticketPhoto}</Label>
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -412,12 +412,12 @@ const Expenses = () => {
                     className="gap-2"
                   >
                     <Camera className="h-4 w-4" />
-                    Hacer foto
+                    {t.takePhoto}
                   </Button>
                 )}
               </div>
-              <Button type="submit" className="w-full gradient-hero text-primary-foreground border-0">
-                {editingId ? "Actualizar" : "Guardar"}
+               <Button type="submit" className="w-full gradient-hero text-primary-foreground border-0">
+                 {editingId ? t.update : t.save}
               </Button>
             </form>
           </DialogContent>
@@ -425,24 +425,24 @@ const Expenses = () => {
       </div>
 
       {expenses.length === 0 ? (
-        <EmptyState
-          icon={Receipt}
-          title="Sin gastos registrados"
-          description="Registra gastos y divide cuentas fácilmente entre los miembros del viaje."
-        />
+         <EmptyState
+           icon={Receipt}
+           title={t.noExpensesTitle}
+           description={t.noExpensesDesc}
+          />
       ) : (
         <Tabs defaultValue="saldos" className="w-full">
           <TabsList className="grid w-full grid-cols-2 mb-4">
-            <TabsTrigger value="saldos">Saldos</TabsTrigger>
-            <TabsTrigger value="gastos">Gastos</TabsTrigger>
+             <TabsTrigger value="saldos">{t.balances}</TabsTrigger>
+             <TabsTrigger value="gastos">{t.expensesList}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="saldos" className="space-y-4">
             {/* Total */}
             <div className="rounded-xl bg-card p-4 shadow-card">
-              <p className="text-sm font-semibold text-card-foreground mb-3">
-                Total gastado: {totalExpenses.toFixed(2)} €
-              </p>
+               <p className="text-sm font-semibold text-card-foreground mb-3">
+                 {t.totalSpent}: {totalExpenses.toFixed(2)} €
+               </p>
               <div className="space-y-2">
                 {members.map((m) => {
                   const bal = balances.get(m.user_id) ?? 0;
@@ -470,7 +470,7 @@ const Expenses = () => {
             {/* Who owes whom */}
             {debts.length > 0 && (
               <div className="rounded-xl bg-card p-4 shadow-card">
-                <p className="text-sm font-semibold text-card-foreground mb-3">Quién debe a quién</p>
+                <p className="text-sm font-semibold text-card-foreground mb-3">{t.whoOwesWhom}</p>
                 <div className="space-y-2">
                   {debts.map((d, i) => (
                     <div key={i} className="flex items-center gap-2 text-sm">
@@ -492,14 +492,14 @@ const Expenses = () => {
                   <div className="flex items-start justify-between">
                     <div>
                       <p className="text-sm font-semibold text-card-foreground">{exp.title}</p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Pagado por {memberName(exp.paid_by)} — {exp.amount.toFixed(2)} €
-                      </p>
+                       <p className="text-xs text-muted-foreground mt-1">
+                         {t.paidByLabel} {memberName(exp.paid_by)} — {exp.amount.toFixed(2)} €
+                       </p>
+                       <p className="text-xs text-muted-foreground mt-0.5">
+                         {t.sharedBetween}: {exp.splits.map(memberName).join(", ")}
+                       </p>
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        Compartido entre: {exp.splits.map(memberName).join(", ")}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        {(exp.amount / (exp.splits.length || 1)).toFixed(2)} € / persona
+                        {(exp.amount / (exp.splits.length || 1)).toFixed(2)} € / {t.perPerson}
                       </p>
                       {exp.receipt_path && (
                         <img
@@ -523,7 +523,7 @@ const Expenses = () => {
                               <Pencil className="h-4 w-4" />
                             </Button>
                           </TooltipTrigger>
-                          <TooltipContent>Editar</TooltipContent>
+                          <TooltipContent>{t.edit}</TooltipContent>
                         </Tooltip>
                         <Tooltip>
                           <TooltipTrigger asChild>
@@ -536,7 +536,7 @@ const Expenses = () => {
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </TooltipTrigger>
-                          <TooltipContent>Eliminar</TooltipContent>
+                          <TooltipContent>{t.delete}</TooltipContent>
                         </Tooltip>
                       </div>
                     )}
