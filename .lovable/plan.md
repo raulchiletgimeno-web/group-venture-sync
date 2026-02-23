@@ -1,22 +1,21 @@
 
 
-## Reemplazar emojis de banderas por imagenes reales
+## Banderas visibles con imagenes locales
 
-Los emojis de banderas (🇬🇧🇫🇷🇵🇹🇮🇹) no se renderizan correctamente en algunos sistemas operativos como Windows, donde aparecen como texto "GB", "FR", etc. La solucion es usar imagenes SVG de banderas reales.
+Las banderas de flagcdn.com no se estan cargando correctamente, por eso ves iconos vacios. La solucion es reemplazar las URLs externas por imagenes PNG incrustadas directamente en el codigo (data URIs) o usar un CDN mas fiable con formato PNG.
 
 ### Cambios:
 
-1. **`src/i18n/translations.ts`**: Cambiar `languageFlags` de emojis (string) a URLs de imagenes SVG usando el servicio gratuito flagcdn.com (o similar).
+1. **`src/i18n/translations.ts`**: Cambiar las URLs de flagcdn.com SVG a formato PNG con un CDN mas fiable que soporte CORS correctamente. Usaremos `https://flagcdn.com/w80/xx.png` (formato PNG en vez de SVG) o alternativamente emojis en formato de imagen desde otro servicio como `https://flagsapi.com/XX/flat/64.png`.
 
-2. **`src/pages/Index.tsx`**: Reemplazar el texto `{languageFlags[lang]}` por un elemento `<img>` que muestre la bandera como imagen, con un tamano adecuado (~28x20px) y bordes redondeados.
+2. **`src/pages/Index.tsx`**: Mejorar el estilo visual de las banderas:
+   - Aumentar ligeramente el tamano (w-8 h-6)
+   - Anadir un borde sutil (`border border-white/30`) para que se distingan del fondo
+   - Anadir un anillo de color cuando esta seleccionada (`ring-2 ring-white`) para indicar claramente cual idioma esta activo
 
 ### Detalle tecnico:
 
-- Se usaran imagenes SVG del servicio `https://flagcdn.com/` que es gratuito y fiable
-  - GB: `https://flagcdn.com/w40/gb.svg`
-  - FR: `https://flagcdn.com/w40/fr.svg`
-  - PT: `https://flagcdn.com/w40/pt.svg`
-  - IT: `https://flagcdn.com/w40/it.svg`
-- El tipo de `languageFlags` cambiara de `Record<Language, string>` (emoji) a `Record<Language, string>` (URL), manteniendo compatibilidad
-- Las imagenes se mostraran con `<img>` con clases de Tailwind para tamano y estilo visual
+- Se cambiaran las URLs de `.svg` a `.png` ya que los SVG de flagcdn tienen problemas de carga en algunos contextos
+- Alternativa: si PNG de flagcdn tampoco funciona, se usaran imagenes de `https://flagsapi.com/` como respaldo
+- Se anadira un borde visible y efecto de seleccion mas claro para distinguir las banderas entre si
 
