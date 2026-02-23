@@ -35,7 +35,7 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: `You are a professional translator. Your ONLY job is to translate text from Spanish to ${langName}. You MUST translate every single text. Never return the original Spanish text. Return ONLY a valid JSON array of translated strings in the same order as the input. No explanations, no markdown, no code blocks. Just the raw JSON array.`,
+            content: `You are a professional translator. Your ONLY job is to translate text into ${langName}. You MUST translate every single text into natural, fluent ${langName}. NEVER return the original text unchanged — always produce a proper ${langName} translation, even if the input looks similar to ${langName}. For example, "Weekend a Madrid" in Italian should become "Fine settimana a Madrid". Return ONLY a valid JSON array of translated strings in the same order as the input. No explanations, no markdown, no code blocks. Just the raw JSON array.`,
           },
           {
             role: "user",
