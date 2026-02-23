@@ -25,7 +25,7 @@ const TripLayout = () => {
   }, [tripId]);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-b from-primary/10 via-secondary/5 to-background">
       <header className="sticky top-0 z-40 bg-card/80 backdrop-blur-lg border-b border-border">
         <div className="flex items-center gap-3 px-4 h-14">
           <Link to={backTo} className="text-muted-foreground hover:text-foreground transition-colors">
