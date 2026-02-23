@@ -2,7 +2,7 @@ export type Language = "es" | "en" | "fr" | "pt" | "it";
 
 export const languageFlags: Record<Language, string> = {
   es: "https://flagsapi.com/ES/flat/64.png",
-  en: "https://flagsapi.com/GB/flat/64.png",
+  en: "https://flagsapi.com/US/flat/64.png",
   fr: "https://flagsapi.com/FR/flat/64.png",
   pt: "https://flagsapi.com/PT/flat/64.png",
   it: "https://flagsapi.com/IT/flat/64.png",
