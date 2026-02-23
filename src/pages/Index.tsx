@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Plus, UserPlus, Compass, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import TripCard from "@/components/TripCard";
@@ -30,7 +30,7 @@ const Index = () => {
   const [loading, setLoading] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
   const [joinOpen, setJoinOpen] = useState(false);
-  const prevLanguageRef = useRef(language);
+  
 
   const formatDate = (d: string) => {
     const date = new Date(d + "T00:00:00");
@@ -78,8 +78,6 @@ const Index = () => {
       setTranslatedTitles({});
       return;
     }
-    if (prevLanguageRef.current === language) return;
-    prevLanguageRef.current = language;
 
     const translateTitles = async () => {
       try {
