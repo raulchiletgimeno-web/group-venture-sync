@@ -5,6 +5,7 @@ import TripCard from "@/components/TripCard";
 import EmptyState from "@/components/EmptyState";
 import CreateTripDialog from "@/components/CreateTripDialog";
 import JoinTripDialog from "@/components/JoinTripDialog";
+import HelpChatBot from "@/components/HelpChatBot";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { languageFlags, Language } from "@/i18n/translations";
@@ -209,6 +210,7 @@ const Index = () => {
 
       <CreateTripDialog open={createOpen} onOpenChange={setCreateOpen} />
       <JoinTripDialog open={joinOpen} onOpenChange={setJoinOpen} />
+      <HelpChatBot />
     </div>
   );
 };

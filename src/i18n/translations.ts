@@ -274,6 +274,12 @@ type TranslationKeys = {
 
   // Language
   selectLanguage: string;
+
+  // Help Chat
+  helpChatTitle: string;
+  helpChatWelcome: string;
+  helpChatPlaceholder: string;
+  helpChatError: string;
 };
 
 const translations: Record<Language, TranslationKeys> = {
@@ -500,6 +506,10 @@ const translations: Record<Language, TranslationKeys> = {
     pageNotFound: "Oops! Página no encontrada",
     returnHome: "Volver al inicio",
     selectLanguage: "Idioma",
+    helpChatTitle: "Asistente LORMIT",
+    helpChatWelcome: "¡Hola! 👋 Soy el asistente de LORMIT. Pregúntame cómo crear viajes, añadir transportes, gestionar gastos o cualquier duda sobre la app.",
+    helpChatPlaceholder: "Escribe tu pregunta...",
+    helpChatError: "Lo siento, ha ocurrido un error. Inténtalo de nuevo.",
   },
 
   en: {
@@ -725,6 +735,10 @@ const translations: Record<Language, TranslationKeys> = {
     pageNotFound: "Oops! Page not found",
     returnHome: "Return to Home",
     selectLanguage: "Language",
+    helpChatTitle: "LORMIT Assistant",
+    helpChatWelcome: "Hi! 👋 I'm the LORMIT assistant. Ask me how to create trips, add transport, manage expenses, or anything about the app.",
+    helpChatPlaceholder: "Type your question...",
+    helpChatError: "Sorry, an error occurred. Please try again.",
   },
 
   fr: {
@@ -950,6 +964,10 @@ const translations: Record<Language, TranslationKeys> = {
     pageNotFound: "Oops ! Page non trouvée",
     returnHome: "Retour à l'accueil",
     selectLanguage: "Langue",
+    helpChatTitle: "Assistant LORMIT",
+    helpChatWelcome: "Bonjour ! 👋 Je suis l'assistant LORMIT. Demandez-moi comment créer des voyages, ajouter des transports, gérer les dépenses ou toute question sur l'app.",
+    helpChatPlaceholder: "Écrivez votre question...",
+    helpChatError: "Désolé, une erreur est survenue. Veuillez réessayer.",
   },
 
   pt: {
@@ -1175,6 +1193,10 @@ const translations: Record<Language, TranslationKeys> = {
     pageNotFound: "Oops! Página não encontrada",
     returnHome: "Voltar ao início",
     selectLanguage: "Idioma",
+    helpChatTitle: "Assistente LORMIT",
+    helpChatWelcome: "Olá! 👋 Sou o assistente LORMIT. Pergunte-me como criar viagens, adicionar transportes, gerir despesas ou qualquer dúvida sobre a app.",
+    helpChatPlaceholder: "Escreva a sua pergunta...",
+    helpChatError: "Desculpe, ocorreu um erro. Tente novamente.",
   },
 
   it: {
@@ -1400,6 +1422,10 @@ const translations: Record<Language, TranslationKeys> = {
     pageNotFound: "Oops! Pagina non trovata",
     returnHome: "Torna alla home",
     selectLanguage: "Lingua",
+    helpChatTitle: "Assistente LORMIT",
+    helpChatWelcome: "Ciao! 👋 Sono l'assistente LORMIT. Chiedimi come creare viaggi, aggiungere trasporti, gestire le spese o qualsiasi domanda sull'app.",
+    helpChatPlaceholder: "Scrivi la tua domanda...",
+    helpChatError: "Mi dispiace, si è verificato un errore. Riprova.",
   },
 };
 
