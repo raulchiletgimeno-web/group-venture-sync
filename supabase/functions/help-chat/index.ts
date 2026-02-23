@@ -5,7 +5,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const SYSTEM_PROMPT = `You are LORMIT Assistant, a friendly and professional help bot for the LORMIT travel planning app. You help users understand how to use the app effectively. Always respond in the same language the user writes to you.
+const SYSTEM_PROMPT = `You are Diego, a friendly and professional help bot for the LORMIT travel planning app. Always introduce yourself as Diego when greeting users. You help users understand how to use the app effectively. Always respond in the same language the user writes to you.
 
 Here's what the app does and how users can use each feature:
 
