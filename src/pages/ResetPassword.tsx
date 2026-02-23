@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 
@@ -13,6 +14,7 @@ const ResetPassword = () => {
   const [newPassword, setNewPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const { toast } = useToast();
+  const { t } = useLanguage();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -29,9 +31,9 @@ const ResetPassword = () => {
       redirectTo: `${window.location.origin}/reset-password`,
     });
     if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: t.error, description: error.message, variant: "destructive" });
     } else {
-      toast({ title: "Email enviado", description: "Revisa tu bandeja de entrada para restablecer tu contraseña." });
+      toast({ title: t.emailSent, description: t.emailSentDesc });
     }
     setSubmitting(false);
   };
@@ -41,9 +43,9 @@ const ResetPassword = () => {
     setSubmitting(true);
     const { error } = await supabase.auth.updateUser({ password: newPassword });
     if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: t.error, description: error.message, variant: "destructive" });
     } else {
-      toast({ title: "Contraseña actualizada", description: "Ya puedes iniciar sesión con tu nueva contraseña." });
+      toast({ title: t.passwordUpdated, description: t.passwordUpdatedDesc });
       navigate("/auth");
     }
     setSubmitting(false);
@@ -53,45 +55,45 @@ const ResetPassword = () => {
     <div className="min-h-screen bg-background flex flex-col items-center pt-20 px-5">
       <div className="flex items-center gap-2 mb-6">
         <Compass className="h-6 w-6 text-primary" />
-        <span className="text-sm font-semibold tracking-wider text-muted-foreground uppercase">Nuestro viaje</span>
+        <span className="text-sm font-semibold tracking-wider text-muted-foreground uppercase">LORMIT</span>
       </div>
 
       <div className="bg-card rounded-xl shadow-card p-6 max-w-sm w-full">
         <h2 className="text-lg font-bold text-card-foreground mb-4">
-          {isRecovery ? "Nueva contraseña" : "Restablecer contraseña"}
+          {isRecovery ? t.newPassword : t.resetPassword}
         </h2>
 
         {isRecovery ? (
           <form onSubmit={handleUpdatePassword} className="flex flex-col gap-4">
             <div className="space-y-1.5">
-              <Label htmlFor="new-password">Nueva contraseña</Label>
+              <Label htmlFor="new-password">{t.newPassword}</Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input id="new-password" type="password" placeholder="••••••••" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="pl-9" required minLength={6} />
               </div>
             </div>
             <Button type="submit" disabled={submitting} className="w-full font-semibold">
-              {submitting ? "Guardando..." : "Guardar contraseña"}
+              {submitting ? t.saving : t.savePassword}
             </Button>
           </form>
         ) : (
           <form onSubmit={handleRequestReset} className="flex flex-col gap-4">
             <div className="space-y-1.5">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{t.email}</Label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input id="email" type="email" placeholder="tu@email.com" value={email} onChange={(e) => setEmail(e.target.value)} className="pl-9" required />
               </div>
             </div>
             <Button type="submit" disabled={submitting} className="w-full font-semibold">
-              {submitting ? "Enviando..." : "Enviar enlace de recuperación"}
+              {submitting ? t.sending : t.sendRecoveryLink}
             </Button>
           </form>
         )}
 
         <div className="mt-4 text-center">
           <button onClick={() => navigate("/auth")} className="text-sm text-primary font-semibold hover:underline">
-            Volver al login
+            {t.backToLogin}
           </button>
         </div>
       </div>

@@ -6,6 +6,9 @@ import EmptyState from "@/components/EmptyState";
 import CreateTripDialog from "@/components/CreateTripDialog";
 import JoinTripDialog from "@/components/JoinTripDialog";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { languageFlags, Language } from "@/i18n/translations";
+import { getLocale } from "@/i18n/translations";
 import { supabase } from "@/integrations/supabase/client";
 import heroImage from "@/assets/hero-travel.jpg";
 
@@ -19,17 +22,18 @@ interface Trip {
   memberCount: number;
 }
 
-const formatDate = (d: string) => {
-  const date = new Date(d + "T00:00:00");
-  return date.toLocaleDateString("es-ES", { day: "numeric", month: "short" });
-};
-
 const Index = () => {
   const { profile, signOut } = useAuth();
+  const { t, language, setLanguage } = useLanguage();
   const [trips, setTrips] = useState<Trip[]>([]);
   const [loading, setLoading] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
   const [joinOpen, setJoinOpen] = useState(false);
+
+  const formatDate = (d: string) => {
+    const date = new Date(d + "T00:00:00");
+    return date.toLocaleDateString(getLocale(language), { day: "numeric", month: "short" });
+  };
 
   const fetchTrips = async () => {
     const { data } = await supabase
@@ -38,7 +42,6 @@ const Index = () => {
       .order("start_date", { ascending: true });
 
     if (data) {
-      // Get member counts for each trip
       const tripsWithCounts = await Promise.all(
         data.map(async (trip) => {
           const { count } = await supabase
@@ -65,6 +68,8 @@ const Index = () => {
     fetchTrips();
   }, []);
 
+  const flagLanguages: Language[] = ["en", "fr", "pt", "it"];
+
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
@@ -82,7 +87,7 @@ const Index = () => {
             </div>
             <div className="flex items-center gap-2">
               {profile?.name && (
-                <span className="text-xs font-medium text-foreground">Usuario: {profile.name}</span>
+                <span className="text-xs font-medium text-foreground">{t.user}: {profile.name}</span>
               )}
               <Button
                 size="icon"
@@ -95,11 +100,11 @@ const Index = () => {
             </div>
           </div>
 
-          <h1 className="text-3xl font-extrabold text-primary-foreground mt-3 leading-tight">
-            Organiza viajes<br />en grupo, sin caos.
+          <h1 className="text-3xl font-extrabold text-primary-foreground mt-3 leading-tight whitespace-pre-line">
+            {t.heroTitle}
           </h1>
           <p className="text-sm text-primary-foreground/75 mt-3 max-w-xs leading-relaxed">
-            Transporte, alojamiento, gastos, fotos y chat — todo en un solo lugar.
+            {t.heroSubtitle}
           </p>
           <div className="flex gap-3 mt-6">
             <Button
@@ -108,7 +113,7 @@ const Index = () => {
               onClick={() => setCreateOpen(true)}
             >
               <Plus className="h-4 w-4 mr-2" />
-              Crear viaje
+              {t.createTrip}
             </Button>
             <Button
               size="lg"
@@ -117,23 +122,41 @@ const Index = () => {
               onClick={() => setJoinOpen(true)}
             >
               <UserPlus className="h-4 w-4 mr-2" />
-              Unirse
+              {t.joinTrip}
             </Button>
+          </div>
+
+          {/* Language flags */}
+          <div className="flex items-center gap-3 mt-5">
+            {flagLanguages.map((lang) => (
+              <button
+                key={lang}
+                onClick={() => setLanguage(lang)}
+                className={`text-2xl transition-all duration-200 ${
+                  language === lang
+                    ? "scale-125 drop-shadow-lg"
+                    : "opacity-70 hover:opacity-100 hover:scale-110"
+                }`}
+                title={lang.toUpperCase()}
+              >
+                {languageFlags[lang]}
+              </button>
+            ))}
           </div>
         </div>
       </div>
 
       {/* Trips List */}
       <div className="px-5 py-6">
-        <h2 className="text-lg font-bold text-foreground mb-4">Mis Viajes</h2>
+        <h2 className="text-lg font-bold text-foreground mb-4">{t.myTrips}</h2>
         {loading ? (
           <div className="flex justify-center py-10">
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
           </div>
         ) : trips.length === 0 ? (
           <EmptyState
-            title="Sin viajes aún"
-            description="Crea tu primer viaje o únete a uno con un código de invitación."
+            title={t.noTripsTitle}
+            description={t.noTripsDesc}
           />
         ) : (
           <div className="flex flex-col gap-3">

@@ -13,6 +13,7 @@ import EmptyState from "@/components/EmptyState";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Member {
   user_id: string;
@@ -33,6 +34,7 @@ const Expenses = () => {
   const { tripId } = useParams();
   const { user } = useAuth();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);

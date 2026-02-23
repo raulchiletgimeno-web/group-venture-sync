@@ -11,6 +11,8 @@ import EmptyState from "@/components/EmptyState";
 import { supabase } from "@/integrations/supabase/client";
 import { useTripRole } from "@/hooks/use-trip-role";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { getLocale } from "@/i18n/translations";
 
 interface AccommodationItem {
   id: string;
@@ -27,122 +29,74 @@ const Accommodation = () => {
   const { tripId } = useParams();
   const { isCreator } = useTripRole(tripId);
   const { toast } = useToast();
+  const { t, language } = useLanguage();
   const [items, setItems] = useState<AccommodationItem[]>([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  const emptyForm = {
-    name: "",
-    address: "",
-    check_in: "",
-    check_out: "",
-    booking_reference: "",
-    notes: "",
-    website: "",
-  };
-
+  const emptyForm = { name: "", address: "", check_in: "", check_out: "", booking_reference: "", notes: "", website: "" };
   const [form, setForm] = useState(emptyForm);
 
   const fetchItems = async () => {
     if (!tripId) return;
-    const { data } = await supabase
-      .from("trip_accommodation")
-      .select("*")
-      .eq("trip_id", tripId)
-      .order("check_in", { ascending: true });
+    const { data } = await supabase.from("trip_accommodation").select("*").eq("trip_id", tripId).order("check_in", { ascending: true });
     setItems(data ?? []);
     setLoading(false);
   };
 
   useEffect(() => { fetchItems(); }, [tripId]);
 
-  const openCreate = () => {
-    setEditingId(null);
-    setForm(emptyForm);
-    setOpen(true);
-  };
+  const openCreate = () => { setEditingId(null); setForm(emptyForm); setOpen(true); };
 
   const openEdit = (item: AccommodationItem) => {
     setEditingId(item.id);
-    setForm({
-      name: item.name,
-      address: item.address ?? "",
-      check_in: item.check_in,
-      check_out: item.check_out,
-      booking_reference: item.booking_reference ?? "",
-      notes: item.notes ?? "",
-      website: item.website ?? "",
-    });
+    setForm({ name: item.name, address: item.address ?? "", check_in: item.check_in, check_out: item.check_out, booking_reference: item.booking_reference ?? "", notes: item.notes ?? "", website: item.website ?? "" });
     setOpen(true);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!tripId) return;
-
-    const payload = {
-      name: form.name,
-      address: form.address || null,
-      check_in: form.check_in,
-      check_out: form.check_out,
-      booking_reference: form.booking_reference || null,
-      notes: form.notes || null,
-      website: form.website || null,
-    };
-
+    const payload = { name: form.name, address: form.address || null, check_in: form.check_in, check_out: form.check_out, booking_reference: form.booking_reference || null, notes: form.notes || null, website: form.website || null };
     const { error } = editingId
       ? await supabase.from("trip_accommodation").update(payload).eq("id", editingId)
       : await supabase.from("trip_accommodation").insert({ ...payload, trip_id: tripId });
-
-    if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-      return;
-    }
-
-    setForm(emptyForm);
-    setEditingId(null);
-    setOpen(false);
-    fetchItems();
-    toast({ title: editingId ? "Alojamiento actualizado" : "Alojamiento añadido" });
+    if (error) { toast({ title: t.error, description: error.message, variant: "destructive" }); return; }
+    setForm(emptyForm); setEditingId(null); setOpen(false); fetchItems();
+    toast({ title: editingId ? t.accommodationUpdated : t.accommodationAdded });
   };
 
-  const handleDelete = async (id: string) => {
-    await supabase.from("trip_accommodation").delete().eq("id", id);
-    fetchItems();
-  };
+  const handleDelete = async (id: string) => { await supabase.from("trip_accommodation").delete().eq("id", id); fetchItems(); };
 
-  const formatDate = (d: string) =>
-    new Date(d + "T00:00:00").toLocaleDateString("es-ES", { day: "numeric", month: "short" });
+  const formatDate = (d: string) => new Date(d + "T00:00:00").toLocaleDateString(getLocale(language), { day: "numeric", month: "short" });
 
-  if (loading) {
-    return <div className="flex justify-center py-10"><div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>;
-  }
+  if (loading) return <div className="flex justify-center py-10"><div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>;
 
   return (
     <div className="animate-fade-in">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-bold text-foreground">Dónde Dormimos</h2>
+        <h2 className="text-xl font-bold text-foreground">{t.whereWeSleep}</h2>
         {isCreator && (
           <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setEditingId(null); }}>
             <DialogTrigger asChild>
               <Button size="sm" className="gradient-hero text-primary-foreground border-0" onClick={openCreate}>
-                <Plus className="h-4 w-4 mr-1" /> Añadir
+                <Plus className="h-4 w-4 mr-1" /> {t.add}
               </Button>
             </DialogTrigger>
             <DialogContent>
-              <DialogHeader><DialogTitle>{editingId ? "Editar alojamiento" : "Añadir alojamiento"}</DialogTitle></DialogHeader>
+              <DialogHeader><DialogTitle>{editingId ? t.editAccommodation : t.addAccommodation}</DialogTitle></DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
-                <div><Label>Nombre</Label><Input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Hotel, apartamento..." /></div>
-                <div><Label>Dirección</Label><Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} /></div>
+                <div><Label>{t.accommodationName}</Label><Input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder={t.accommodationNamePlaceholder} /></div>
+                <div><Label>{t.address}</Label><Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} /></div>
                 <div className="grid grid-cols-2 gap-3">
-                  <div><Label>Check-in</Label><Input type="date" required value={form.check_in} onChange={(e) => setForm({ ...form, check_in: e.target.value })} /></div>
-                  <div><Label>Check-out</Label><Input type="date" required value={form.check_out} onChange={(e) => setForm({ ...form, check_out: e.target.value })} /></div>
+                  <div><Label>{t.checkIn}</Label><Input type="date" required value={form.check_in} onChange={(e) => setForm({ ...form, check_in: e.target.value })} /></div>
+                  <div><Label>{t.checkOut}</Label><Input type="date" required value={form.check_out} onChange={(e) => setForm({ ...form, check_out: e.target.value })} /></div>
                 </div>
-                <div><Label>Referencia reserva</Label><Input value={form.booking_reference} onChange={(e) => setForm({ ...form, booking_reference: e.target.value })} /></div>
-                <div><Label>Página web</Label><Input type="url" value={form.website} onChange={(e) => setForm({ ...form, website: e.target.value })} placeholder="https://www.hotel.com" /></div>
-                <div><Label>Notas</Label><Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
-                <Button type="submit" className="w-full gradient-hero text-primary-foreground border-0">{editingId ? "Actualizar" : "Guardar"}</Button>
+                <div><Label>{t.bookingReference}</Label><Input value={form.booking_reference} onChange={(e) => setForm({ ...form, booking_reference: e.target.value })} /></div>
+                <div><Label>{t.website}</Label><Input type="url" value={form.website} onChange={(e) => setForm({ ...form, website: e.target.value })} placeholder={t.websitePlaceholder} /></div>
+                <div><Label>{t.notes}</Label><Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
+                <Button type="submit" className="w-full gradient-hero text-primary-foreground border-0">{editingId ? t.update : t.save}</Button>
               </form>
             </DialogContent>
           </Dialog>
@@ -150,11 +104,7 @@ const Accommodation = () => {
       </div>
 
       {items.length === 0 ? (
-        <EmptyState
-          icon={Hotel}
-          title="Sin alojamiento registrado"
-          description={isCreator ? "Añade hoteles, apartamentos o cualquier alojamiento del viaje." : "El administrador del viaje aún no ha añadido alojamiento."}
-        />
+        <EmptyState icon={Hotel} title={t.noAccommodationTitle} description={isCreator ? t.noAccommodationDescCreator : t.noAccommodationDescMember} />
       ) : (
         <div className="space-y-3">
           {items.map((item) => (
@@ -174,14 +124,14 @@ const Accommodation = () => {
                         <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={() => window.open(item.website!.startsWith("http") ? item.website! : `https://${item.website}`, '_blank')}>
                           <Globe className="h-4 w-4" />
                         </Button>
-                      </TooltipTrigger><TooltipContent>Web</TooltipContent></Tooltip>
+                      </TooltipTrigger><TooltipContent>{t.web}</TooltipContent></Tooltip>
                     )}
                     {item.address && (
                       <Tooltip><TooltipTrigger asChild>
                         <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(item.address!)}`, '_blank')}>
                           <MapPin className="h-4 w-4" />
                         </Button>
-                      </TooltipTrigger><TooltipContent>Cómo llegar</TooltipContent></Tooltip>
+                      </TooltipTrigger><TooltipContent>{t.howToGet}</TooltipContent></Tooltip>
                     )}
                   </div>
                   {isCreator && (
@@ -190,12 +140,12 @@ const Accommodation = () => {
                         <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={() => openEdit(item)}>
                           <Pencil className="h-4 w-4" />
                         </Button>
-                      </TooltipTrigger><TooltipContent>Editar</TooltipContent></Tooltip>
+                      </TooltipTrigger><TooltipContent>{t.edit}</TooltipContent></Tooltip>
                       <Tooltip><TooltipTrigger asChild>
                         <Button variant="ghost" size="icon" className="text-destructive h-8 w-8" onClick={() => handleDelete(item.id)}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
-                      </TooltipTrigger><TooltipContent>Eliminar</TooltipContent></Tooltip>
+                      </TooltipTrigger><TooltipContent>{t.delete}</TooltipContent></Tooltip>
                     </div>
                   )}
                 </div>

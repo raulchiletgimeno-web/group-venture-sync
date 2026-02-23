@@ -7,22 +7,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useTripRole } from "@/hooks/use-trip-role";
-
-const sections = [
-  { path: "transport", label: "Transporte", icon: Plane, color: "bg-primary/10 text-primary" },
-  { path: "accommodation", label: "Alojamiento", icon: Hotel, color: "bg-accent/10 text-accent" },
-  { path: "expenses", label: "Gastos", icon: Receipt, color: "bg-secondary text-secondary-foreground" },
-  { path: "photos", label: "Fotos", icon: Camera, color: "bg-primary/10 text-primary" },
-  { path: "chat", label: "Chat", icon: MessageCircle, color: "bg-accent/10 text-accent" },
-  { path: "weather", label: "El Tiempo", icon: CloudSun, color: "bg-secondary text-secondary-foreground" },
-  { path: "schedule", label: "Actividades", icon: CalendarDays, color: "bg-primary/10 text-primary" },
-];
-
-const statusLabels: Record<string, string> = {
-  upcoming: "Próximo",
-  active: "En curso",
-  finished: "Finalizado",
-};
+import { useLanguage } from "@/contexts/LanguageContext";
+import { getLocale } from "@/i18n/translations";
 
 interface TripData {
   title: string;
@@ -36,8 +22,25 @@ interface TripData {
 const TripDashboard = () => {
   const { tripId } = useParams();
   const { isCreator } = useTripRole(tripId);
+  const { t, language } = useLanguage();
   const [trip, setTrip] = useState<TripData | null>(null);
   const [memberCount, setMemberCount] = useState(0);
+
+  const sections = [
+    { path: "transport", label: t.transport, icon: Plane, color: "bg-primary/10 text-primary" },
+    { path: "accommodation", label: t.accommodation, icon: Hotel, color: "bg-accent/10 text-accent" },
+    { path: "expenses", label: t.expenses, icon: Receipt, color: "bg-secondary text-secondary-foreground" },
+    { path: "photos", label: t.photos, icon: Camera, color: "bg-primary/10 text-primary" },
+    { path: "chat", label: t.chat, icon: MessageCircle, color: "bg-accent/10 text-accent" },
+    { path: "weather", label: t.weather, icon: CloudSun, color: "bg-secondary text-secondary-foreground" },
+    { path: "schedule", label: t.activities, icon: CalendarDays, color: "bg-primary/10 text-primary" },
+  ];
+
+  const statusLabels: Record<string, string> = {
+    upcoming: t.upcoming,
+    active: t.active,
+    finished: t.finished,
+  };
 
   useEffect(() => {
     if (!tripId) return;
@@ -63,14 +66,14 @@ const TripDashboard = () => {
   const handleShare = () => {
     if (!trip) return;
     const link = `${window.location.origin}/join/${trip.invite_code}`;
-    const text = `¡Únete a mi viaje "${trip.title}"! Usa este enlace: ${link}`;
+    const text = `${t.joinTripTitle} "${trip.title}"! ${link}`;
     const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
     window.location.href = whatsappUrl;
   };
 
   const formatDate = (d: string) => {
     const date = new Date(d + "T00:00:00");
-    return date.toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" });
+    return date.toLocaleDateString(getLocale(language), { day: "numeric", month: "short", year: "numeric" });
   };
 
   if (!trip) {
@@ -97,7 +100,7 @@ const TripDashboard = () => {
             </div>
             <div className="flex items-center gap-1.5 mt-1 text-muted-foreground text-sm">
               <Users className="h-3.5 w-3.5" />
-              <span>{memberCount} miembro{memberCount !== 1 ? "s" : ""}</span>
+              <span>{memberCount} {memberCount !== 1 ? t.members : t.member}</span>
             </div>
           </div>
           <span className="gradient-hero text-primary-foreground text-xs font-medium px-2.5 py-1 rounded-full">
@@ -108,16 +111,16 @@ const TripDashboard = () => {
           <div className="mt-4 flex items-center gap-3">
             <Button variant="outline" size="sm" className="text-sm" onClick={handleShare}>
               <Share2 className="h-3.5 w-3.5 mr-1.5" />
-              Invitar amigos
+              {t.inviteFriends}
             </Button>
             <span className="inline-flex items-center rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
-              Código: {trip.invite_code}
+              {t.code}: {trip.invite_code}
             </span>
           </div>
         )}
       </div>
 
-      <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Secciones</h3>
+      <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">{t.sections}</h3>
       <div className="grid grid-cols-2 gap-3">
         {sections.map(({ path, label, icon: Icon, color }) => (
           <Link
