@@ -68,7 +68,7 @@ const Index = () => {
     fetchTrips();
   }, []);
 
-  const flagLanguages: Language[] = ["en", "fr", "pt", "it"];
+  const flagLanguages: Language[] = ["es", "en", "fr", "pt", "it"];
 
   return (
     <div className="min-h-screen bg-background">
