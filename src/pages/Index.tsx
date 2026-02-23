@@ -132,14 +132,14 @@ const Index = () => {
               <button
                 key={lang}
                 onClick={() => setLanguage(lang)}
-                className={`transition-all duration-200 ${
+                className={`transition-all duration-200 rounded-sm ${
                   language === lang
-                    ? "scale-125 drop-shadow-lg"
+                    ? "scale-125 drop-shadow-lg ring-2 ring-white"
                     : "opacity-70 hover:opacity-100 hover:scale-110"
                 }`}
                 title={lang.toUpperCase()}
               >
-                <img src={languageFlags[lang]} alt={lang.toUpperCase()} className="w-7 h-5 rounded-sm object-cover" />
+                <img src={languageFlags[lang]} alt={lang.toUpperCase()} className="w-8 h-6 rounded-sm object-cover border border-white/30" />
               </button>
             ))}
           </div>
