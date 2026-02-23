@@ -97,7 +97,7 @@ const HelpChatBot = () => {
           className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full gradient-hero shadow-card-hover flex items-center justify-center transition-transform hover:scale-110 active:scale-95"
           aria-label={t.helpChatTitle}
         >
-          <MessageCircleQuestion className="h-7 w-7 text-primary-foreground" />
+          <MessageCircleQuestion className="h-7 w-7 text-white" />
         </button>
       )}
 
