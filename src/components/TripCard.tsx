@@ -1,5 +1,6 @@
 import { MapPin, Calendar, Users, ChevronRight } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface TripCardProps {
   id: string;
@@ -11,13 +12,15 @@ interface TripCardProps {
   status: "upcoming" | "active" | "finished";
 }
 
-const statusConfig = {
-  upcoming: { label: "Próximo", className: "bg-secondary text-secondary-foreground" },
-  active: { label: "En curso", className: "gradient-hero text-primary-foreground" },
-  finished: { label: "Finalizado", className: "bg-muted text-muted-foreground" },
-};
-
 const TripCard = ({ id, title, destination, startDate, endDate, memberCount, status }: TripCardProps) => {
+  const { t } = useLanguage();
+
+  const statusConfig = {
+    upcoming: { label: t.upcoming, className: "bg-secondary text-secondary-foreground" },
+    active: { label: t.active, className: "gradient-hero text-primary-foreground" },
+    finished: { label: t.finished, className: "bg-muted text-muted-foreground" },
+  };
+
   const statusInfo = statusConfig[status];
 
   return (

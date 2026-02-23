@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -17,6 +18,7 @@ const JoinTripDialog = ({ open, onOpenChange }: JoinTripDialogProps) => {
   const [code, setCode] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const { user } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -32,12 +34,11 @@ const JoinTripDialog = ({ open, onOpenChange }: JoinTripDialogProps) => {
       .single();
 
     if (!trip) {
-      toast({ title: "Código inválido", description: "No se encontró ningún viaje con ese código.", variant: "destructive" });
+      toast({ title: t.invalidCode, description: t.invalidCodeDesc, variant: "destructive" });
       setSubmitting(false);
       return;
     }
 
-    // Check if already a member
     const { data: existing } = await supabase
       .from("trip_members")
       .select("id")
@@ -46,7 +47,7 @@ const JoinTripDialog = ({ open, onOpenChange }: JoinTripDialogProps) => {
       .maybeSingle();
 
     if (existing) {
-      toast({ title: "Ya eres miembro", description: "Ya formas parte de este viaje." });
+      toast({ title: t.alreadyMember, description: t.alreadyMemberDesc });
     } else {
       const { error } = await supabase.from("trip_members").insert({
         trip_id: trip.id,
@@ -54,11 +55,11 @@ const JoinTripDialog = ({ open, onOpenChange }: JoinTripDialogProps) => {
         role: "member",
       });
       if (error) {
-        toast({ title: "Error", description: error.message, variant: "destructive" });
+        toast({ title: t.error, description: error.message, variant: "destructive" });
         setSubmitting(false);
         return;
       }
-      toast({ title: "¡Te has unido!", description: "Ahora eres parte del viaje." });
+      toast({ title: t.joined, description: t.joinedDesc });
     }
 
     onOpenChange(false);
@@ -71,15 +72,15 @@ const JoinTripDialog = ({ open, onOpenChange }: JoinTripDialogProps) => {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-sm mx-auto">
         <DialogHeader>
-          <DialogTitle>Unirse a un viaje</DialogTitle>
-          <DialogDescription>Pega el código de invitación que te compartieron.</DialogDescription>
+          <DialogTitle>{t.joinTripTitle}</DialogTitle>
+          <DialogDescription>{t.joinTripDesc}</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="space-y-1.5">
-            <Label htmlFor="invite-code">Código de invitación</Label>
+            <Label htmlFor="invite-code">{t.inviteCodeLabel}</Label>
             <Input
               id="invite-code"
-              placeholder="Ej: A1B2C3D4"
+              placeholder={t.inviteCodePlaceholder}
               value={code}
               onChange={(e) => setCode(e.target.value)}
               required
@@ -87,7 +88,7 @@ const JoinTripDialog = ({ open, onOpenChange }: JoinTripDialogProps) => {
             />
           </div>
           <Button type="submit" className="w-full font-semibold" disabled={submitting}>
-            {submitting ? "Buscando..." : "Unirme"}
+            {submitting ? t.searching : t.joinMe}
           </Button>
         </form>
       </DialogContent>

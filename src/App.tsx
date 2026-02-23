@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { LanguageProvider } from "@/contexts/LanguageContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
@@ -29,27 +30,29 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <Routes>
-            {/* Public routes */}
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
+          <LanguageProvider>
+            <Routes>
+              {/* Public routes */}
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
 
-            {/* Protected routes */}
-            <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-            <Route path="/join/:inviteCode" element={<ProtectedRoute><JoinTrip /></ProtectedRoute>} />
-            <Route path="/trip/:tripId" element={<ProtectedRoute><TripLayout /></ProtectedRoute>}>
-              <Route index element={<TripDashboard />} />
-              <Route path="transport" element={<Transport />} />
-              <Route path="accommodation" element={<Accommodation />} />
-              <Route path="expenses" element={<Expenses />} />
-              <Route path="photos" element={<Photos />} />
-              <Route path="chat" element={<Chat />} />
-              <Route path="weather" element={<Weather />} />
-              <Route path="schedule" element={<Schedule />} />
-            </Route>
+              {/* Protected routes */}
+              <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+              <Route path="/join/:inviteCode" element={<ProtectedRoute><JoinTrip /></ProtectedRoute>} />
+              <Route path="/trip/:tripId" element={<ProtectedRoute><TripLayout /></ProtectedRoute>}>
+                <Route index element={<TripDashboard />} />
+                <Route path="transport" element={<Transport />} />
+                <Route path="accommodation" element={<Accommodation />} />
+                <Route path="expenses" element={<Expenses />} />
+                <Route path="photos" element={<Photos />} />
+                <Route path="chat" element={<Chat />} />
+                <Route path="weather" element={<Weather />} />
+                <Route path="schedule" element={<Schedule />} />
+              </Route>
 
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </LanguageProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

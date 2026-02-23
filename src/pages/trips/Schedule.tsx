@@ -11,6 +11,8 @@ import EmptyState from "@/components/EmptyState";
 import { supabase } from "@/integrations/supabase/client";
 import { useTripRole } from "@/hooks/use-trip-role";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { getLocale } from "@/i18n/translations";
 
 interface ScheduleItem {
   id: string;
@@ -26,29 +28,17 @@ const Schedule = () => {
   const { tripId } = useParams();
   const { isCreator } = useTripRole(tripId);
   const { toast } = useToast();
+  const { t, language } = useLanguage();
   const [items, setItems] = useState<ScheduleItem[]>([]);
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const [form, setForm] = useState({
-    date: "",
-    time: "",
-    title: "",
-    description: "",
-    location: "",
-    address: "",
-    website: "",
-  });
+  const [form, setForm] = useState({ date: "", time: "", title: "", description: "", location: "", address: "", website: "" });
 
   const fetchItems = async () => {
     if (!tripId) return;
-    const { data } = await supabase
-      .from("trip_schedule")
-      .select("*")
-      .eq("trip_id", tripId)
-      .order("date", { ascending: true })
-      .order("time", { ascending: true });
+    const { data } = await supabase.from("trip_schedule").select("*").eq("trip_id", tripId).order("date", { ascending: true }).order("time", { ascending: true });
     setItems(data ?? []);
     setLoading(false);
   };
@@ -58,93 +48,58 @@ const Schedule = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!tripId) return;
-
-    const payload = {
-      trip_id: tripId,
-      date: form.date,
-      time: form.time || null,
-      title: form.title,
-      description: form.description || null,
-      location: form.location || null,
-      website: form.website || null,
-    };
-
+    const payload = { trip_id: tripId, date: form.date, time: form.time || null, title: form.title, description: form.description || null, location: form.location || null, website: form.website || null };
     const { error } = editingId
       ? await supabase.from("trip_schedule").update(payload).eq("id", editingId)
       : await supabase.from("trip_schedule").insert(payload);
-
-    if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-      return;
-    }
-
-    resetForm();
-    setOpen(false);
-    fetchItems();
-    toast({ title: editingId ? "Actividad actualizada" : "Actividad añadida" });
+    if (error) { toast({ title: t.error, description: error.message, variant: "destructive" }); return; }
+    resetForm(); setOpen(false); fetchItems();
+    toast({ title: editingId ? t.activityUpdated : t.activityAdded });
   };
 
-  const resetForm = () => {
-    setForm({ date: "", time: "", title: "", description: "", location: "", address: "", website: "" });
-    setEditingId(null);
-  };
+  const resetForm = () => { setForm({ date: "", time: "", title: "", description: "", location: "", address: "", website: "" }); setEditingId(null); };
 
   const startEdit = (item: ScheduleItem) => {
-    setForm({
-      date: item.date,
-      time: item.time || "",
-      title: item.title,
-      description: item.description || "",
-      location: item.location || "",
-      address: item.location || "",
-      website: item.website || "",
-    });
-    setEditingId(item.id);
-    setOpen(true);
+    setForm({ date: item.date, time: item.time || "", title: item.title, description: item.description || "", location: item.location || "", address: item.location || "", website: item.website || "" });
+    setEditingId(item.id); setOpen(true);
   };
 
-  const handleDelete = async (id: string) => {
-    await supabase.from("trip_schedule").delete().eq("id", id);
-    fetchItems();
-  };
+  const handleDelete = async (id: string) => { await supabase.from("trip_schedule").delete().eq("id", id); fetchItems(); };
 
   const formatDate = (d: string) =>
-    new Date(d + "T00:00:00").toLocaleDateString("es-ES", { weekday: "short", day: "numeric", month: "short" });
+    new Date(d + "T00:00:00").toLocaleDateString(getLocale(language), { weekday: "short", day: "numeric", month: "short" });
 
-  // Group by date
   const grouped = items.reduce<Record<string, ScheduleItem[]>>((acc, item) => {
     (acc[item.date] ??= []).push(item);
     return acc;
   }, {});
 
-  if (loading) {
-    return <div className="flex justify-center py-10"><div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>;
-  }
+  if (loading) return <div className="flex justify-center py-10"><div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>;
 
   return (
     <div className="animate-fade-in">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-bold text-foreground">Actividades</h2>
+        <h2 className="text-xl font-bold text-foreground">{t.activitiesTitle}</h2>
         {isCreator && (
           <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
             <DialogTrigger asChild>
               <Button size="sm" className="gradient-hero text-primary-foreground border-0">
-                <Plus className="h-4 w-4 mr-1" /> Añadir
+                <Plus className="h-4 w-4 mr-1" /> {t.add}
               </Button>
             </DialogTrigger>
             <DialogContent>
-              <DialogHeader><DialogTitle>{editingId ? "Editar actividad" : "Añadir actividad"}</DialogTitle></DialogHeader>
+              <DialogHeader><DialogTitle>{editingId ? t.editActivity : t.addActivity}</DialogTitle></DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
-                <div><Label>Título</Label><Input required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Visita al museo, cena..." /></div>
+                <div><Label>{t.activityTitle}</Label><Input required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder={t.activityPlaceholder} /></div>
                 <div className="grid grid-cols-2 gap-3">
-                  <div><Label>Fecha</Label><Input type="date" required value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} /></div>
-                  <div><Label>Hora</Label><Input type="time" value={form.time} onChange={(e) => setForm({ ...form, time: e.target.value })} /></div>
+                  <div><Label>{t.date}</Label><Input type="date" required value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} /></div>
+                  <div><Label>{t.time}</Label><Input type="time" value={form.time} onChange={(e) => setForm({ ...form, time: e.target.value })} /></div>
                 </div>
-                <div><Label>Lugar</Label><Input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} placeholder="Nombre del lugar" /></div>
-                <div><Label>Dirección</Label><Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="Calle, número, ciudad..." /></div>
-                <div><Label>Descripción</Label><Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
-                <div><Label>Página web</Label><Input type="url" value={form.website} onChange={(e) => setForm({ ...form, website: e.target.value })} placeholder="https://..." /></div>
-                <Button type="submit" className="w-full gradient-hero text-primary-foreground border-0">{editingId ? "Actualizar" : "Guardar"}</Button>
+                <div><Label>{t.place}</Label><Input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} placeholder={t.placePlaceholder} /></div>
+                <div><Label>{t.addressLabel}</Label><Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder={t.addressPlaceholder} /></div>
+                <div><Label>{t.description}</Label><Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
+                <div><Label>{t.webPage}</Label><Input type="url" value={form.website} onChange={(e) => setForm({ ...form, website: e.target.value })} placeholder="https://..." /></div>
+                <Button type="submit" className="w-full gradient-hero text-primary-foreground border-0">{editingId ? t.update : t.save}</Button>
               </form>
             </DialogContent>
           </Dialog>
@@ -152,11 +107,7 @@ const Schedule = () => {
       </div>
 
       {items.length === 0 ? (
-        <EmptyState
-          icon={CalendarDays}
-          title="Sin actividades planificadas"
-          description={isCreator ? "Organiza el itinerario día a día con actividades y horarios." : "El administrador del viaje aún no ha planificado actividades."}
-        />
+        <EmptyState icon={CalendarDays} title={t.noActivitiesTitle} description={isCreator ? t.noActivitiesDescCreator : t.noActivitiesDescMember} />
       ) : (
         <div className="space-y-5">
           {Object.entries(grouped).map(([date, dayItems]) => (
@@ -181,14 +132,14 @@ const Schedule = () => {
                               <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={() => window.open(item.website!.startsWith("http") ? item.website! : `https://${item.website}`, '_blank')}>
                                 <Globe className="h-4 w-4" />
                               </Button>
-                            </TooltipTrigger><TooltipContent>Web</TooltipContent></Tooltip>
+                            </TooltipTrigger><TooltipContent>{t.web}</TooltipContent></Tooltip>
                           )}
                           {item.location && (
                             <Tooltip><TooltipTrigger asChild>
                               <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(item.location!)}`, '_blank')}>
                                 <MapPin className="h-4 w-4" />
                               </Button>
-                            </TooltipTrigger><TooltipContent>Cómo llegar</TooltipContent></Tooltip>
+                            </TooltipTrigger><TooltipContent>{t.howToGet}</TooltipContent></Tooltip>
                           )}
                         </div>
                         {isCreator && (
@@ -197,12 +148,12 @@ const Schedule = () => {
                               <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={() => startEdit(item)}>
                                 <Pencil className="h-4 w-4" />
                               </Button>
-                            </TooltipTrigger><TooltipContent>Editar</TooltipContent></Tooltip>
+                            </TooltipTrigger><TooltipContent>{t.edit}</TooltipContent></Tooltip>
                             <Tooltip><TooltipTrigger asChild>
                               <Button variant="ghost" size="icon" className="text-destructive h-8 w-8" onClick={() => handleDelete(item.id)}>
                                 <Trash2 className="h-4 w-4" />
                               </Button>
-                            </TooltipTrigger><TooltipContent>Eliminar</TooltipContent></Tooltip>
+                            </TooltipTrigger><TooltipContent>{t.delete}</TooltipContent></Tooltip>
                           </div>
                         )}
                       </div>
