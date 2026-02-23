@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Plus, UserPlus, Compass, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import TripCard from "@/components/TripCard";
@@ -26,9 +26,11 @@ const Index = () => {
   const { profile, signOut } = useAuth();
   const { t, language, setLanguage } = useLanguage();
   const [trips, setTrips] = useState<Trip[]>([]);
+  const [translatedTitles, setTranslatedTitles] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
   const [joinOpen, setJoinOpen] = useState(false);
+  const prevLanguageRef = useRef(language);
 
   const formatDate = (d: string) => {
     const date = new Date(d + "T00:00:00");
@@ -67,6 +69,37 @@ const Index = () => {
   useEffect(() => {
     fetchTrips();
   }, []);
+
+  // Translate trip titles when language changes
+  useEffect(() => {
+    if (trips.length === 0) return;
+    // Don't translate if language is Spanish (original language)
+    if (language === "es") {
+      setTranslatedTitles({});
+      return;
+    }
+    if (prevLanguageRef.current === language) return;
+    prevLanguageRef.current = language;
+
+    const translateTitles = async () => {
+      try {
+        const titles = trips.map((t) => t.title);
+        const resp = await supabase.functions.invoke("translate", {
+          body: { texts: titles, targetLanguage: language },
+        });
+        if (resp.data?.translations) {
+          const map: Record<string, string> = {};
+          trips.forEach((trip, i) => {
+            map[trip.id] = resp.data.translations[i] || trip.title;
+          });
+          setTranslatedTitles(map);
+        }
+      } catch (e) {
+        console.error("Translation error:", e);
+      }
+    };
+    translateTitles();
+  }, [language, trips]);
 
   const flagLanguages: Language[] = ["es", "en", "fr", "pt", "it"];
 
@@ -164,7 +197,7 @@ const Index = () => {
               <TripCard
                 key={trip.id}
                 id={trip.id}
-                title={trip.title}
+                title={translatedTitles[trip.id] || trip.title}
                 destination={trip.destination}
                 startDate={formatDate(trip.start_date)}
                 endDate={formatDate(trip.end_date)}
