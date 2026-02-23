@@ -103,7 +103,7 @@ const Index = () => {
   const flagLanguages: Language[] = ["es", "en", "fr", "pt", "it"];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-b from-[hsl(175_45%_75%)] via-[hsl(190_35%_85%)] to-background">
       {/* Hero Section */}
       <div className="relative overflow-hidden">
         <div className="absolute inset-0">
