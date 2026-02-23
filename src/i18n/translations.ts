@@ -1,11 +1,11 @@
 export type Language = "es" | "en" | "fr" | "pt" | "it";
 
 export const languageFlags: Record<Language, string> = {
-  es: "https://flagcdn.com/w40/es.svg",
-  en: "https://flagcdn.com/w40/gb.svg",
-  fr: "https://flagcdn.com/w40/fr.svg",
-  pt: "https://flagcdn.com/w40/pt.svg",
-  it: "https://flagcdn.com/w40/it.svg",
+  es: "https://flagsapi.com/ES/flat/64.png",
+  en: "https://flagsapi.com/GB/flat/64.png",
+  fr: "https://flagsapi.com/FR/flat/64.png",
+  pt: "https://flagsapi.com/PT/flat/64.png",
+  it: "https://flagsapi.com/IT/flat/64.png",
 };
 
 export const languageNames: Record<Language, string> = {
