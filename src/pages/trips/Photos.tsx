@@ -1,14 +1,20 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { Camera, Loader2, Trash2, Image } from "lucide-react";
+import { Camera, Loader2, Trash2, Image, X } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTripRole } from "@/hooks/use-trip-role";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { formatDisplayName } from "@/lib/formatDisplayName";
 import EmptyState from "@/components/EmptyState";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+
+interface MemberName {
+  id: string;
+  name: string | null;
+}
 
 const Photos = () => {
   const { tripId } = useParams();
@@ -19,6 +25,28 @@ const Photos = () => {
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [viewingPhoto, setViewingPhoto] = useState<{ url: string; userName: string } | null>(null);
+  const [members, setMembers] = useState<MemberName[]>([]);
+
+  useEffect(() => {
+    if (!tripId) return;
+    supabase
+      .from("trip_members")
+      .select("user_id")
+      .eq("trip_id", tripId)
+      .eq("status", "approved")
+      .then(async ({ data }) => {
+        if (!data) return;
+        const ids = data.map((m) => m.user_id);
+        const { data: profiles } = await supabase.from("profiles").select("id, name").in("id", ids);
+        setMembers(profiles ?? []);
+      });
+  }, [tripId]);
+
+  const getMemberName = (userId: string) => {
+    const m = members.find((p) => p.id === userId);
+    return formatDisplayName(m?.name);
+  };
 
   const { data: photos = [], isLoading } = useQuery({
     queryKey: ["trip-photos", tripId],
@@ -86,8 +114,16 @@ const Photos = () => {
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {photos.map((photo) => (
-            <div key={photo.id} className="relative group rounded-xl overflow-hidden aspect-square bg-muted">
-              <img src={getPublicUrl(photo.file_path)} alt={t.tripPhoto} className="w-full h-full object-cover" loading="lazy" />
+            <div key={photo.id} className="relative group rounded-xl overflow-hidden bg-muted">
+              <div
+                className="aspect-square cursor-pointer"
+                onClick={() => setViewingPhoto({ url: getPublicUrl(photo.file_path), userName: getMemberName(photo.user_id) })}
+              >
+                <img src={getPublicUrl(photo.file_path)} alt={t.tripPhoto} className="w-full h-full object-cover" loading="lazy" />
+              </div>
+              <div className="px-2 py-1.5 bg-card">
+                <p className="text-xs text-muted-foreground truncate">{getMemberName(photo.user_id)}</p>
+              </div>
               {(photo.user_id === user?.id || isCreator) && (
                 <button onClick={() => deleteMutation.mutate({ id: photo.id, file_path: photo.file_path })} className="absolute top-2 right-2 p-1.5 rounded-full bg-background/80 text-destructive opacity-0 group-hover:opacity-100 transition-opacity">
                   <Trash2 className="h-4 w-4" />
@@ -95,6 +131,25 @@ const Photos = () => {
               )}
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Fullscreen photo viewer */}
+      {viewingPhoto && (
+        <div
+          className="fixed inset-0 z-50 bg-black/90 flex flex-col items-center justify-center animate-fade-in"
+          onClick={() => setViewingPhoto(null)}
+        >
+          <button className="absolute top-4 right-4 text-white/80 hover:text-white z-10" onClick={() => setViewingPhoto(null)}>
+            <X className="h-7 w-7" />
+          </button>
+          <img
+            src={viewingPhoto.url}
+            alt={t.tripPhoto}
+            className="max-w-full max-h-[85vh] object-contain rounded-lg"
+            onClick={(e) => e.stopPropagation()}
+          />
+          <p className="text-white/70 text-sm mt-3">{viewingPhoto.userName}</p>
         </div>
       )}
     </div>
