@@ -274,6 +274,16 @@ const Expenses = () => {
     [expenses]
   );
 
+  const myExpenses = useMemo(() => {
+    if (!user) return 0;
+    return expenses.reduce((sum, e) => {
+      if (e.splits.includes(user.id)) {
+        return sum + e.amount / (e.splits.length || 1);
+      }
+      return sum;
+    }, 0);
+  }, [expenses, user]);
+
   // Calculate simplified debts (who owes whom)
   const debts = useMemo(() => {
     const debtors: { from: string; to: string; amount: number }[] = [];
@@ -432,9 +442,16 @@ const Expenses = () => {
           <TabsContent value="saldos" className="space-y-4">
             {/* Total */}
             <div className="rounded-xl bg-card p-4 shadow-card">
-               <p className="text-sm font-semibold text-card-foreground mb-3">
-                 {t.totalSpent}: {totalExpenses.toFixed(2)} €
-               </p>
+               <div className="flex items-center justify-between mb-3">
+                 <div>
+                   <p className="text-xs text-muted-foreground">{t.totalSpent}</p>
+                   <p className="text-sm font-semibold text-card-foreground">{totalExpenses.toFixed(2)} €</p>
+                 </div>
+                 <div className="text-right">
+                   <p className="text-xs text-muted-foreground">{t.myExpenses}</p>
+                   <p className="text-sm font-semibold text-card-foreground">{myExpenses.toFixed(2)} €</p>
+                 </div>
+               </div>
               <div className="space-y-2">
                 {members.map((m) => {
                   const bal = balances.get(m.user_id) ?? 0;

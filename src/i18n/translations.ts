@@ -183,6 +183,7 @@ type TranslationKeys = {
   balances: string;
   expensesList: string;
   totalSpent: string;
+  myExpenses: string;
   whoOwesWhom: string;
   paidByLabel: string;
   sharedBetween: string;
@@ -453,6 +454,7 @@ const translations: Record<Language, TranslationKeys> = {
     balances: "Saldos",
     expensesList: "Gastos",
     totalSpent: "Total gastado",
+    myExpenses: "Mi gasto",
     whoOwesWhom: "Quién debe a quién",
     paidByLabel: "Pagado por",
     sharedBetween: "Compartido entre",
@@ -704,6 +706,7 @@ const translations: Record<Language, TranslationKeys> = {
     balances: "Balances",
     expensesList: "Expenses",
     totalSpent: "Total spent",
+    myExpenses: "My expenses",
     whoOwesWhom: "Who owes whom",
     paidByLabel: "Paid by",
     sharedBetween: "Shared between",
@@ -955,6 +958,7 @@ const translations: Record<Language, TranslationKeys> = {
     balances: "Soldes",
     expensesList: "Dépenses",
     totalSpent: "Total dépensé",
+    myExpenses: "Mes dépenses",
     whoOwesWhom: "Qui doit à qui",
     paidByLabel: "Payé par",
     sharedBetween: "Partagé entre",
@@ -1206,6 +1210,7 @@ const translations: Record<Language, TranslationKeys> = {
     balances: "Saldos",
     expensesList: "Despesas",
     totalSpent: "Total gasto",
+    myExpenses: "Meu gasto",
     whoOwesWhom: "Quem deve a quem",
     paidByLabel: "Pago por",
     sharedBetween: "Partilhado entre",
@@ -1457,6 +1462,7 @@ const translations: Record<Language, TranslationKeys> = {
     balances: "Saldi",
     expensesList: "Spese",
     totalSpent: "Totale speso",
+    myExpenses: "La mia spesa",
     whoOwesWhom: "Chi deve a chi",
     paidByLabel: "Pagato da",
     sharedBetween: "Condiviso tra",
