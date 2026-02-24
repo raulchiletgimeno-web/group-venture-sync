@@ -2,7 +2,7 @@ import { useParams, Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import {
   Plane, Hotel, Receipt, Camera, MessageCircle, CloudSun, CalendarDays,
-  Users, MapPin, Calendar, Share2,
+  Users, MapPin, Calendar, Share2, Pencil,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -23,6 +23,13 @@ interface TripData {
   end_date: string;
   status: string;
   invite_code: string;
+  created_by: string;
+}
+
+interface MemberInfo {
+  user_id: string;
+  name: string | null;
+  role: string;
 }
 
 const TripDashboard = () => {
@@ -32,6 +39,7 @@ const TripDashboard = () => {
   const { t, language } = useLanguage();
   const [trip, setTrip] = useState<TripData | null>(null);
   const [memberCount, setMemberCount] = useState(0);
+  const [membersList, setMembersList] = useState<MemberInfo[]>([]);
 
   const sections = [
     { path: "transport", label: t.transport, icon: Plane, color: "bg-primary/10 text-primary" },
@@ -55,7 +63,7 @@ const TripDashboard = () => {
     // Fetch trip info - use a direct query that works for both pending and approved
     supabase
       .from("trips")
-      .select("title, destination, start_date, end_date, status, invite_code")
+      .select("title, destination, start_date, end_date, status, invite_code, created_by")
       .eq("id", tripId)
       .single()
       .then(({ data }) => {
@@ -64,11 +72,24 @@ const TripDashboard = () => {
 
     supabase
       .from("trip_members")
-      .select("id", { count: "exact", head: true })
+      .select("user_id, role")
       .eq("trip_id", tripId)
       .eq("status", "approved")
-      .then(({ count }) => {
-        setMemberCount(count ?? 0);
+      .then(async ({ data }) => {
+        if (!data) return;
+        setMemberCount(data.length);
+        const userIds = data.map((m) => m.user_id);
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, name")
+          .in("id", userIds);
+        setMembersList(
+          data.map((m) => ({
+            user_id: m.user_id,
+            name: profiles?.find((p) => p.id === m.user_id)?.name ?? null,
+            role: m.role,
+          }))
+        );
       });
   }, [tripId]);
 
@@ -115,10 +136,32 @@ const TripDashboard = () => {
               <Calendar className="h-3.5 w-3.5" />
               <span>{formatDate(trip.start_date)} — {formatDate(trip.end_date)}</span>
             </div>
-            <div className="flex items-center gap-1.5 mt-1 text-muted-foreground text-sm">
-              <Users className="h-3.5 w-3.5" />
-              <span>{memberCount} {memberCount !== 1 ? t.members : t.member}</span>
-            </div>
+            <Popover>
+              <PopoverTrigger asChild>
+                <button className="flex items-center gap-1.5 mt-1 text-muted-foreground text-sm hover:text-foreground transition-colors cursor-pointer">
+                  <Users className="h-3.5 w-3.5" />
+                  <span>{memberCount} {memberCount !== 1 ? t.members : t.member}</span>
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-56 p-3" align="start">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">{t.members}</p>
+                <div className="space-y-2">
+                  {membersList.map((m) => (
+                    <div key={m.user_id} className="flex items-center gap-2">
+                      <Avatar className="h-6 w-6">
+                        <AvatarFallback className="text-[10px] bg-primary/10 text-primary">
+                          {formatDisplayName(m.name).split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="text-sm text-foreground truncate">{formatDisplayName(m.name)}</span>
+                      {m.role === "creator" && (
+                        <Pencil className="h-3 w-3 text-primary shrink-0" />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </PopoverContent>
+            </Popover>
           </div>
           <span className="gradient-hero text-primary-foreground text-xs font-medium px-2.5 py-1 rounded-full">
             {statusLabels[trip.status] ?? trip.status}
