@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.help-chat]
 verify_jwt = false
+
+[functions.notify-creator-join]
+verify_jwt = false

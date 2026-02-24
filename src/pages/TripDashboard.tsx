@@ -7,8 +7,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useTripRole } from "@/hooks/use-trip-role";
+import { useMemberStatus } from "@/hooks/use-member-status";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { getLocale } from "@/i18n/translations";
+import PendingApproval from "@/components/PendingApproval";
+import MemberApprovalManager from "@/components/MemberApprovalManager";
 
 interface TripData {
   title: string;
@@ -22,6 +25,7 @@ interface TripData {
 const TripDashboard = () => {
   const { tripId } = useParams();
   const { isCreator } = useTripRole(tripId);
+  const { status: memberStatus, loading: statusLoading } = useMemberStatus(tripId);
   const { t, language } = useLanguage();
   const [trip, setTrip] = useState<TripData | null>(null);
   const [memberCount, setMemberCount] = useState(0);
@@ -45,6 +49,7 @@ const TripDashboard = () => {
   useEffect(() => {
     if (!tripId) return;
 
+    // Fetch trip info - use a direct query that works for both pending and approved
     supabase
       .from("trips")
       .select("title, destination, start_date, end_date, status, invite_code")
@@ -58,6 +63,7 @@ const TripDashboard = () => {
       .from("trip_members")
       .select("id", { count: "exact", head: true })
       .eq("trip_id", tripId)
+      .eq("status", "approved")
       .then(({ count }) => {
         setMemberCount(count ?? 0);
       });
@@ -76,7 +82,7 @@ const TripDashboard = () => {
     return date.toLocaleDateString(getLocale(language), { day: "numeric", month: "short", year: "numeric" });
   };
 
-  if (!trip) {
+  if (!trip || statusLoading) {
     return (
       <div className="flex justify-center py-10">
         <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
@@ -84,8 +90,16 @@ const TripDashboard = () => {
     );
   }
 
+  // Show pending approval screen for non-approved members
+  if (memberStatus === "pending") {
+    return <PendingApproval />;
+  }
+
   return (
     <div className="animate-fade-in">
+      {/* Show pending requests to creator */}
+      {isCreator && tripId && <MemberApprovalManager tripId={tripId} />}
+
       <div className="rounded-xl bg-card p-5 shadow-card mb-6">
         <div className="flex items-start justify-between">
           <div>
