@@ -89,6 +89,8 @@ const Chat = () => {
     const { error: uploadError } = await supabase.storage.from("trip-photos").upload(path, file, { upsert: true });
     if (uploadError) { toast({ title: t.errorUploadingImage, variant: "destructive" }); setSending(false); return; }
     await supabase.from("trip_messages").insert({ trip_id: tripId, user_id: user.id, type: "image", file_path: path });
+    // Also add to trip_photos so it appears in the Photos tab
+    await supabase.from("trip_photos").insert({ trip_id: tripId, user_id: user.id, file_path: path });
     setImagePreview(null); setImageFile(null); setSending(false);
   };
 
