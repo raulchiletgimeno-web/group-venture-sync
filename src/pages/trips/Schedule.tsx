@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { CalendarDays, Plus, Trash2, Pencil, Globe, MapPin } from "lucide-react";
+import ActivityTicketManager from "@/components/ActivityTicketManager";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -134,6 +135,7 @@ const Schedule = () => {
                               </Button>
                             </TooltipTrigger><TooltipContent>{t.web}</TooltipContent></Tooltip>
                           )}
+                          <ActivityTicketManager scheduleId={item.id} tripId={tripId!} isCreator={isCreator} />
                           {item.location && (
                             <Tooltip><TooltipTrigger asChild>
                               <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(item.location!)}`, '_blank')}>

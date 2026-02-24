@@ -272,6 +272,12 @@ type TranslationKeys = {
   noActivitiesDescMember: string;
   activityUpdated: string;
   activityAdded: string;
+  groupTicket: string;
+  personalTicket: string;
+  ticketType: string;
+  manageActivityTickets: string;
+  activityTicketUploaded: string;
+  activityTicketDeleted: string;
 
   // Join trip page
   joinErrorInvalid: string;
@@ -519,6 +525,12 @@ const translations: Record<Language, TranslationKeys> = {
     noActivitiesDescMember: "El administrador del viaje aún no ha planificado actividades.",
     activityUpdated: "Actividad actualizada",
     activityAdded: "Actividad añadida",
+    groupTicket: "Grupal",
+    personalTicket: "Personal",
+    ticketType: "Tipo de entrada",
+    manageActivityTickets: "Gestionar entradas",
+    activityTicketUploaded: "Entrada subida correctamente",
+    activityTicketDeleted: "Entrada eliminada",
     joinErrorInvalid: "Código de invitación inválido o viaje no encontrado.",
     goHome: "Ir al inicio",
     pageNotFound: "Oops! Página no encontrada",
@@ -757,6 +769,12 @@ const translations: Record<Language, TranslationKeys> = {
     noActivitiesDescMember: "The trip admin hasn't planned activities yet.",
     activityUpdated: "Activity updated",
     activityAdded: "Activity added",
+    groupTicket: "Group",
+    personalTicket: "Personal",
+    ticketType: "Ticket type",
+    manageActivityTickets: "Manage tickets",
+    activityTicketUploaded: "Ticket uploaded successfully",
+    activityTicketDeleted: "Ticket deleted",
     joinErrorInvalid: "Invalid invite code or trip not found.",
     goHome: "Go home",
     pageNotFound: "Oops! Page not found",
@@ -995,6 +1013,12 @@ const translations: Record<Language, TranslationKeys> = {
     noActivitiesDescMember: "L'administrateur du voyage n'a pas encore planifié d'activités.",
     activityUpdated: "Activité mise à jour",
     activityAdded: "Activité ajoutée",
+    groupTicket: "Groupe",
+    personalTicket: "Personnel",
+    ticketType: "Type de billet",
+    manageActivityTickets: "Gérer les billets",
+    activityTicketUploaded: "Billet téléchargé avec succès",
+    activityTicketDeleted: "Billet supprimé",
     joinErrorInvalid: "Code d'invitation invalide ou voyage non trouvé.",
     goHome: "Retour à l'accueil",
     pageNotFound: "Oops ! Page non trouvée",
@@ -1233,6 +1257,12 @@ const translations: Record<Language, TranslationKeys> = {
     noActivitiesDescMember: "O administrador da viagem ainda não planeou atividades.",
     activityUpdated: "Atividade atualizada",
     activityAdded: "Atividade adicionada",
+    groupTicket: "Grupo",
+    personalTicket: "Pessoal",
+    ticketType: "Tipo de bilhete",
+    manageActivityTickets: "Gerir bilhetes",
+    activityTicketUploaded: "Bilhete carregado com sucesso",
+    activityTicketDeleted: "Bilhete eliminado",
     joinErrorInvalid: "Código de convite inválido ou viagem não encontrada.",
     goHome: "Ir para o início",
     pageNotFound: "Oops! Página não encontrada",
@@ -1471,6 +1501,12 @@ const translations: Record<Language, TranslationKeys> = {
     noActivitiesDescMember: "L'amministratore del viaggio non ha ancora pianificato attività.",
     activityUpdated: "Attività aggiornata",
     activityAdded: "Attività aggiunta",
+    groupTicket: "Gruppo",
+    personalTicket: "Personale",
+    ticketType: "Tipo di biglietto",
+    manageActivityTickets: "Gestisci biglietti",
+    activityTicketUploaded: "Biglietto caricato con successo",
+    activityTicketDeleted: "Biglietto eliminato",
     joinErrorInvalid: "Codice d'invito non valido o viaggio non trovato.",
     goHome: "Vai alla home",
     pageNotFound: "Oops! Pagina non trovata",
