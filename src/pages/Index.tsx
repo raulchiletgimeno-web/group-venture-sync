@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, UserPlus, Compass, LogOut } from "lucide-react";
+import { Plus, UserPlus, Compass, LogOut, MessageCircleQuestion } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import TripCard from "@/components/TripCard";
 import EmptyState from "@/components/EmptyState";
@@ -31,7 +31,7 @@ const Index = () => {
   const [loading, setLoading] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
   const [joinOpen, setJoinOpen] = useState(false);
-  
+  const [helpOpen, setHelpOpen] = useState(false);
 
   const formatDate = (d: string) => {
     const date = new Date(d + "T00:00:00");
@@ -180,7 +180,16 @@ const Index = () => {
 
       {/* Trips List */}
       <div className="px-5 py-6">
-        <h2 className="text-lg font-bold text-foreground mb-4">{t.myTrips}</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-bold text-foreground">{t.myTrips}</h2>
+          <button
+            onClick={() => setHelpOpen(true)}
+            className="h-10 w-10 rounded-full gradient-hero shadow-card-hover flex items-center justify-center transition-transform hover:scale-110 active:scale-95"
+            aria-label={t.helpChatTitle}
+          >
+            <MessageCircleQuestion className="h-5 w-5 text-white" />
+          </button>
+        </div>
         {loading ? (
           <div className="flex justify-center py-10">
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
@@ -210,7 +219,7 @@ const Index = () => {
 
       <CreateTripDialog open={createOpen} onOpenChange={setCreateOpen} />
       <JoinTripDialog open={joinOpen} onOpenChange={setJoinOpen} />
-      <HelpChatBot />
+      <HelpChatBot open={helpOpen} onOpenChange={setHelpOpen} />
     </div>
   );
 };
