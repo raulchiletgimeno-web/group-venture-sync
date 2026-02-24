@@ -1,4 +1,4 @@
-import { MapPin, Calendar, Users, ChevronRight } from "lucide-react";
+import { MapPin, Calendar, Users, ChevronRight, Clock } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -10,9 +10,10 @@ interface TripCardProps {
   endDate: string;
   memberCount: number;
   status: "upcoming" | "active" | "finished";
+  memberStatus?: "approved" | "pending";
 }
 
-const TripCard = ({ id, title, destination, startDate, endDate, memberCount, status }: TripCardProps) => {
+const TripCard = ({ id, title, destination, startDate, endDate, memberCount, status, memberStatus = "approved" }: TripCardProps) => {
   const { t } = useLanguage();
 
   const statusConfig = {
@@ -26,7 +27,7 @@ const TripCard = ({ id, title, destination, startDate, endDate, memberCount, sta
   return (
     <Link
       to={`/trip/${id}`}
-      className="block rounded-xl bg-card p-5 shadow-card hover:shadow-card-hover transition-all duration-300 animate-fade-in"
+      className={`block rounded-xl bg-card p-5 shadow-card hover:shadow-card-hover transition-all duration-300 animate-fade-in ${memberStatus === "pending" ? "opacity-75" : ""}`}
     >
       <div className="flex items-start justify-between mb-3">
         <div>
@@ -36,9 +37,17 @@ const TripCard = ({ id, title, destination, startDate, endDate, memberCount, sta
             <span className="text-sm">{destination}</span>
           </div>
         </div>
-        <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${statusInfo.className}`}>
-          {statusInfo.label}
-        </span>
+        <div className="flex flex-col items-end gap-1">
+          <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${statusInfo.className}`}>
+            {statusInfo.label}
+          </span>
+          {memberStatus === "pending" && (
+            <span className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full bg-amber-100 text-amber-700">
+              <Clock className="h-3 w-3" />
+              {t.pendingApprovalTitle}
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="flex items-center justify-between mt-4">

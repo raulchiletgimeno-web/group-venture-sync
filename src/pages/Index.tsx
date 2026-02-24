@@ -21,6 +21,7 @@ interface Trip {
   end_date: string;
   status: "upcoming" | "active" | "finished";
   memberCount: number;
+  memberStatus: "approved" | "pending";
 }
 
 const Index = () => {
@@ -39,9 +40,29 @@ const Index = () => {
   };
 
   const fetchTrips = async () => {
+    // Get user's memberships first (includes pending)
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setLoading(false); return; }
+
+    const { data: memberships } = await supabase
+      .from("trip_members")
+      .select("trip_id, status")
+      .eq("user_id", user.id);
+
+    if (!memberships || memberships.length === 0) {
+      setTrips([]);
+      setLoading(false);
+      return;
+    }
+
+    const tripIds = memberships.map((m) => m.trip_id);
+    const statusMap: Record<string, string> = {};
+    memberships.forEach((m) => { statusMap[m.trip_id] = m.status; });
+
     const { data } = await supabase
       .from("trips")
-      .select("*, trip_members!inner(user_id)")
+      .select("*")
+      .in("id", tripIds)
       .order("start_date", { ascending: true });
 
     if (data) {
@@ -50,7 +71,8 @@ const Index = () => {
           const { count } = await supabase
             .from("trip_members")
             .select("id", { count: "exact", head: true })
-            .eq("trip_id", trip.id);
+            .eq("trip_id", trip.id)
+            .eq("status", "approved");
           return {
             id: trip.id,
             title: trip.title,
@@ -59,6 +81,7 @@ const Index = () => {
             end_date: trip.end_date,
             status: trip.status as Trip["status"],
             memberCount: count ?? 0,
+            memberStatus: (statusMap[trip.id] || "approved") as "approved" | "pending",
           };
         })
       );
@@ -211,6 +234,7 @@ const Index = () => {
                 endDate={formatDate(trip.end_date)}
                 memberCount={trip.memberCount}
                 status={trip.status}
+                memberStatus={trip.memberStatus}
               />
             ))}
           </div>
