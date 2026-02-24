@@ -5,11 +5,14 @@ import {
   Users, MapPin, Calendar, Share2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
 import { useTripRole } from "@/hooks/use-trip-role";
 import { useMemberStatus } from "@/hooks/use-member-status";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { getLocale } from "@/i18n/translations";
+import { formatDisplayName } from "@/lib/formatDisplayName";
 import PendingApproval from "@/components/PendingApproval";
 import MemberApprovalManager from "@/components/MemberApprovalManager";
 
