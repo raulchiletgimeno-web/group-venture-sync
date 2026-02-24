@@ -14,6 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { formatDisplayName } from "@/lib/formatDisplayName";
 
 interface Member {
   user_id: string;
@@ -65,7 +66,7 @@ const Expenses = () => {
       .in("id", userIds);
 
     setMembers(
-      (profiles ?? []).map((p) => ({ user_id: p.id, name: p.name || p.id.slice(0, 8) }))
+      (profiles ?? []).map((p) => ({ user_id: p.id, name: formatDisplayName(p.name, p.id.slice(0, 8)) }))
     );
   };
 
