@@ -333,6 +333,48 @@ export type Database = {
           },
         ]
       }
+      trip_schedule_tickets: {
+        Row: {
+          created_at: string
+          file_path: string
+          id: string
+          schedule_id: string
+          ticket_type: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          file_path: string
+          id?: string
+          schedule_id: string
+          ticket_type?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          file_path?: string
+          id?: string
+          schedule_id?: string
+          ticket_type?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_schedule_tickets_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "trip_schedule"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trip_schedule_tickets_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trip_transport: {
         Row: {
           arrival_datetime: string | null
