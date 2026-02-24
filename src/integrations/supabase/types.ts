@@ -383,6 +383,45 @@ export type Database = {
           },
         ]
       }
+      trip_transport_tickets: {
+        Row: {
+          created_at: string
+          file_path: string
+          id: string
+          transport_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          file_path: string
+          id?: string
+          transport_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          file_path?: string
+          id?: string
+          transport_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_transport_tickets_transport_id_fkey"
+            columns: ["transport_id"]
+            isOneToOne: false
+            referencedRelation: "trip_transport"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trip_transport_tickets_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trips: {
         Row: {
           created_at: string

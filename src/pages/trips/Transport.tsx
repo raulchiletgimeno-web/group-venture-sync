@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { Plane, Plus, Trash2, Pencil, MapPin } from "lucide-react";
+import { Plane, Plus, Trash2, Pencil, MapPin, Ticket } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import TicketManager from "@/components/TicketManager";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -178,13 +179,18 @@ const Transport = () => {
                   {item.notes && <p className="text-xs text-muted-foreground mt-1">{item.notes}</p>}
                 </div>
                 <div className="flex flex-col items-end gap-1 shrink-0">
-                  {((item as any).departure_address || item.departure_location) && (
+                  <div className="flex gap-1">
+                    {((item as any).departure_address || item.departure_location) && (
+                      <Tooltip><TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent((item as any).departure_address || item.departure_location)}`, '_blank')}>
+                          <MapPin className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger><TooltipContent>{t.howToGet}</TooltipContent></Tooltip>
+                    )}
                     <Tooltip><TooltipTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent((item as any).departure_address || item.departure_location)}`, '_blank')}>
-                        <MapPin className="h-4 w-4" />
-                      </Button>
-                    </TooltipTrigger><TooltipContent>{t.howToGet}</TooltipContent></Tooltip>
-                  )}
+                      <span><TicketManager transportId={item.id} tripId={tripId!} isCreator={isCreator} /></span>
+                    </TooltipTrigger><TooltipContent>{t.tickets}</TooltipContent></Tooltip>
+                  </div>
                   {isCreator && (
                     <div className="flex gap-1">
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={() => openEdit(item)}>
