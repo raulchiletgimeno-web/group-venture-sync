@@ -352,18 +352,9 @@ const Expenses = () => {
               </div>
               <div>
                 <Label>{t.paidBy}</Label>
-                <Select value={paidBy} onValueChange={setPaidBy}>
-                  <SelectTrigger>
-                    <SelectValue placeholder={t.selectPayer} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {members.map((m) => (
-                      <SelectItem key={m.user_id} value={m.user_id}>
-                        {m.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <p className="text-sm text-foreground mt-1 p-2 rounded-md bg-muted">
+                  {memberName(user?.id ?? "")}
+                </p>
               </div>
               <div>
                 <Label className="mb-2 block">{t.sharedAmong}</Label>
