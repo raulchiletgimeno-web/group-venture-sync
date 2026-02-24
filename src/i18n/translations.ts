@@ -133,6 +133,15 @@ type TranslationKeys = {
   transportUpdated: string;
   transportAdded: string;
   howToGet: string;
+  tickets: string;
+  manageTickets: string;
+  uploadTicket: string;
+  viewTicket: string;
+  ticketFor: string;
+  ticketUploaded: string;
+  ticketDeleted: string;
+  noTicket: string;
+  selectMember: string;
   flight: string;
   train: string;
   bus: string;
@@ -383,6 +392,15 @@ const translations: Record<Language, TranslationKeys> = {
     transportUpdated: "Transporte actualizado",
     transportAdded: "Transporte añadido",
     howToGet: "Cómo llegar",
+    tickets: "Billetes",
+    manageTickets: "Gestionar billetes",
+    uploadTicket: "Subir billete",
+    viewTicket: "Ver billete",
+    ticketFor: "Billete para",
+    ticketUploaded: "Billete subido correctamente",
+    ticketDeleted: "Billete eliminado",
+    noTicket: "No tienes billete asignado",
+    selectMember: "Seleccionar miembro",
     flight: "Vuelo",
     train: "Tren",
     bus: "Autobús",
@@ -612,6 +630,15 @@ const translations: Record<Language, TranslationKeys> = {
     transportUpdated: "Transport updated",
     transportAdded: "Transport added",
     howToGet: "Get directions",
+    tickets: "Tickets",
+    manageTickets: "Manage tickets",
+    uploadTicket: "Upload ticket",
+    viewTicket: "View ticket",
+    ticketFor: "Ticket for",
+    ticketUploaded: "Ticket uploaded successfully",
+    ticketDeleted: "Ticket deleted",
+    noTicket: "No ticket assigned to you",
+    selectMember: "Select member",
     flight: "Flight",
     train: "Train",
     bus: "Bus",
@@ -841,6 +868,15 @@ const translations: Record<Language, TranslationKeys> = {
     transportUpdated: "Transport mis à jour",
     transportAdded: "Transport ajouté",
     howToGet: "Comment y aller",
+    tickets: "Billets",
+    manageTickets: "Gérer les billets",
+    uploadTicket: "Télécharger un billet",
+    viewTicket: "Voir le billet",
+    ticketFor: "Billet pour",
+    ticketUploaded: "Billet téléchargé avec succès",
+    ticketDeleted: "Billet supprimé",
+    noTicket: "Aucun billet attribué",
+    selectMember: "Sélectionner un membre",
     flight: "Vol",
     train: "Train",
     bus: "Bus",
@@ -1070,6 +1106,15 @@ const translations: Record<Language, TranslationKeys> = {
     transportUpdated: "Transporte atualizado",
     transportAdded: "Transporte adicionado",
     howToGet: "Como chegar",
+    tickets: "Bilhetes",
+    manageTickets: "Gerir bilhetes",
+    uploadTicket: "Carregar bilhete",
+    viewTicket: "Ver bilhete",
+    ticketFor: "Bilhete para",
+    ticketUploaded: "Bilhete carregado com sucesso",
+    ticketDeleted: "Bilhete eliminado",
+    noTicket: "Nenhum bilhete atribuído",
+    selectMember: "Selecionar membro",
     flight: "Voo",
     train: "Comboio",
     bus: "Autocarro",
@@ -1299,6 +1344,15 @@ const translations: Record<Language, TranslationKeys> = {
     transportUpdated: "Trasporto aggiornato",
     transportAdded: "Trasporto aggiunto",
     howToGet: "Come arrivare",
+    tickets: "Biglietti",
+    manageTickets: "Gestisci biglietti",
+    uploadTicket: "Carica biglietto",
+    viewTicket: "Vedi biglietto",
+    ticketFor: "Biglietto per",
+    ticketUploaded: "Biglietto caricato con successo",
+    ticketDeleted: "Biglietto eliminato",
+    noTicket: "Nessun biglietto assegnato",
+    selectMember: "Seleziona membro",
     flight: "Volo",
     train: "Treno",
     bus: "Autobus",
