@@ -8,9 +8,13 @@ type Msg = { role: "user" | "assistant"; content: string };
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/help-chat`;
 
-const HelpChatBot = () => {
+interface HelpChatBotProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+const HelpChatBot = ({ open, onOpenChange }: HelpChatBotProps) => {
   const { t } = useLanguage();
-  const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -90,17 +94,6 @@ const HelpChatBot = () => {
 
   return (
     <>
-      {/* Floating button */}
-      {!open && (
-        <button
-          onClick={() => setOpen(true)}
-          className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full gradient-hero shadow-card-hover flex items-center justify-center transition-transform hover:scale-110 active:scale-95"
-          aria-label={t.helpChatTitle}
-        >
-          <MessageCircleQuestion className="h-7 w-7 text-white" />
-        </button>
-      )}
-
       {/* Chat panel */}
       {open && (
         <div className="fixed bottom-6 right-6 z-50 w-[340px] h-[480px] rounded-2xl bg-card shadow-card-hover border border-border flex flex-col overflow-hidden animate-fade-in">
@@ -110,7 +103,7 @@ const HelpChatBot = () => {
               <Bot className="h-5 w-5 text-primary-foreground" />
               <span className="font-bold text-primary-foreground text-sm">{t.helpChatTitle}</span>
             </div>
-            <button onClick={() => setOpen(false)} className="text-primary-foreground/80 hover:text-primary-foreground">
+            <button onClick={() => onOpenChange(false)} className="text-primary-foreground/80 hover:text-primary-foreground">
               <X className="h-5 w-5" />
             </button>
           </div>
