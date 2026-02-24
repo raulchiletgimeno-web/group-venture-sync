@@ -295,6 +295,15 @@ type TranslationKeys = {
   helpChatWelcome: string;
   helpChatPlaceholder: string;
   helpChatError: string;
+
+  // Member approval
+  pendingApprovalTitle: string;
+  pendingApprovalDesc: string;
+  pendingRequests: string;
+  memberApproved: string;
+  memberRejected: string;
+  joinRequestSent: string;
+  joinRequestSentDesc: string;
 };
 
 const translations: Record<Language, TranslationKeys> = {
@@ -540,6 +549,13 @@ const translations: Record<Language, TranslationKeys> = {
     helpChatWelcome: "¡Hola! 👋 Soy Diego, tu asistente de LORMIT. Pregúntame cómo crear viajes, añadir transportes, gestionar gastos o cualquier duda sobre la app.",
     helpChatPlaceholder: "Escribe tu pregunta...",
     helpChatError: "Lo siento, ha ocurrido un error. Inténtalo de nuevo.",
+    pendingApprovalTitle: "Solicitud pendiente",
+    pendingApprovalDesc: "Tu solicitud para unirte a este viaje está pendiente de aprobación por el creador.",
+    pendingRequests: "Solicitudes pendientes",
+    memberApproved: "Miembro aprobado",
+    memberRejected: "Solicitud rechazada",
+    joinRequestSent: "Solicitud enviada",
+    joinRequestSentDesc: "El creador del viaje debe aprobar tu solicitud.",
   },
 
   en: {
@@ -784,6 +800,13 @@ const translations: Record<Language, TranslationKeys> = {
     helpChatWelcome: "Hi! 👋 I'm Diego, your LORMIT assistant. Ask me how to create trips, add transport, manage expenses, or anything about the app.",
     helpChatPlaceholder: "Type your question...",
     helpChatError: "Sorry, an error occurred. Please try again.",
+    pendingApprovalTitle: "Request pending",
+    pendingApprovalDesc: "Your request to join this trip is pending approval by the creator.",
+    pendingRequests: "Pending requests",
+    memberApproved: "Member approved",
+    memberRejected: "Request rejected",
+    joinRequestSent: "Request sent",
+    joinRequestSentDesc: "The trip creator must approve your request.",
   },
 
   fr: {
@@ -1028,6 +1051,13 @@ const translations: Record<Language, TranslationKeys> = {
     helpChatWelcome: "Bonjour ! 👋 Je suis Diego, votre assistant LORMIT. Demandez-moi comment créer des voyages, ajouter des transports, gérer les dépenses ou toute question sur l'app.",
     helpChatPlaceholder: "Écrivez votre question...",
     helpChatError: "Désolé, une erreur est survenue. Veuillez réessayer.",
+    pendingApprovalTitle: "Demande en attente",
+    pendingApprovalDesc: "Votre demande pour rejoindre ce voyage est en attente d'approbation par le créateur.",
+    pendingRequests: "Demandes en attente",
+    memberApproved: "Membre approuvé",
+    memberRejected: "Demande rejetée",
+    joinRequestSent: "Demande envoyée",
+    joinRequestSentDesc: "Le créateur du voyage doit approuver votre demande.",
   },
 
   pt: {
@@ -1272,6 +1302,13 @@ const translations: Record<Language, TranslationKeys> = {
     helpChatWelcome: "Olá! 👋 Sou o Diego, o seu assistente LORMIT. Pergunte-me como criar viagens, adicionar transportes, gerir despesas ou qualquer dúvida sobre a app.",
     helpChatPlaceholder: "Escreva a sua pergunta...",
     helpChatError: "Desculpe, ocorreu um erro. Tente novamente.",
+    pendingApprovalTitle: "Pedido pendente",
+    pendingApprovalDesc: "O seu pedido para se juntar a esta viagem está pendente de aprovação pelo criador.",
+    pendingRequests: "Pedidos pendentes",
+    memberApproved: "Membro aprovado",
+    memberRejected: "Pedido rejeitado",
+    joinRequestSent: "Pedido enviado",
+    joinRequestSentDesc: "O criador da viagem deve aprovar o seu pedido.",
   },
 
   it: {
@@ -1516,6 +1553,13 @@ const translations: Record<Language, TranslationKeys> = {
     helpChatWelcome: "Ciao! 👋 Sono Diego, il tuo assistente LORMIT. Chiedimi come creare viaggi, aggiungere trasporti, gestire le spese o qualsiasi domanda sull'app.",
     helpChatPlaceholder: "Scrivi la tua domanda...",
     helpChatError: "Mi dispiace, si è verificato un errore. Riprova.",
+    pendingApprovalTitle: "Richiesta in attesa",
+    pendingApprovalDesc: "La tua richiesta di unirti a questo viaggio è in attesa di approvazione dal creatore.",
+    pendingRequests: "Richieste in attesa",
+    memberApproved: "Membro approvato",
+    memberRejected: "Richiesta rifiutata",
+    joinRequestSent: "Richiesta inviata",
+    joinRequestSentDesc: "Il creatore del viaggio deve approvare la tua richiesta.",
   },
 };
 

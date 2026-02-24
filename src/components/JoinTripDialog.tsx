@@ -41,25 +41,36 @@ const JoinTripDialog = ({ open, onOpenChange }: JoinTripDialogProps) => {
 
     const { data: existing } = await supabase
       .from("trip_members")
-      .select("id")
+      .select("id, status")
       .eq("trip_id", trip.id)
       .eq("user_id", user.id)
       .maybeSingle();
 
     if (existing) {
-      toast({ title: t.alreadyMember, description: t.alreadyMemberDesc });
+      if (existing.status === "pending") {
+        toast({ title: t.joinRequestSent, description: t.joinRequestSentDesc });
+      } else {
+        toast({ title: t.alreadyMember, description: t.alreadyMemberDesc });
+      }
     } else {
       const { error } = await supabase.from("trip_members").insert({
         trip_id: trip.id,
         user_id: user.id,
         role: "member",
+        status: "pending",
       });
       if (error) {
         toast({ title: t.error, description: error.message, variant: "destructive" });
         setSubmitting(false);
         return;
       }
-      toast({ title: t.joined, description: t.joinedDesc });
+
+      // Notify creator (fire and forget)
+      supabase.functions.invoke("notify-creator-join", {
+        body: { tripId: trip.id },
+      });
+
+      toast({ title: t.joinRequestSent, description: t.joinRequestSentDesc });
     }
 
     onOpenChange(false);

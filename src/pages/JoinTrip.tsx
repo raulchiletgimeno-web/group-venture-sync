@@ -19,11 +19,17 @@ const JoinTrip = () => {
     const joinTrip = async () => {
       const { data: trip } = await supabase.from("trips").select("id").eq("invite_code", inviteCode.toUpperCase().trim()).single();
       if (!trip) { setError(t.joinErrorInvalid); return; }
-      const { data: existing } = await supabase.from("trip_members").select("id").eq("trip_id", trip.id).eq("user_id", user.id).maybeSingle();
+      const { data: existing } = await supabase.from("trip_members").select("id, status").eq("trip_id", trip.id).eq("user_id", user.id).maybeSingle();
       if (!existing) {
-        const { error: insertError } = await supabase.from("trip_members").insert({ trip_id: trip.id, user_id: user.id, role: "member" });
+        const { error: insertError } = await supabase.from("trip_members").insert({ trip_id: trip.id, user_id: user.id, role: "member", status: "pending" });
         if (insertError) { setError(insertError.message); return; }
-        toast({ title: t.joined, description: t.joinedDesc });
+
+        // Notify creator
+        supabase.functions.invoke("notify-creator-join", {
+          body: { tripId: trip.id },
+        });
+
+        toast({ title: t.joinRequestSent, description: t.joinRequestSentDesc });
       }
       navigate(`/trip/${trip.id}`, { replace: true });
     };
