@@ -38,7 +38,8 @@ const Auth = () => {
         navigate("/");
       }
     } else {
-      if (!name.trim()) {
+      const nameParts = name.trim().split(/\s+/);
+      if (nameParts.length < 2 || nameParts.some(p => p.length === 0)) {
         toast({ title: t.nameRequired, description: t.nameRequiredDesc, variant: "destructive" });
         setSubmitting(false);
         return;
@@ -79,7 +80,7 @@ const Auth = () => {
                 <Label htmlFor="name">{t.name}</Label>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input id="name" placeholder={t.yourName} value={name} onChange={(e) => setName(e.target.value)} className="pl-9" />
+                  <Input id="name" placeholder="Ej: Juan García" value={name} onChange={(e) => setName(e.target.value)} className="pl-9" />
                 </div>
               </div>
             )}
