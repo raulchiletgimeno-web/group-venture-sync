@@ -8,6 +8,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { formatDisplayName } from "@/lib/formatDisplayName";
 
 interface Member {
   user_id: string;
@@ -153,7 +154,7 @@ const ActivityTicketManager = ({ scheduleId, tripId, isCreator }: Props) => {
 
   const memberName = (userId: string) => {
     const m = members.find((m) => m.user_id === userId);
-    return m?.profiles?.name || m?.profiles?.email || userId.slice(0, 8);
+    return formatDisplayName(m?.profiles?.name, m?.profiles?.email || userId.slice(0, 8));
   };
 
   // Non-creator: show ticket icon only if they have a personal or group ticket
@@ -221,7 +222,7 @@ const ActivityTicketManager = ({ scheduleId, tripId, isCreator }: Props) => {
                   <SelectContent>
                     {members.map((m) => (
                       <SelectItem key={m.user_id} value={m.user_id}>
-                        {m.profiles?.name || m.profiles?.email || m.user_id.slice(0, 8)}
+                        {formatDisplayName(m.profiles?.name, m.profiles?.email || m.user_id.slice(0, 8))}
                       </SelectItem>
                     ))}
                   </SelectContent>

@@ -10,6 +10,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { getLocale } from "@/i18n/translations";
 import { useToast } from "@/hooks/use-toast";
+import { formatDisplayName } from "@/lib/formatDisplayName";
 
 interface Message {
   id: string;
@@ -68,7 +69,7 @@ const Chat = () => {
 
   useEffect(() => { scrollRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
 
-  const getMemberName = (userId: string) => members.find((m) => m.user_id === userId)?.name || t.usuario;
+  const getMemberName = (userId: string) => formatDisplayName(members.find((m) => m.user_id === userId)?.name, t.usuario);
   const getInitials = (name: string) => name.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2);
   const getFileUrl = (path: string) => supabase.storage.from("trip-photos").getPublicUrl(path).data.publicUrl;
 

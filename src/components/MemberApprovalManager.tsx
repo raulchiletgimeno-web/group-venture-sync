@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { formatDisplayName } from "@/lib/formatDisplayName";
 
 interface PendingMember {
   id: string;
@@ -119,7 +120,7 @@ const MemberApprovalManager = ({ tripId }: MemberApprovalManagerProps) => {
           >
             <div>
               <p className="text-sm font-medium text-card-foreground">
-                {member.name || member.email || t.usuario}
+                {formatDisplayName(member.name, member.email || t.usuario)}
               </p>
               {member.name && member.email && (
                 <p className="text-xs text-muted-foreground">{member.email}</p>

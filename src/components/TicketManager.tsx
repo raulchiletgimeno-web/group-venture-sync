@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { formatDisplayName } from "@/lib/formatDisplayName";
 
 interface Member {
   user_id: string;
@@ -123,7 +124,7 @@ const TicketManager = ({ transportId, tripId, isCreator }: Props) => {
 
   const memberName = (userId: string) => {
     const m = members.find((m) => m.user_id === userId);
-    return m?.profiles?.name || m?.profiles?.email || userId.slice(0, 8);
+    return formatDisplayName(m?.profiles?.name, m?.profiles?.email || userId.slice(0, 8));
   };
 
   // For non-creator: show ticket button if they have a ticket
@@ -167,7 +168,7 @@ const TicketManager = ({ transportId, tripId, isCreator }: Props) => {
                 <SelectContent>
                   {members.map((m) => (
                     <SelectItem key={m.user_id} value={m.user_id}>
-                      {m.profiles?.name || m.profiles?.email || m.user_id.slice(0, 8)}
+                      {formatDisplayName(m.profiles?.name, m.profiles?.email || m.user_id.slice(0, 8))}
                     </SelectItem>
                   ))}
                 </SelectContent>
