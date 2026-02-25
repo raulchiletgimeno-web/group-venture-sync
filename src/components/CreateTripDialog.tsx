@@ -62,6 +62,7 @@ const CreateTripDialog = ({ open, onOpenChange }: CreateTripDialogProps) => {
       trip_id: trip.id,
       user_id: user.id,
       role: "creator",
+      status: "approved",
     });
 
     toast({ title: t.tripCreated, description: `${t.inviteCode}: ${inviteCode}` });
