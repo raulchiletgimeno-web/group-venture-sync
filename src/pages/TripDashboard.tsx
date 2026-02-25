@@ -2,7 +2,7 @@ import { useParams, Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import {
   Plane, Hotel, Receipt, Camera, MessageCircle, CloudSun, CalendarDays,
-  Users, MapPin, Calendar, Share2, Pencil,
+  Users, MapPin, Calendar, Share2, Pencil, Bell,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -40,6 +40,7 @@ const TripDashboard = () => {
   const [trip, setTrip] = useState<TripData | null>(null);
   const [memberCount, setMemberCount] = useState(0);
   const [membersList, setMembersList] = useState<MemberInfo[]>([]);
+  const [pendingCount, setPendingCount] = useState(0);
 
   const sections = [
     { path: "transport", label: t.transport, icon: Plane, color: "bg-primary/10 text-primary" },
@@ -72,25 +73,47 @@ const TripDashboard = () => {
 
     supabase
       .from("trip_members")
-      .select("user_id, role")
+      .select("user_id, role, status")
       .eq("trip_id", tripId)
-      .eq("status", "approved")
       .then(async ({ data }) => {
         if (!data) return;
-        setMemberCount(data.length);
-        const userIds = data.map((m) => m.user_id);
+        const approved = data.filter((m) => m.status === "approved");
+        setPendingCount(data.filter((m) => m.status === "pending").length);
+        setMemberCount(approved.length);
+        const userIds = approved.map((m) => m.user_id);
         const { data: profiles } = await supabase
           .from("profiles")
           .select("id, name")
           .in("id", userIds);
         setMembersList(
-          data.map((m) => ({
+          approved.map((m) => ({
             user_id: m.user_id,
             name: profiles?.find((p) => p.id === m.user_id)?.name ?? null,
             role: m.role,
           }))
         );
       });
+
+    // Subscribe for pending member changes
+    const memberChannel = supabase
+      .channel(`dashboard-members-${tripId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "trip_members", filter: `trip_id=eq.${tripId}` },
+        async () => {
+          const { data } = await supabase
+            .from("trip_members")
+            .select("user_id, role, status")
+            .eq("trip_id", tripId);
+          if (!data) return;
+          const approved = data.filter((m) => m.status === "approved");
+          setPendingCount(data.filter((m) => m.status === "pending").length);
+          setMemberCount(approved.length);
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(memberChannel); };
   }, [tripId]);
 
   const handleShare = () => {
@@ -141,6 +164,12 @@ const TripDashboard = () => {
                 <button className="flex items-center gap-1.5 mt-1 text-muted-foreground text-sm hover:text-foreground transition-colors cursor-pointer">
                   <Users className="h-3.5 w-3.5" />
                   <span>{memberCount} {memberCount !== 1 ? t.members : t.member}</span>
+                  {isCreator && pendingCount > 0 && (
+                    <span className="inline-flex items-center gap-0.5 ml-1 text-amber-600">
+                      <Bell className="h-3.5 w-3.5 animate-pulse" />
+                      <span className="text-xs font-semibold">{pendingCount}</span>
+                    </span>
+                  )}
                 </button>
               </PopoverTrigger>
               <PopoverContent className="w-56 p-3" align="start">
