@@ -20,6 +20,7 @@ import Photos from "./pages/trips/Photos";
 import Chat from "./pages/trips/Chat";
 import Weather from "./pages/trips/Weather";
 import Schedule from "./pages/trips/Schedule";
+import EmergencyPhones from "./pages/trips/EmergencyPhones";
 
 const queryClient = new QueryClient();
 
@@ -48,6 +49,7 @@ const App = () => (
                 <Route path="chat" element={<Chat />} />
                 <Route path="weather" element={<Weather />} />
                 <Route path="schedule" element={<Schedule />} />
+                <Route path="phones" element={<EmergencyPhones />} />
               </Route>
 
               <Route path="*" element={<NotFound />} />

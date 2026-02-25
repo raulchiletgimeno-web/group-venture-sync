@@ -305,6 +305,19 @@ type TranslationKeys = {
   memberRejected: string;
   joinRequestSent: string;
   joinRequestSentDesc: string;
+
+  // Emergency phones
+  emergencyPhones: string;
+  phoneEmergencies: string;
+  phonePolice: string;
+  phoneLocalPolice: string;
+  phoneAmbulance: string;
+  phoneFire: string;
+  phoneTaxi: string;
+  phoneTourism: string;
+  phoneNonEmergency: string;
+  phonePoison: string;
+  phoneCarabinieri: string;
 };
 
 const translations: Record<Language, TranslationKeys> = {
@@ -558,6 +571,17 @@ const translations: Record<Language, TranslationKeys> = {
     memberRejected: "Solicitud rechazada",
     joinRequestSent: "Solicitud enviada",
     joinRequestSentDesc: "El creador del viaje debe aprobar tu solicitud.",
+    emergencyPhones: "Teléfonos de Interés",
+    phoneEmergencies: "Emergencias",
+    phonePolice: "Policía Nacional",
+    phoneLocalPolice: "Policía Local",
+    phoneAmbulance: "Ambulancia",
+    phoneFire: "Bomberos",
+    phoneTaxi: "Taxi",
+    phoneTourism: "Información turística",
+    phoneNonEmergency: "Urgencias no graves",
+    phonePoison: "Centro de intoxicaciones",
+    phoneCarabinieri: "Carabinieri",
   },
 
   en: {
@@ -810,6 +834,17 @@ const translations: Record<Language, TranslationKeys> = {
     memberRejected: "Request rejected",
     joinRequestSent: "Request sent",
     joinRequestSentDesc: "The trip creator must approve your request.",
+    emergencyPhones: "Emergency Phones",
+    phoneEmergencies: "Emergencies",
+    phonePolice: "Police",
+    phoneLocalPolice: "Local Police",
+    phoneAmbulance: "Ambulance",
+    phoneFire: "Fire Department",
+    phoneTaxi: "Taxi",
+    phoneTourism: "Tourist Information",
+    phoneNonEmergency: "Non-emergency",
+    phonePoison: "Poison Control",
+    phoneCarabinieri: "Carabinieri",
   },
 
   fr: {
@@ -1062,6 +1097,17 @@ const translations: Record<Language, TranslationKeys> = {
     memberRejected: "Demande rejetée",
     joinRequestSent: "Demande envoyée",
     joinRequestSentDesc: "Le créateur du voyage doit approuver votre demande.",
+    emergencyPhones: "Téléphones d'urgence",
+    phoneEmergencies: "Urgences",
+    phonePolice: "Police",
+    phoneLocalPolice: "Police municipale",
+    phoneAmbulance: "Ambulance",
+    phoneFire: "Pompiers",
+    phoneTaxi: "Taxi",
+    phoneTourism: "Office de tourisme",
+    phoneNonEmergency: "Urgences non graves",
+    phonePoison: "Centre antipoison",
+    phoneCarabinieri: "Carabinieri",
   },
 
   pt: {
@@ -1314,6 +1360,17 @@ const translations: Record<Language, TranslationKeys> = {
     memberRejected: "Pedido rejeitado",
     joinRequestSent: "Pedido enviado",
     joinRequestSentDesc: "O criador da viagem deve aprovar o seu pedido.",
+    emergencyPhones: "Telefones de Emergência",
+    phoneEmergencies: "Emergências",
+    phonePolice: "Polícia",
+    phoneLocalPolice: "Polícia Local",
+    phoneAmbulance: "Ambulância",
+    phoneFire: "Bombeiros",
+    phoneTaxi: "Táxi",
+    phoneTourism: "Informação turística",
+    phoneNonEmergency: "Urgências não graves",
+    phonePoison: "Centro de intoxicações",
+    phoneCarabinieri: "Carabinieri",
   },
 
   it: {
@@ -1566,6 +1623,17 @@ const translations: Record<Language, TranslationKeys> = {
     memberRejected: "Richiesta rifiutata",
     joinRequestSent: "Richiesta inviata",
     joinRequestSentDesc: "Il creatore del viaggio deve approvare la tua richiesta.",
+    emergencyPhones: "Telefoni di Emergenza",
+    phoneEmergencies: "Emergenze",
+    phonePolice: "Polizia",
+    phoneLocalPolice: "Polizia Locale",
+    phoneAmbulance: "Ambulanza",
+    phoneFire: "Vigili del Fuoco",
+    phoneTaxi: "Taxi",
+    phoneTourism: "Informazioni turistiche",
+    phoneNonEmergency: "Urgenze non gravi",
+    phonePoison: "Centro antiveleni",
+    phoneCarabinieri: "Carabinieri",
   },
 };
 

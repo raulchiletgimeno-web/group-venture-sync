@@ -2,7 +2,7 @@ import { useParams, Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import {
   Plane, Hotel, Receipt, Camera, MessageCircle, CloudSun, CalendarDays,
-  Users, MapPin, Calendar, Share2, Pencil, Bell,
+  Users, MapPin, Calendar, Share2, Pencil, Bell, Phone,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -50,6 +50,7 @@ const TripDashboard = () => {
     { path: "chat", label: t.chat, icon: MessageCircle, color: "bg-accent/10 text-accent" },
     { path: "weather", label: t.weather, icon: CloudSun, color: "bg-secondary text-secondary-foreground" },
     { path: "schedule", label: t.activities, icon: CalendarDays, color: "bg-primary/10 text-primary" },
+    { path: "phones", label: t.emergencyPhones, icon: Phone, color: "bg-accent/10 text-accent" },
   ];
 
   const statusLabels: Record<string, string> = {
