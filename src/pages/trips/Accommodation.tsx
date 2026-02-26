@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams } from "react-router-dom";
-import { Hotel, Plus, Trash2, Pencil, Globe, MapPin } from "lucide-react";
+import { Hotel, Plus, Trash2, Pencil, Globe, MapPin, Upload, Eye, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,6 +23,7 @@ interface AccommodationItem {
   booking_reference: string | null;
   notes: string | null;
   website: string | null;
+  booking_file_path: string | null;
 }
 
 const Accommodation = () => {
@@ -34,6 +35,10 @@ const Accommodation = () => {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [viewOpen, setViewOpen] = useState(false);
+  const [viewUrl, setViewUrl] = useState("");
+  const [uploading, setUploading] = useState<string | null>(null);
+  const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   const emptyForm = { name: "", address: "", check_in: "", check_out: "", booking_reference: "", notes: "", website: "" };
   const [form, setForm] = useState(emptyForm);
@@ -41,7 +46,7 @@ const Accommodation = () => {
   const fetchItems = async () => {
     if (!tripId) return;
     const { data } = await supabase.from("trip_accommodation").select("*").eq("trip_id", tripId).order("check_in", { ascending: true });
-    setItems(data ?? []);
+    setItems((data as AccommodationItem[] | null) ?? []);
     setLoading(false);
   };
 
@@ -70,6 +75,46 @@ const Accommodation = () => {
   const handleDelete = async (id: string) => { await supabase.from("trip_accommodation").delete().eq("id", id); fetchItems(); };
 
   const formatDate = (d: string) => new Date(d + "T00:00:00").toLocaleDateString(getLocale(language), { day: "numeric", month: "short" });
+
+  const handleFileUpload = async (itemId: string, file: File) => {
+    if (!tripId) return;
+    setUploading(itemId);
+    const ext = file.name.split(".").pop() || "pdf";
+    const filePath = `${tripId}/accommodation/${itemId}.${ext}`;
+
+    // Remove old file if exists
+    const item = items.find(i => i.id === itemId);
+    if (item?.booking_file_path) {
+      await supabase.storage.from("trip-photos").remove([item.booking_file_path]);
+    }
+
+    const { error: uploadError } = await supabase.storage.from("trip-photos").upload(filePath, file, { upsert: true });
+    if (uploadError) { toast({ title: t.error, description: uploadError.message, variant: "destructive" }); setUploading(null); return; }
+
+    const { error: updateError } = await supabase.from("trip_accommodation").update({ booking_file_path: filePath } as any).eq("id", itemId);
+    if (updateError) { toast({ title: t.error, description: updateError.message, variant: "destructive" }); setUploading(null); return; }
+
+    toast({ title: t.bookingDocUploaded });
+    setUploading(null);
+    fetchItems();
+  };
+
+  const handleDeleteFile = async (item: AccommodationItem) => {
+    if (!item.booking_file_path) return;
+    await supabase.storage.from("trip-photos").remove([item.booking_file_path]);
+    await supabase.from("trip_accommodation").update({ booking_file_path: null } as any).eq("id", item.id);
+    toast({ title: t.bookingDocDeleted });
+    fetchItems();
+  };
+
+  const openDocView = (item: AccommodationItem) => {
+    if (!item.booking_file_path) return;
+    const { data } = supabase.storage.from("trip-photos").getPublicUrl(item.booking_file_path);
+    setViewUrl(data.publicUrl);
+    setViewOpen(true);
+  };
+
+  const isImage = (path: string) => /\.(jpg|jpeg|png|gif|webp)$/i.test(path);
 
   if (loading) return <div className="flex justify-center py-10"><div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>;
 
@@ -110,7 +155,7 @@ const Accommodation = () => {
           {items.map((item) => (
             <div key={item.id} className="rounded-xl bg-card p-4 shadow-card">
               <div className="flex items-start justify-between">
-                <div>
+                <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-card-foreground">{item.name}</p>
                   {item.address && <p className="text-xs text-muted-foreground mt-1">{item.address}</p>}
                   <p className="text-xs text-muted-foreground mt-1">{formatDate(item.check_in)} — {formatDate(item.check_out)}</p>
@@ -134,6 +179,48 @@ const Accommodation = () => {
                       </TooltipTrigger><TooltipContent>{t.howToGet}</TooltipContent></Tooltip>
                     )}
                   </div>
+
+                  {/* Booking document buttons */}
+                  <div className="flex gap-1">
+                    {item.booking_file_path ? (
+                      <>
+                        <Tooltip><TooltipTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={() => openDocView(item)}>
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger><TooltipContent>{t.viewBookingDoc}</TooltipContent></Tooltip>
+                        {isCreator && (
+                          <Tooltip><TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDeleteFile(item)}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger><TooltipContent>{t.deleteBookingDoc}</TooltipContent></Tooltip>
+                        )}
+                      </>
+                    ) : isCreator ? (
+                      <>
+                        <input
+                          type="file"
+                          accept="image/*,application/pdf"
+                          className="hidden"
+                          ref={(el) => { fileInputRefs.current[item.id] = el; }}
+                          onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileUpload(item.id, f); e.target.value = ""; }}
+                        />
+                        <Tooltip><TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground"
+                            disabled={uploading === item.id}
+                            onClick={() => fileInputRefs.current[item.id]?.click()}
+                          >
+                            {uploading === item.id ? <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" /> : <Upload className="h-4 w-4" />}
+                          </Button>
+                        </TooltipTrigger><TooltipContent>{t.uploadBookingDoc}</TooltipContent></Tooltip>
+                      </>
+                    ) : null}
+                  </div>
+
                   {isCreator && (
                     <div className="flex gap-1">
                       <Tooltip><TooltipTrigger asChild>
@@ -154,6 +241,20 @@ const Accommodation = () => {
           ))}
         </div>
       )}
+
+      {/* Document preview dialog */}
+      <Dialog open={viewOpen} onOpenChange={setViewOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader><DialogTitle>{t.bookingDocument}</DialogTitle></DialogHeader>
+          {viewUrl && (
+            isImage(viewUrl) ? (
+              <img src={viewUrl} alt={t.bookingDocument} className="w-full rounded-lg" />
+            ) : (
+              <iframe src={viewUrl} className="w-full h-[70vh] rounded-lg border-0" title={t.bookingDocument} />
+            )
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
