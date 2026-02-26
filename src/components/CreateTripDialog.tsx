@@ -23,7 +23,9 @@ interface CreateTripDialogProps {
 
 const CreateTripDialog = ({ open, onOpenChange }: CreateTripDialogProps) => {
   const [title, setTitle] = useState("");
-  const [destination, setDestination] = useState("");
+  const [city, setCity] = useState("");
+  const [province, setProvince] = useState("");
+  const [country, setCountry] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -38,6 +40,7 @@ const CreateTripDialog = ({ open, onOpenChange }: CreateTripDialogProps) => {
     setSubmitting(true);
 
     const inviteCode = generateInviteCode();
+    const destination = [city, province, country].filter(Boolean).join(", ");
 
     const { data: trip, error } = await supabase
       .from("trips")
@@ -68,7 +71,9 @@ const CreateTripDialog = ({ open, onOpenChange }: CreateTripDialogProps) => {
     toast({ title: t.tripCreated, description: `${t.inviteCode}: ${inviteCode}` });
     onOpenChange(false);
     setTitle("");
-    setDestination("");
+    setCity("");
+    setProvince("");
+    setCountry("");
     setStartDate("");
     setEndDate("");
     setSubmitting(false);
@@ -88,8 +93,18 @@ const CreateTripDialog = ({ open, onOpenChange }: CreateTripDialogProps) => {
             <Input id="trip-title" placeholder={t.titlePlaceholder} value={title} onChange={(e) => setTitle(e.target.value)} required />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="trip-dest">{t.destination}</Label>
-            <Input id="trip-dest" placeholder={t.destinationPlaceholder} value={destination} onChange={(e) => setDestination(e.target.value)} required />
+            <Label htmlFor="trip-city">{t.destinationCity}</Label>
+            <Input id="trip-city" placeholder={t.destinationCityPlaceholder} value={city} onChange={(e) => setCity(e.target.value)} required />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="trip-province">{t.destinationProvince}</Label>
+              <Input id="trip-province" placeholder={t.destinationProvincePlaceholder} value={province} onChange={(e) => setProvince(e.target.value)} required />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="trip-country">{t.destinationCountry}</Label>
+              <Input id="trip-country" placeholder={t.destinationCountryPlaceholder} value={country} onChange={(e) => setCountry(e.target.value)} required />
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
