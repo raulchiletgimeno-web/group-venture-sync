@@ -56,10 +56,23 @@ const Weather = () => {
   const fetchWeather = async (dest: string) => {
     try {
       const langCode = language === "pt" ? "pt" : language === "it" ? "it" : language === "fr" ? "fr" : language === "en" ? "en" : "es";
-      const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(dest)}&count=1&language=${langCode}`);
+      // Use only the city name (first part) for geocoding, as Open-Meteo works best with simple names
+      const cityName = dest.split(",")[0].trim();
+      const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(cityName)}&count=5&language=${langCode}`);
       const geoData = await geoRes.json();
       if (!geoData.results?.length) { setError(`${t.locationNotFound} "${dest}".`); setLoading(false); return; }
-      const { latitude, longitude, name } = geoData.results[0];
+      // Try to match by country/admin if available for better accuracy
+      const parts = dest.split(",").map(p => p.trim().toLowerCase());
+      let best = geoData.results[0];
+      if (parts.length > 1) {
+        const matched = geoData.results.find((r: any) => {
+          const admin = (r.admin1 || "").toLowerCase();
+          const country = (r.country || "").toLowerCase();
+          return parts.some(p => admin.includes(p) || country.includes(p));
+        });
+        if (matched) best = matched;
+      }
+      const { latitude, longitude, name } = best;
       setDestination(name);
       const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,wind_speed_10m_max,uv_index_max&timezone=auto&forecast_days=10`);
       const weatherData = await weatherRes.json();
