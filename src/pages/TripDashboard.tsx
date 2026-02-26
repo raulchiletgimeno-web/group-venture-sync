@@ -1,18 +1,24 @@
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import {
   Plane, Hotel, Receipt, Camera, MessageCircle, CloudSun, CalendarDays,
-  Users, MapPin, Calendar, Share2, Pencil, Bell, Phone,
+  Users, MapPin, Calendar, Share2, Pencil, Bell, Phone, Trash2, Check, X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useTripRole } from "@/hooks/use-trip-role";
 import { useMemberStatus } from "@/hooks/use-member-status";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { getLocale } from "@/i18n/translations";
 import { formatDisplayName } from "@/lib/formatDisplayName";
+import { useToast } from "@/hooks/use-toast";
 import PendingApproval from "@/components/PendingApproval";
 import MemberApprovalManager from "@/components/MemberApprovalManager";
 
@@ -34,6 +40,8 @@ interface MemberInfo {
 
 const TripDashboard = () => {
   const { tripId } = useParams();
+  const navigate = useNavigate();
+  const { toast } = useToast();
   const { isCreator } = useTripRole(tripId);
   const { status: memberStatus, loading: statusLoading } = useMemberStatus(tripId);
   const { t, language } = useLanguage();
@@ -41,6 +49,14 @@ const TripDashboard = () => {
   const [memberCount, setMemberCount] = useState(0);
   const [membersList, setMembersList] = useState<MemberInfo[]>([]);
   const [pendingCount, setPendingCount] = useState(0);
+
+  // Edit state
+  const [editing, setEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState("");
+  const [editDestination, setEditDestination] = useState("");
+  const [editStartDate, setEditStartDate] = useState("");
+  const [editEndDate, setEditEndDate] = useState("");
+  const [saving, setSaving] = useState(false);
 
   const sections = [
     { path: "transport", label: t.transport, icon: Plane, color: "bg-primary/10 text-primary" },
@@ -62,7 +78,6 @@ const TripDashboard = () => {
   useEffect(() => {
     if (!tripId) return;
 
-    // Fetch trip info - use a direct query that works for both pending and approved
     supabase
       .from("trips")
       .select("title, destination, start_date, end_date, status, invite_code, created_by")
@@ -95,7 +110,6 @@ const TripDashboard = () => {
         );
       });
 
-    // Subscribe for pending member changes
     const memberChannel = supabase
       .channel(`dashboard-members-${tripId}`)
       .on(
@@ -125,6 +139,50 @@ const TripDashboard = () => {
     window.location.href = whatsappUrl;
   };
 
+  const startEditing = () => {
+    if (!trip) return;
+    setEditTitle(trip.title);
+    setEditDestination(trip.destination);
+    setEditStartDate(trip.start_date);
+    setEditEndDate(trip.end_date);
+    setEditing(true);
+  };
+
+  const cancelEditing = () => setEditing(false);
+
+  const handleSave = async () => {
+    if (!tripId || !trip) return;
+    setSaving(true);
+    const { error } = await supabase
+      .from("trips")
+      .update({
+        title: editTitle,
+        destination: editDestination,
+        start_date: editStartDate,
+        end_date: editEndDate,
+      })
+      .eq("id", tripId);
+    setSaving(false);
+    if (error) {
+      toast({ title: t.error, variant: "destructive" });
+      return;
+    }
+    setTrip({ ...trip, title: editTitle, destination: editDestination, start_date: editStartDate, end_date: editEndDate });
+    setEditing(false);
+    toast({ title: t.tripUpdated });
+  };
+
+  const handleDelete = async () => {
+    if (!tripId) return;
+    const { error } = await supabase.from("trips").delete().eq("id", tripId);
+    if (error) {
+      toast({ title: t.error, variant: "destructive" });
+      return;
+    }
+    toast({ title: t.tripDeleted });
+    navigate("/");
+  };
+
   const formatDate = (d: string) => {
     const date = new Date(d + "T00:00:00");
     return date.toLocaleDateString(getLocale(language), { day: "numeric", month: "short", year: "numeric" });
@@ -138,28 +196,54 @@ const TripDashboard = () => {
     );
   }
 
-  // Show pending approval screen for non-approved members
   if (memberStatus === "pending") {
     return <PendingApproval />;
   }
 
   return (
     <div className="animate-fade-in">
-      {/* Show pending requests to creator */}
       {isCreator && tripId && <MemberApprovalManager tripId={tripId} />}
 
       <div className="rounded-xl bg-card p-5 shadow-card mb-6">
         <div className="flex items-start justify-between">
-          <div>
-            <h2 className="text-xl font-bold text-card-foreground">{trip.title}</h2>
-            <div className="flex items-center gap-1.5 mt-2 text-muted-foreground text-sm">
-              <MapPin className="h-3.5 w-3.5" />
-              <span>{trip.destination}</span>
-            </div>
-            <div className="flex items-center gap-1.5 mt-1 text-muted-foreground text-sm">
-              <Calendar className="h-3.5 w-3.5" />
-              <span>{formatDate(trip.start_date)} — {formatDate(trip.end_date)}</span>
-            </div>
+          <div className="flex-1 min-w-0">
+            {editing ? (
+              <div className="space-y-2">
+                <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} className="text-xl font-bold" />
+                <div className="flex items-center gap-1.5">
+                  <MapPin className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                  <Input value={editDestination} onChange={(e) => setEditDestination(e.target.value)} className="text-sm" />
+                </div>
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                  <Input type="date" value={editStartDate} onChange={(e) => setEditStartDate(e.target.value)} className="text-sm w-auto" />
+                  <span className="text-muted-foreground">—</span>
+                  <Input type="date" value={editEndDate} onChange={(e) => setEditEndDate(e.target.value)} className="text-sm w-auto" />
+                </div>
+                <div className="flex gap-2 pt-1">
+                  <Button size="sm" onClick={handleSave} disabled={saving || !editTitle.trim() || !editDestination.trim()}>
+                    <Check className="h-3.5 w-3.5 mr-1" />
+                    {t.save}
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={cancelEditing}>
+                    <X className="h-3.5 w-3.5 mr-1" />
+                    {t.cancel}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <h2 className="text-xl font-bold text-card-foreground">{trip.title}</h2>
+                <div className="flex items-center gap-1.5 mt-2 text-muted-foreground text-sm">
+                  <MapPin className="h-3.5 w-3.5" />
+                  <span>{trip.destination}</span>
+                </div>
+                <div className="flex items-center gap-1.5 mt-1 text-muted-foreground text-sm">
+                  <Calendar className="h-3.5 w-3.5" />
+                  <span>{formatDate(trip.start_date)} — {formatDate(trip.end_date)}</span>
+                </div>
+              </>
+            )}
             <Popover>
               <PopoverTrigger asChild>
                 <button className="flex items-center gap-1.5 mt-1 text-muted-foreground text-sm hover:text-foreground transition-colors cursor-pointer">
@@ -193,12 +277,19 @@ const TripDashboard = () => {
               </PopoverContent>
             </Popover>
           </div>
-          <span className="gradient-hero text-primary-foreground text-xs font-medium px-2.5 py-1 rounded-full">
-            {statusLabels[trip.status] ?? trip.status}
-          </span>
+          <div className="flex items-center gap-2">
+            {isCreator && !editing && (
+              <button onClick={startEditing} className="p-1.5 rounded-md hover:bg-muted transition-colors" title={t.editTrip}>
+                <Pencil className="h-4 w-4 text-muted-foreground" />
+              </button>
+            )}
+            <span className="gradient-hero text-primary-foreground text-xs font-medium px-2.5 py-1 rounded-full">
+              {statusLabels[trip.status] ?? trip.status}
+            </span>
+          </div>
         </div>
         {isCreator && (
-          <div className="mt-4 flex items-center gap-3">
+          <div className="mt-4 flex items-center gap-3 flex-wrap">
             <Button variant="outline" size="sm" className="text-sm" onClick={handleShare}>
               <Share2 className="h-3.5 w-3.5 mr-1.5" />
               {t.inviteFriends}
@@ -206,6 +297,26 @@ const TripDashboard = () => {
             <span className="inline-flex items-center rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
               {t.code}: {trip.invite_code}
             </span>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" size="sm" className="text-sm ml-auto">
+                  <Trash2 className="h-3.5 w-3.5 mr-1.5" />
+                  {t.deleteTrip}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>{t.deleteTripConfirm}</AlertDialogTitle>
+                  <AlertDialogDescription>{t.deleteTripDesc}</AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>{t.cancel}</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                    {t.deleteTrip}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         )}
       </div>
