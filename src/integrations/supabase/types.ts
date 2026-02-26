@@ -44,6 +44,7 @@ export type Database = {
       trip_accommodation: {
         Row: {
           address: string | null
+          booking_file_path: string | null
           booking_reference: string | null
           check_in: string
           check_out: string
@@ -56,6 +57,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          booking_file_path?: string | null
           booking_reference?: string | null
           check_in: string
           check_out: string
@@ -68,6 +70,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          booking_file_path?: string | null
           booking_reference?: string | null
           check_in?: string
           check_out?: string

@@ -1,0 +1,1 @@
+ALTER TABLE public.trip_accommodation ADD COLUMN booking_file_path text;

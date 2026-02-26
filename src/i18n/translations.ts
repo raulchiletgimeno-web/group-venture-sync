@@ -171,6 +171,12 @@ type TranslationKeys = {
   accommodationUpdated: string;
   accommodationAdded: string;
   web: string;
+  uploadBookingDoc: string;
+  bookingDocUploaded: string;
+  bookingDocDeleted: string;
+  viewBookingDoc: string;
+  bookingDocument: string;
+  deleteBookingDoc: string;
 
   // Expenses
   sharedExpenses: string;
@@ -472,6 +478,12 @@ const translations: Record<Language, TranslationKeys> = {
     accommodationUpdated: "Alojamiento actualizado",
     accommodationAdded: "Alojamiento añadido",
     web: "Web",
+    uploadBookingDoc: "Subir reserva",
+    bookingDocUploaded: "Documento de reserva subido",
+    bookingDocDeleted: "Documento de reserva eliminado",
+    viewBookingDoc: "Ver reserva",
+    bookingDocument: "Documento de reserva",
+    deleteBookingDoc: "Eliminar reserva",
     sharedExpenses: "Gastos Compartidos",
     addExpense: "Añadir gasto",
     editExpense: "Editar gasto",
@@ -748,6 +760,12 @@ const translations: Record<Language, TranslationKeys> = {
     accommodationUpdated: "Accommodation updated",
     accommodationAdded: "Accommodation added",
     web: "Web",
+    uploadBookingDoc: "Upload booking",
+    bookingDocUploaded: "Booking document uploaded",
+    bookingDocDeleted: "Booking document deleted",
+    viewBookingDoc: "View booking",
+    bookingDocument: "Booking document",
+    deleteBookingDoc: "Delete booking",
     sharedExpenses: "Shared Expenses",
     addExpense: "Add expense",
     editExpense: "Edit expense",
@@ -1024,6 +1042,12 @@ const translations: Record<Language, TranslationKeys> = {
     accommodationUpdated: "Hébergement mis à jour",
     accommodationAdded: "Hébergement ajouté",
     web: "Web",
+    uploadBookingDoc: "Télécharger réservation",
+    bookingDocUploaded: "Document de réservation téléchargé",
+    bookingDocDeleted: "Document de réservation supprimé",
+    viewBookingDoc: "Voir réservation",
+    bookingDocument: "Document de réservation",
+    deleteBookingDoc: "Supprimer réservation",
     sharedExpenses: "Dépenses Partagées",
     addExpense: "Ajouter une dépense",
     editExpense: "Modifier la dépense",
@@ -1300,6 +1324,12 @@ const translations: Record<Language, TranslationKeys> = {
     accommodationUpdated: "Alojamento atualizado",
     accommodationAdded: "Alojamento adicionado",
     web: "Web",
+    uploadBookingDoc: "Carregar reserva",
+    bookingDocUploaded: "Documento de reserva carregado",
+    bookingDocDeleted: "Documento de reserva eliminado",
+    viewBookingDoc: "Ver reserva",
+    bookingDocument: "Documento de reserva",
+    deleteBookingDoc: "Eliminar reserva",
     sharedExpenses: "Despesas Partilhadas",
     addExpense: "Adicionar despesa",
     editExpense: "Editar despesa",
@@ -1576,6 +1606,12 @@ const translations: Record<Language, TranslationKeys> = {
     accommodationUpdated: "Alloggio aggiornato",
     accommodationAdded: "Alloggio aggiunto",
     web: "Web",
+    uploadBookingDoc: "Carica prenotazione",
+    bookingDocUploaded: "Documento di prenotazione caricato",
+    bookingDocDeleted: "Documento di prenotazione eliminato",
+    viewBookingDoc: "Vedi prenotazione",
+    bookingDocument: "Documento di prenotazione",
+    deleteBookingDoc: "Elimina prenotazione",
     sharedExpenses: "Spese Condivise",
     addExpense: "Aggiungi spesa",
     editExpense: "Modifica spesa",
