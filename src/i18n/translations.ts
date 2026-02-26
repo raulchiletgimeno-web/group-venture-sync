@@ -318,6 +318,15 @@ type TranslationKeys = {
   phoneNonEmergency: string;
   phonePoison: string;
   phoneCarabinieri: string;
+
+  // Edit / Delete trip
+  editTrip: string;
+  deleteTrip: string;
+  deleteTripConfirm: string;
+  deleteTripDesc: string;
+  tripUpdated: string;
+  tripDeleted: string;
+  cancel: string;
 };
 
 const translations: Record<Language, TranslationKeys> = {
@@ -582,6 +591,13 @@ const translations: Record<Language, TranslationKeys> = {
     phoneNonEmergency: "Urgencias no graves",
     phonePoison: "Centro de intoxicaciones",
     phoneCarabinieri: "Carabinieri",
+    editTrip: "Editar viaje",
+    deleteTrip: "Eliminar viaje",
+    deleteTripConfirm: "¿Eliminar este viaje?",
+    deleteTripDesc: "Esta acción no se puede deshacer. Se eliminarán todos los datos del viaje.",
+    tripUpdated: "Viaje actualizado",
+    tripDeleted: "Viaje eliminado",
+    cancel: "Cancelar",
   },
 
   en: {
@@ -845,6 +861,13 @@ const translations: Record<Language, TranslationKeys> = {
     phoneNonEmergency: "Non-emergency",
     phonePoison: "Poison Control",
     phoneCarabinieri: "Carabinieri",
+    editTrip: "Edit trip",
+    deleteTrip: "Delete trip",
+    deleteTripConfirm: "Delete this trip?",
+    deleteTripDesc: "This action cannot be undone. All trip data will be deleted.",
+    tripUpdated: "Trip updated",
+    tripDeleted: "Trip deleted",
+    cancel: "Cancel",
   },
 
   fr: {
@@ -1108,6 +1131,13 @@ const translations: Record<Language, TranslationKeys> = {
     phoneNonEmergency: "Urgences non graves",
     phonePoison: "Centre antipoison",
     phoneCarabinieri: "Carabinieri",
+    editTrip: "Modifier le voyage",
+    deleteTrip: "Supprimer le voyage",
+    deleteTripConfirm: "Supprimer ce voyage ?",
+    deleteTripDesc: "Cette action est irréversible. Toutes les données du voyage seront supprimées.",
+    tripUpdated: "Voyage mis à jour",
+    tripDeleted: "Voyage supprimé",
+    cancel: "Annuler",
   },
 
   pt: {
@@ -1371,6 +1401,13 @@ const translations: Record<Language, TranslationKeys> = {
     phoneNonEmergency: "Urgências não graves",
     phonePoison: "Centro de intoxicações",
     phoneCarabinieri: "Carabinieri",
+    editTrip: "Editar viagem",
+    deleteTrip: "Eliminar viagem",
+    deleteTripConfirm: "Eliminar esta viagem?",
+    deleteTripDesc: "Esta ação não pode ser desfeita. Todos os dados da viagem serão eliminados.",
+    tripUpdated: "Viagem atualizada",
+    tripDeleted: "Viagem eliminada",
+    cancel: "Cancelar",
   },
 
   it: {
@@ -1634,6 +1671,13 @@ const translations: Record<Language, TranslationKeys> = {
     phoneNonEmergency: "Urgenze non gravi",
     phonePoison: "Centro antiveleni",
     phoneCarabinieri: "Carabinieri",
+    editTrip: "Modifica viaggio",
+    deleteTrip: "Elimina viaggio",
+    deleteTripConfirm: "Eliminare questo viaggio?",
+    deleteTripDesc: "Questa azione non può essere annullata. Tutti i dati del viaggio verranno eliminati.",
+    tripUpdated: "Viaggio aggiornato",
+    tripDeleted: "Viaggio eliminato",
+    cancel: "Annulla",
   },
 };
 
