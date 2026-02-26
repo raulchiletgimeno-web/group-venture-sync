@@ -68,6 +68,12 @@ type TranslationKeys = {
   title: string;
   titlePlaceholder: string;
   destination: string;
+  destinationCity: string;
+  destinationCityPlaceholder: string;
+  destinationProvince: string;
+  destinationProvincePlaceholder: string;
+  destinationCountry: string;
+  destinationCountryPlaceholder: string;
   destinationPlaceholder: string;
   start: string;
   end: string;
@@ -375,6 +381,12 @@ const translations: Record<Language, TranslationKeys> = {
     title: "Título",
     titlePlaceholder: "Ej: Barcelona con amigos",
     destination: "Destino",
+    destinationCity: "Población",
+    destinationCityPlaceholder: "Ej: Almadén de la Plata",
+    destinationProvince: "Provincia",
+    destinationProvincePlaceholder: "Ej: Sevilla",
+    destinationCountry: "País",
+    destinationCountryPlaceholder: "Ej: España",
     destinationPlaceholder: "Ej: Barcelona, España",
     start: "Inicio",
     end: "Fin",
@@ -645,6 +657,12 @@ const translations: Record<Language, TranslationKeys> = {
     title: "Title",
     titlePlaceholder: "E.g.: Barcelona with friends",
     destination: "Destination",
+    destinationCity: "City / Town",
+    destinationCityPlaceholder: "E.g.: Almadén de la Plata",
+    destinationProvince: "Province / State",
+    destinationProvincePlaceholder: "E.g.: Seville",
+    destinationCountry: "Country",
+    destinationCountryPlaceholder: "E.g.: Spain",
     destinationPlaceholder: "E.g.: Barcelona, Spain",
     start: "Start",
     end: "End",
@@ -915,6 +933,12 @@ const translations: Record<Language, TranslationKeys> = {
     title: "Titre",
     titlePlaceholder: "Ex: Barcelone entre amis",
     destination: "Destination",
+    destinationCity: "Ville",
+    destinationCityPlaceholder: "Ex: Almadén de la Plata",
+    destinationProvince: "Province",
+    destinationProvincePlaceholder: "Ex: Séville",
+    destinationCountry: "Pays",
+    destinationCountryPlaceholder: "Ex: Espagne",
     destinationPlaceholder: "Ex: Barcelone, Espagne",
     start: "Début",
     end: "Fin",
@@ -1185,6 +1209,12 @@ const translations: Record<Language, TranslationKeys> = {
     title: "Título",
     titlePlaceholder: "Ex: Barcelona com amigos",
     destination: "Destino",
+    destinationCity: "Cidade",
+    destinationCityPlaceholder: "Ex: Almadén de la Plata",
+    destinationProvince: "Província",
+    destinationProvincePlaceholder: "Ex: Sevilha",
+    destinationCountry: "País",
+    destinationCountryPlaceholder: "Ex: Espanha",
     destinationPlaceholder: "Ex: Barcelona, Espanha",
     start: "Início",
     end: "Fim",
@@ -1455,6 +1485,12 @@ const translations: Record<Language, TranslationKeys> = {
     title: "Titolo",
     titlePlaceholder: "Es: Barcellona con amici",
     destination: "Destinazione",
+    destinationCity: "Città",
+    destinationCityPlaceholder: "Es: Almadén de la Plata",
+    destinationProvince: "Provincia",
+    destinationProvincePlaceholder: "Es: Siviglia",
+    destinationCountry: "Paese",
+    destinationCountryPlaceholder: "Es: Spagna",
     destinationPlaceholder: "Es: Barcellona, Spagna",
     start: "Inizio",
     end: "Fine",
