@@ -136,11 +136,9 @@ const Index = () => {
         <div className="relative px-5 pt-14 pb-10">
           {/* User header */}
           <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-1">
-              <span className="text-xl font-extrabold tracking-wider text-white uppercase">Y</span>
-              <Luggage className="h-6 w-6 text-white" strokeWidth={2.5} />
-              <span className="text-xl font-extrabold tracking-wider text-white uppercase">RMIT</span>
-            </div>
+            <span className="text-xl font-extrabold tracking-wider text-white uppercase inline-flex items-center">
+              Y<Luggage className="h-5 w-5" strokeWidth={2.5} />RMIT
+            </span>
             <div className="flex items-center gap-2">
               {profile?.name && (
                 <span className="text-xs font-medium text-foreground">{t.user}: {profile.name}</span>
