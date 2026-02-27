@@ -138,7 +138,7 @@ const Index = () => {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <Compass className="h-6 w-6 text-primary-foreground" />
-              <span className="text-sm font-semibold tracking-wider text-primary-foreground/80 uppercase">LORMIT</span>
+              <span className="text-sm font-semibold tracking-wider text-primary-foreground/80 uppercase">YORMIT</span>
             </div>
             <div className="flex items-center gap-2">
               {profile?.name && (
