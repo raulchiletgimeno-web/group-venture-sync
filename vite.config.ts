@@ -23,8 +23,8 @@ export default defineConfig(({ mode }) => ({
         globPatterns: ["**/*.{js,css,html,ico,png,svg,jpg,webp,woff,woff2}"],
       },
       manifest: {
-        name: "LORMIT - Organiza viajes en grupo",
-        short_name: "LORMIT",
+        name: "YORMIT - Organiza viajes en grupo",
+        short_name: "YORMIT",
         description: "Organiza viajes en grupo, sin caos.",
         theme_color: "#0ea5e9",
         background_color: "#f0f7fa",

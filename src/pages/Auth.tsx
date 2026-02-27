@@ -64,7 +64,7 @@ const Auth = () => {
         <div className="relative px-5 pt-14 pb-8 text-center">
           <div className="flex items-center justify-center gap-2 mb-2">
             <Compass className="h-6 w-6 text-primary-foreground" />
-            <span className="text-sm font-semibold tracking-wider text-primary-foreground/80 uppercase">LORMIT</span>
+            <span className="text-sm font-semibold tracking-wider text-primary-foreground/80 uppercase">YORMIT</span>
           </div>
           <h1 className="text-2xl font-extrabold text-primary-foreground">
             {mode === "login" ? t.letsGo : t.createAccount}
