@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, UserPlus, Compass, LogOut, MessageCircleQuestion } from "lucide-react";
+import { Plus, UserPlus, LogOut, MessageCircleQuestion, Luggage } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import TripCard from "@/components/TripCard";
 import EmptyState from "@/components/EmptyState";
@@ -136,9 +136,10 @@ const Index = () => {
         <div className="relative px-5 pt-14 pb-10">
           {/* User header */}
           <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <Compass className="h-6 w-6 text-primary-foreground" />
-              <span className="text-sm font-semibold tracking-wider text-primary-foreground/80 uppercase">YORMIT</span>
+            <div className="flex items-center gap-1">
+              <span className="text-xl font-extrabold tracking-wider text-white uppercase">Y</span>
+              <Luggage className="h-6 w-6 text-white" strokeWidth={2.5} />
+              <span className="text-xl font-extrabold tracking-wider text-white uppercase">RMIT</span>
             </div>
             <div className="flex items-center gap-2">
               {profile?.name && (
