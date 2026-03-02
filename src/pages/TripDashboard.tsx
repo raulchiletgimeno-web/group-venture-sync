@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import {
   Plane, Hotel, Receipt, Camera, MessageCircle, CloudSun, CalendarDays,
   Users, MapPin, Calendar, Share2, Pencil, Bell, Phone, Trash2, Check, X,
+  MoreVertical, ShieldCheck, ShieldOff, UserMinus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +13,9 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
 import { useTripRole } from "@/hooks/use-trip-role";
 import { useMemberStatus } from "@/hooks/use-member-status";
@@ -42,7 +46,7 @@ const TripDashboard = () => {
   const { tripId } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { isCreator } = useTripRole(tripId);
+  const { isCreator, isOriginalCreator } = useTripRole(tripId);
   const { status: memberStatus, loading: statusLoading } = useMemberStatus(tripId);
   const { t, language } = useLanguage();
   const [trip, setTrip] = useState<TripData | null>(null);
@@ -183,6 +187,34 @@ const TripDashboard = () => {
     navigate("/");
   };
 
+  const handlePromote = async (userId: string) => {
+    if (!tripId) return;
+    const { error } = await supabase.from("trip_members").update({ role: "co-creator" }).eq("trip_id", tripId).eq("user_id", userId);
+    if (!error) {
+      setMembersList((prev) => prev.map((m) => m.user_id === userId ? { ...m, role: "co-creator" } : m));
+      toast({ title: t.coCreatorAdded });
+    }
+  };
+
+  const handleDemote = async (userId: string) => {
+    if (!tripId) return;
+    const { error } = await supabase.from("trip_members").update({ role: "member" }).eq("trip_id", tripId).eq("user_id", userId);
+    if (!error) {
+      setMembersList((prev) => prev.map((m) => m.user_id === userId ? { ...m, role: "member" } : m));
+      toast({ title: t.coCreatorRemoved });
+    }
+  };
+
+  const handleRemoveMember = async (userId: string) => {
+    if (!tripId) return;
+    const { error } = await supabase.from("trip_members").delete().eq("trip_id", tripId).eq("user_id", userId);
+    if (!error) {
+      setMembersList((prev) => prev.filter((m) => m.user_id !== userId));
+      setMemberCount((c) => c - 1);
+      toast({ title: t.memberRemoved });
+    }
+  };
+
   const formatDate = (d: string) => {
     const date = new Date(d + "T00:00:00");
     return date.toLocaleDateString(getLocale(language), { day: "numeric", month: "short", year: "numeric" });
@@ -267,9 +299,54 @@ const TripDashboard = () => {
                           {formatDisplayName(m.name).split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2)}
                         </AvatarFallback>
                       </Avatar>
-                      <span className="text-sm text-foreground truncate">{formatDisplayName(m.name)}</span>
-                      {m.role === "creator" && (
+                      <span className="text-sm text-foreground truncate flex-1">{formatDisplayName(m.name)}</span>
+                      {(m.role === "creator" || m.role === "co-creator") && (
                         <Pencil className="h-3 w-3 text-primary shrink-0" />
+                      )}
+                      {m.role === "co-creator" && (
+                        <span className="text-[10px] text-muted-foreground">{t.coCreator}</span>
+                      )}
+                      {isOriginalCreator && m.role !== "creator" && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button className="p-0.5 rounded hover:bg-muted transition-colors">
+                              <MoreVertical className="h-3.5 w-3.5 text-muted-foreground" />
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-48">
+                            {m.role === "co-creator" ? (
+                              <DropdownMenuItem onClick={() => handleDemote(m.user_id)}>
+                                <ShieldOff className="h-3.5 w-3.5 mr-2" />
+                                {t.removeCoCreator}
+                              </DropdownMenuItem>
+                            ) : (
+                              <DropdownMenuItem onClick={() => handlePromote(m.user_id)}>
+                                <ShieldCheck className="h-3.5 w-3.5 mr-2" />
+                                {t.makeCoCreator}
+                              </DropdownMenuItem>
+                            )}
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
+                                  <UserMinus className="h-3.5 w-3.5 mr-2" />
+                                  {t.removeMember}
+                                </DropdownMenuItem>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>{t.removeMemberConfirm}</AlertDialogTitle>
+                                  <AlertDialogDescription>{t.removeMemberDesc}</AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>{t.cancel}</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleRemoveMember(m.user_id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                    {t.removeMember}
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       )}
                     </div>
                   ))}

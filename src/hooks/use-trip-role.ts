@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 export function useTripRole(tripId: string | undefined) {
   const [isCreator, setIsCreator] = useState(false);
+  const [isOriginalCreator, setIsOriginalCreator] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -19,12 +20,13 @@ export function useTripRole(tripId: string | undefined) {
         .eq("user_id", user.id)
         .single();
 
-      setIsCreator(data?.role === "creator");
+      setIsCreator(data?.role === "creator" || data?.role === "co-creator");
+      setIsOriginalCreator(data?.role === "creator");
       setLoading(false);
     };
 
     check();
   }, [tripId]);
 
-  return { isCreator, loading };
+  return { isCreator, isOriginalCreator, loading };
 }
