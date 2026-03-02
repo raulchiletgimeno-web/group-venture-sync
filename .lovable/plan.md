@@ -1,68 +1,89 @@
 
-## Plan: Calendario interactivo en la pestaña de Actividades
+
+## Plan: Segundo creador del viaje
 
 ### Resumen
-Al abrir la pestaña de Actividades, en lugar de mostrar directamente la lista de actividades, se mostrara primero un calendario visual con los dias del viaje. Al pulsar en un dia concreto, se desplegaran las actividades programadas para ese dia, ordenadas cronologicamente. Los dias con actividades tendran un indicador visual (punto).
+El creador original podra designar a cualquier miembro aprobado como "co-creador" (segundo creador) desde el popover de miembros. El co-creador tendra exactamente los mismos permisos que el creador original. Tambien se podra eliminar miembros del viaje desde ese mismo popover.
+
+### Enfoque tecnico clave
+
+La solucion mas elegante es modificar la funcion `is_trip_creator` en la base de datos para que reconozca tanto `role = 'creator'` como `role = 'co-creator'`. De esta forma, **todas las politicas RLS existentes** (transporte, alojamiento, actividades, tickets, etc.) funcionaran automaticamente sin necesidad de modificarlas una por una.
 
 ### Cambios necesarios
 
-**Archivo: `src/pages/trips/Schedule.tsx`**
+**1. Migracion de base de datos**
 
-1. **Obtener las fechas del viaje**: Hacer una consulta adicional a la tabla `trips` para obtener `start_date` y `end_date` del viaje actual.
-
-2. **Nuevo estado `selectedDate`**: Inicialmente `null`. Controla si se muestra el calendario (cuando es `null`) o las actividades del dia seleccionado.
-
-3. **Vista calendario (estado inicial)**: 
-   - Mostrar el titulo "Actividades" con el boton "Añadir" del creador.
-   - Renderizar un calendario usando el componente `Calendar` (DayPicker) ya existente en el proyecto.
-   - Configurar el calendario para que solo muestre como seleccionables los dias dentro del rango `start_date` - `end_date` del viaje (los demas dias estaran deshabilitados).
-   - Los dias que tengan actividades programadas mostraran un punto/indicador visual debajo del numero.
-   - Al hacer clic en un dia, se establece `selectedDate` a esa fecha.
-
-4. **Vista actividades del dia (cuando `selectedDate` tiene valor)**:
-   - Mostrar un boton "Volver al calendario" para regresar a la vista de calendario.
-   - Mostrar la fecha seleccionada como encabezado.
-   - Listar las actividades de ese dia ordenadas por hora, con el mismo formato de tarjeta actual.
-   - El boton "Añadir" (para creadores) pre-rellenara el campo de fecha con el dia seleccionado.
-
-### Detalle tecnico
-
-```text
-+---------------------------+
-|  Actividades       [+ Add]|
-+---------------------------+
-|                           |
-|   <<  Abril/Mayo 2025  >> |
-|  Lu Ma Mi Ju Vi Sa Do     |
-|           ...              |
-|  [30] 1  2  3             |
-|   .       .               |  <-- puntos = dias con actividades
-|                           |
-+---------------------------+
-        |  click en "30"
-        v
-+---------------------------+
-|  <- Calendario     [+ Add]|
-|  Mie, 30 Abr              |
-+---------------------------+
-|  09:00 Visita al Prado    |
-|  14:00 Comida en Botin    |
-+---------------------------+
+- Actualizar la funcion `is_trip_creator` para que tambien acepte `role = 'co-creator'`:
+```sql
+CREATE OR REPLACE FUNCTION public.is_trip_creator(p_trip_id uuid)
+RETURNS boolean
+LANGUAGE sql STABLE SECURITY DEFINER
+SET search_path TO 'public'
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.trip_members
+    WHERE trip_id = p_trip_id
+      AND user_id = auth.uid()
+      AND role IN ('creator', 'co-creator')
+  )
+$$;
 ```
 
-**Componentes y dependencias usados:**
-- `Calendar` de `@/components/ui/calendar` (ya existe, usa `react-day-picker`)
-- `date-fns` (ya instalado) para generar el rango de dias y comparaciones
-- `eachDayOfInterval`, `isSameDay`, `parseISO` de `date-fns`
+- Agregar politica RLS para que el creador original pueda cambiar roles de miembros (ya existe la politica "Creator can update members").
 
-**Estilos del calendario:**
-- Se usara CSS personalizado (via `classNames` o `modifiers` de DayPicker) para mostrar un punto debajo de los dias que tengan actividades.
-- Los dias fuera del rango del viaje se deshabilitaran con la prop `disabled`.
+**2. Hook `use-trip-role.ts`**
 
-**Flujo de datos:**
-1. Al montar el componente, se obtienen en paralelo: datos del viaje (fechas) y actividades.
-2. Se calcula un `Set` de fechas con actividades para marcar los dias en el calendario.
-3. Al seleccionar un dia, se filtran las actividades de `items` para ese dia.
+- Modificar para que `isCreator` sea `true` cuando el rol sea `'creator'` o `'co-creator'`.
+- Agregar un nuevo valor `isOriginalCreator` (solo `true` para `role === 'creator'`) para controlar funciones exclusivas del creador original (como designar co-creadores).
 
-**Pre-rellenado de fecha en formulario:**
-- Cuando `selectedDate` esta activo y el creador pulsa "Añadir", el campo `date` del formulario se pre-rellena con la fecha seleccionada (formato `YYYY-MM-DD`).
+**3. Dashboard - Popover de miembros (`TripDashboard.tsx`)**
+
+- Para el creador original (`isOriginalCreator`), junto a cada miembro (excepto el mismo) mostrar un `DropdownMenu` con:
+  - **Nombrar co-creador** / **Quitar co-creador** (toggle segun el rol actual del miembro)
+  - **Eliminar del viaje** (elimina al miembro de `trip_members`)
+- Los co-creadores veran un icono de lapiz similar al creador.
+- Implementar funciones `handlePromote`, `handleDemote` y `handleRemoveMember`.
+
+**4. Traducciones (`translations.ts`)**
+
+Agregar claves nuevas en los 5 idiomas:
+- `makeCoCreator`: "Nombrar co-creador" / "Make co-creator" / ...
+- `removeCoCreator`: "Quitar co-creador" / "Remove co-creator" / ...
+- `removeMember`: "Eliminar del viaje" / "Remove from trip" / ...
+- `coCreatorAdded`: "Co-creador designado"
+- `coCreatorRemoved`: "Co-creador eliminado"
+- `memberRemoved`: "Miembro eliminado"
+- `coCreator`: "Co-creador" (para etiqueta visual)
+
+### Flujo de usuario
+
+```text
+Popover de miembros (vista del creador original):
++--------------------------------------+
+| MIEMBROS                             |
+| [AV] Juan Lopez    (lapiz)           |
+| [AV] Maria Garcia  (lapiz) [...]     |  <-- menu con opciones
+| [AV] Pedro Ruiz           [...]      |
++--------------------------------------+
+        |  click en [...]
+        v
++-------------------------+
+| Nombrar co-creador      |
+| Eliminar del viaje      |
++-------------------------+
+```
+
+### Archivos modificados
+
+1. **Migracion SQL** - Actualizar funcion `is_trip_creator`
+2. **`src/hooks/use-trip-role.ts`** - Devolver `isCreator` y `isOriginalCreator`
+3. **`src/pages/TripDashboard.tsx`** - Dropdown en popover de miembros con acciones de gestion
+4. **`src/i18n/translations.ts`** - Nuevas claves de traduccion
+5. **`src/components/MemberApprovalManager.tsx`** - Usar `isOriginalCreator` si es necesario (el creador original es quien aprueba)
+
+### Notas de seguridad
+
+- Solo el creador original puede designar/quitar co-creadores (controlado en frontend con `isOriginalCreator` y en backend porque solo `role = 'creator'` puede hacer UPDATE en `trip_members` via la politica RLS existente).
+- La funcion `is_trip_creator` con SECURITY DEFINER garantiza que las politicas RLS reconozcan ambos roles sin recursion.
+- El creador original no puede eliminarse a si mismo ni quitarse su propio rol.
+
