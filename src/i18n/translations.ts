@@ -341,6 +341,17 @@ type TranslationKeys = {
   tripUpdated: string;
   tripDeleted: string;
   cancel: string;
+
+  // Co-creator & member management
+  makeCoCreator: string;
+  removeCoCreator: string;
+  removeMember: string;
+  coCreatorAdded: string;
+  coCreatorRemoved: string;
+  memberRemoved: string;
+  coCreator: string;
+  removeMemberConfirm: string;
+  removeMemberDesc: string;
 };
 
 const translations: Record<Language, TranslationKeys> = {
@@ -626,6 +637,15 @@ const translations: Record<Language, TranslationKeys> = {
     tripUpdated: "Viaje actualizado",
     tripDeleted: "Viaje eliminado",
     cancel: "Cancelar",
+    makeCoCreator: "Nombrar co-creador",
+    removeCoCreator: "Quitar co-creador",
+    removeMember: "Eliminar del viaje",
+    coCreatorAdded: "Co-creador designado",
+    coCreatorRemoved: "Co-creador eliminado",
+    memberRemoved: "Miembro eliminado",
+    coCreator: "Co-creador",
+    removeMemberConfirm: "¿Eliminar miembro?",
+    removeMemberDesc: "Este usuario será eliminado del viaje.",
   },
 
   en: {
@@ -910,6 +930,15 @@ const translations: Record<Language, TranslationKeys> = {
     tripUpdated: "Trip updated",
     tripDeleted: "Trip deleted",
     cancel: "Cancel",
+    makeCoCreator: "Make co-creator",
+    removeCoCreator: "Remove co-creator",
+    removeMember: "Remove from trip",
+    coCreatorAdded: "Co-creator assigned",
+    coCreatorRemoved: "Co-creator removed",
+    memberRemoved: "Member removed",
+    coCreator: "Co-creator",
+    removeMemberConfirm: "Remove member?",
+    removeMemberDesc: "This user will be removed from the trip.",
   },
 
   fr: {
@@ -1194,6 +1223,15 @@ const translations: Record<Language, TranslationKeys> = {
     tripUpdated: "Voyage mis à jour",
     tripDeleted: "Voyage supprimé",
     cancel: "Annuler",
+    makeCoCreator: "Nommer co-créateur",
+    removeCoCreator: "Retirer co-créateur",
+    removeMember: "Retirer du voyage",
+    coCreatorAdded: "Co-créateur désigné",
+    coCreatorRemoved: "Co-créateur retiré",
+    memberRemoved: "Membre retiré",
+    coCreator: "Co-créateur",
+    removeMemberConfirm: "Retirer le membre ?",
+    removeMemberDesc: "Cet utilisateur sera retiré du voyage.",
   },
 
   pt: {
@@ -1478,6 +1516,15 @@ const translations: Record<Language, TranslationKeys> = {
     tripUpdated: "Viagem atualizada",
     tripDeleted: "Viagem eliminada",
     cancel: "Cancelar",
+    makeCoCreator: "Nomear co-criador",
+    removeCoCreator: "Remover co-criador",
+    removeMember: "Remover da viagem",
+    coCreatorAdded: "Co-criador designado",
+    coCreatorRemoved: "Co-criador removido",
+    memberRemoved: "Membro removido",
+    coCreator: "Co-criador",
+    removeMemberConfirm: "Remover membro?",
+    removeMemberDesc: "Este utilizador será removido da viagem.",
   },
 
   it: {
@@ -1762,6 +1809,15 @@ const translations: Record<Language, TranslationKeys> = {
     tripUpdated: "Viaggio aggiornato",
     tripDeleted: "Viaggio eliminato",
     cancel: "Annulla",
+    makeCoCreator: "Nominare co-creatore",
+    removeCoCreator: "Rimuovere co-creatore",
+    removeMember: "Rimuovere dal viaggio",
+    coCreatorAdded: "Co-creatore designato",
+    coCreatorRemoved: "Co-creatore rimosso",
+    memberRemoved: "Membro rimosso",
+    coCreator: "Co-creatore",
+    removeMemberConfirm: "Rimuovere membro?",
+    removeMemberDesc: "Questo utente verrà rimosso dal viaggio.",
   },
 };
 
