@@ -1,47 +1,68 @@
 
-
-## Adjuntar documento de reserva en alojamientos
+## Plan: Calendario interactivo en la pestaña de Actividades
 
 ### Resumen
-Permitir al creador del viaje adjuntar un documento de reserva (PDF o imagen) a cada alojamiento. Los miembros podran ver el documento pero no editarlo ni eliminarlo.
+Al abrir la pestaña de Actividades, en lugar de mostrar directamente la lista de actividades, se mostrara primero un calendario visual con los dias del viaje. Al pulsar en un dia concreto, se desplegaran las actividades programadas para ese dia, ordenadas cronologicamente. Los dias con actividades tendran un indicador visual (punto).
 
-### Enfoque
-La funcionalidad es mas simple que la de billetes de transporte (que son nominales por miembro). Aqui es un unico documento por alojamiento, similar a un "recibo". Se usara una columna `booking_file_path` directamente en la tabla `trip_accommodation`, sin necesidad de crear una tabla nueva.
+### Cambios necesarios
 
-### Pasos
+**Archivo: `src/pages/trips/Schedule.tsx`**
 
-**1. Migracion de base de datos**
-- Agregar columna `booking_file_path` (text, nullable) a la tabla `trip_accommodation`.
-- No se necesitan nuevas tablas ni politicas RLS adicionales, ya que las politicas existentes cubren que solo el creador puede insertar/actualizar/eliminar alojamientos, y los miembros pueden ver.
+1. **Obtener las fechas del viaje**: Hacer una consulta adicional a la tabla `trips` para obtener `start_date` y `end_date` del viaje actual.
 
-**2. Traducciones**
-- Agregar claves para los 5 idiomas:
-  - `uploadBookingDoc`: "Subir reserva" / "Upload booking" / ...
-  - `bookingDocUploaded`: "Documento de reserva subido" / ...
-  - `bookingDocDeleted`: "Documento de reserva eliminado" / ...
-  - `viewBookingDoc`: "Ver reserva" / ...
-  - `bookingDocument`: "Documento de reserva" / ...
+2. **Nuevo estado `selectedDate`**: Inicialmente `null`. Controla si se muestra el calendario (cuando es `null`) o las actividades del dia seleccionado.
 
-**3. Modificar Accommodation.tsx**
-- Importar iconos `Upload`, `Eye`, `FileText`.
-- Para cada tarjeta de alojamiento:
-  - **Creador**: Mostrar boton para subir documento (si no existe) o botones para ver/eliminar (si existe). La subida usa el bucket `trip-photos` con ruta `{tripId}/accommodation/{accommodationId}.{ext}`.
-  - **Miembro**: Mostrar boton para ver el documento (si existe). Sin opciones de editar/eliminar.
-- Agregar un Dialog para previsualizar el documento (imagen o PDF en iframe), reutilizando el patron del TicketManager.
-- Funciones: `handleFileUpload` (sube archivo y actualiza `booking_file_path`), `handleDeleteFile` (elimina archivo de storage y pone `booking_file_path` a null), `openDocView` (obtiene URL publica y abre dialog).
+3. **Vista calendario (estado inicial)**: 
+   - Mostrar el titulo "Actividades" con el boton "Añadir" del creador.
+   - Renderizar un calendario usando el componente `Calendar` (DayPicker) ya existente en el proyecto.
+   - Configurar el calendario para que solo muestre como seleccionables los dias dentro del rango `start_date` - `end_date` del viaje (los demas dias estaran deshabilitados).
+   - Los dias que tengan actividades programadas mostraran un punto/indicador visual debajo del numero.
+   - Al hacer clic en un dia, se establece `selectedDate` a esa fecha.
 
-### Detalles tecnicos
+4. **Vista actividades del dia (cuando `selectedDate` tiene valor)**:
+   - Mostrar un boton "Volver al calendario" para regresar a la vista de calendario.
+   - Mostrar la fecha seleccionada como encabezado.
+   - Listar las actividades de ese dia ordenadas por hora, con el mismo formato de tarjeta actual.
+   - El boton "Añadir" (para creadores) pre-rellenara el campo de fecha con el dia seleccionado.
+
+### Detalle tecnico
 
 ```text
-trip_accommodation
-+---------------------+
-| ... columnas existentes ...
-| booking_file_path   | text, nullable, nuevo
-+---------------------+
++---------------------------+
+|  Actividades       [+ Add]|
++---------------------------+
+|                           |
+|   <<  Abril/Mayo 2025  >> |
+|  Lu Ma Mi Ju Vi Sa Do     |
+|           ...              |
+|  [30] 1  2  3             |
+|   .       .               |  <-- puntos = dias con actividades
+|                           |
++---------------------------+
+        |  click en "30"
+        v
++---------------------------+
+|  <- Calendario     [+ Add]|
+|  Mie, 30 Abr              |
++---------------------------+
+|  09:00 Visita al Prado    |
+|  14:00 Comida en Botin    |
++---------------------------+
 ```
 
-- Ruta de almacenamiento: `{tripId}/accommodation/{accommodationId}.{extension}`
-- Bucket: `trip-photos` (existente, publico)
-- RLS: Las politicas existentes ya protegen correctamente (creator = CRUD, member = SELECT)
-- El `booking_file_path` se actualiza via UPDATE en `trip_accommodation`, cubierto por la politica "Creator can update accommodation"
+**Componentes y dependencias usados:**
+- `Calendar` de `@/components/ui/calendar` (ya existe, usa `react-day-picker`)
+- `date-fns` (ya instalado) para generar el rango de dias y comparaciones
+- `eachDayOfInterval`, `isSameDay`, `parseISO` de `date-fns`
 
+**Estilos del calendario:**
+- Se usara CSS personalizado (via `classNames` o `modifiers` de DayPicker) para mostrar un punto debajo de los dias que tengan actividades.
+- Los dias fuera del rango del viaje se deshabilitaran con la prop `disabled`.
+
+**Flujo de datos:**
+1. Al montar el componente, se obtienen en paralelo: datos del viaje (fechas) y actividades.
+2. Se calcula un `Set` de fechas con actividades para marcar los dias en el calendario.
+3. Al seleccionar un dia, se filtran las actividades de `items` para ese dia.
+
+**Pre-rellenado de fecha en formulario:**
+- Cuando `selectedDate` esta activo y el creador pulsa "Añadir", el campo `date` del formulario se pre-rellena con la fecha seleccionada (formato `YYYY-MM-DD`).
