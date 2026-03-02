@@ -283,6 +283,8 @@ type TranslationKeys = {
   noActivitiesTitle: string;
   noActivitiesDescCreator: string;
   noActivitiesDescMember: string;
+  backToCalendar: string;
+  noActivitiesDay: string;
   activityUpdated: string;
   activityAdded: string;
   groupTicket: string;
@@ -580,6 +582,8 @@ const translations: Record<Language, TranslationKeys> = {
     noActivitiesTitle: "Sin actividades planificadas",
     noActivitiesDescCreator: "Organiza el itinerario día a día con actividades y horarios.",
     noActivitiesDescMember: "El administrador del viaje aún no ha planificado actividades.",
+    backToCalendar: "Calendario",
+    noActivitiesDay: "No hay actividades este día",
     activityUpdated: "Actividad actualizada",
     activityAdded: "Actividad añadida",
     groupTicket: "Grupal",
@@ -862,6 +866,8 @@ const translations: Record<Language, TranslationKeys> = {
     noActivitiesTitle: "No planned activities",
     noActivitiesDescCreator: "Plan the day-by-day itinerary with activities and schedules.",
     noActivitiesDescMember: "The trip admin hasn't planned activities yet.",
+    backToCalendar: "Calendar",
+    noActivitiesDay: "No activities this day",
     activityUpdated: "Activity updated",
     activityAdded: "Activity added",
     groupTicket: "Group",
@@ -1144,6 +1150,8 @@ const translations: Record<Language, TranslationKeys> = {
     noActivitiesTitle: "Aucune activité planifiée",
     noActivitiesDescCreator: "Organisez l'itinéraire jour par jour avec des activités et des horaires.",
     noActivitiesDescMember: "L'administrateur du voyage n'a pas encore planifié d'activités.",
+    backToCalendar: "Calendrier",
+    noActivitiesDay: "Aucune activité ce jour",
     activityUpdated: "Activité mise à jour",
     activityAdded: "Activité ajoutée",
     groupTicket: "Groupe",
@@ -1426,6 +1434,8 @@ const translations: Record<Language, TranslationKeys> = {
     noActivitiesTitle: "Sem atividades planeadas",
     noActivitiesDescCreator: "Organize o itinerário dia a dia com atividades e horários.",
     noActivitiesDescMember: "O administrador da viagem ainda não planeou atividades.",
+    backToCalendar: "Calendário",
+    noActivitiesDay: "Sem atividades neste dia",
     activityUpdated: "Atividade atualizada",
     activityAdded: "Atividade adicionada",
     groupTicket: "Grupo",
@@ -1708,6 +1718,8 @@ const translations: Record<Language, TranslationKeys> = {
     noActivitiesTitle: "Nessuna attività pianificata",
     noActivitiesDescCreator: "Organizza l'itinerario giorno per giorno con attività e orari.",
     noActivitiesDescMember: "L'amministratore del viaggio non ha ancora pianificato attività.",
+    backToCalendar: "Calendario",
+    noActivitiesDay: "Nessuna attività in questo giorno",
     activityUpdated: "Attività aggiornata",
     activityAdded: "Attività aggiunta",
     groupTicket: "Gruppo",
