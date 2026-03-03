@@ -1,22 +1,27 @@
 
 
-## Plan: Logo YORMIT consistente y mas grande en la pagina Auth
+## Plan: Añadir idioma chino (中文)
 
-### Cambio
+### Cambios necesarios
 
-En `src/pages/Auth.tsx` (lineas 65-68), reemplazar el icono `Compass` + texto "YORMIT" por el mismo logo usado en la pagina principal (Index.tsx): el texto "YORMIT" donde la O es el icono `Luggage`, mas grande y en blanco.
+**1. `src/i18n/translations.ts`**
 
-### Detalle
+- Ampliar el tipo `Language` para incluir `"zh"`: `export type Language = "es" | "en" | "fr" | "pt" | "it" | "zh";`
+- Añadir la bandera de China en `languageFlags`: `zh: "https://flagsapi.com/CN/flat/64.png"`
+- Añadir el nombre en `languageNames`: `zh: "中文"`
+- Añadir el locale en `getLocale`: `zh: "zh-CN"`
+- Añadir un bloque completo `zh: { ... }` en el objeto `translations` con todas las ~290 claves traducidas al chino mandarín simplificado.
 
-**Archivo: `src/pages/Auth.tsx`**
+**2. `src/pages/Index.tsx`**
 
-- Eliminar la importacion de `Compass` (ya no se usa).
-- Importar `Luggage` de `lucide-react`.
-- Reemplazar el bloque del logo (lineas 65-68) por:
+- Añadir `"zh"` al array `flagLanguages` (después de `"it"`):
   ```tsx
-  <span className="text-4xl font-extrabold tracking-wider text-white uppercase inline-flex items-center">
-    Y<Luggage className="h-8 w-8" strokeWidth={2.5} />RMIT
-  </span>
+  const flagLanguages: Language[] = ["es", "en", "fr", "pt", "it", "zh"];
   ```
-  Esto usa `text-4xl` y `h-8 w-8` para el icono, haciendolo mas grande y prominente que el logo en Index (`text-xl` / `h-5 w-5`), manteniendo el color blanco.
+
+### Notas
+
+- El bloque de traducciones chino contendrá todas las claves existentes traducidas al chino mandarín simplificado.
+- La bandera usará el código `CN` de flagsapi.
+- No se requieren cambios en base de datos ni en otros componentes; el sistema de idiomas ya es extensible.
 
