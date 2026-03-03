@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Compass, Mail, Lock, User, Eye, EyeOff } from "lucide-react";
+import { Luggage, Mail, Lock, User, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -62,10 +62,9 @@ const Auth = () => {
           <div className="absolute inset-0 gradient-hero opacity-80" />
         </div>
         <div className="relative px-5 pt-14 pb-8 text-center">
-          <div className="flex items-center justify-center gap-2 mb-2">
-            <Compass className="h-6 w-6 text-primary-foreground" />
-            <span className="text-sm font-semibold tracking-wider text-primary-foreground/80 uppercase">YORMIT</span>
-          </div>
+          <span className="text-4xl font-extrabold tracking-wider text-white uppercase inline-flex items-center">
+            Y<Luggage className="h-8 w-8" strokeWidth={2.5} />RMIT
+          </span>
           <h1 className="text-2xl font-extrabold text-primary-foreground">
             {mode === "login" ? t.letsGo : t.createAccount}
           </h1>
