@@ -123,7 +123,7 @@ const Index = () => {
     translateTitles();
   }, [language, trips]);
 
-  const flagLanguages: Language[] = ["es", "en", "fr", "pt", "it", "zh"];
+  const flagLanguages: Language[] = ["es", "en", "fr", "pt", "it", "zh", "de"];
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[hsl(175_45%_75%)] via-[hsl(190_35%_85%)] to-background">
