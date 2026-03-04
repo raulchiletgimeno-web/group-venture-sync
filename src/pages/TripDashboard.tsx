@@ -190,19 +190,23 @@ const TripDashboard = () => {
   const handlePromote = async (userId: string) => {
     if (!tripId) return;
     const { error } = await supabase.from("trip_members").update({ role: "co-creator" }).eq("trip_id", tripId).eq("user_id", userId);
-    if (!error) {
-      setMembersList((prev) => prev.map((m) => m.user_id === userId ? { ...m, role: "co-creator" } : m));
-      toast({ title: t.coCreatorAdded });
+    if (error) {
+      toast({ title: t.error, variant: "destructive" });
+      return;
     }
+    setMembersList((prev) => prev.map((m) => m.user_id === userId ? { ...m, role: "co-creator" } : m));
+    toast({ title: t.coCreatorAdded });
   };
 
   const handleDemote = async (userId: string) => {
     if (!tripId) return;
     const { error } = await supabase.from("trip_members").update({ role: "member" }).eq("trip_id", tripId).eq("user_id", userId);
-    if (!error) {
-      setMembersList((prev) => prev.map((m) => m.user_id === userId ? { ...m, role: "member" } : m));
-      toast({ title: t.coCreatorRemoved });
+    if (error) {
+      toast({ title: t.error, variant: "destructive" });
+      return;
     }
+    setMembersList((prev) => prev.map((m) => m.user_id === userId ? { ...m, role: "member" } : m));
+    toast({ title: t.coCreatorRemoved });
   };
 
   const handleRemoveMember = async (userId: string) => {
@@ -315,15 +319,47 @@ const TripDashboard = () => {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-48">
                             {m.role === "co-creator" ? (
-                              <DropdownMenuItem onClick={() => handleDemote(m.user_id)}>
-                                <ShieldOff className="h-3.5 w-3.5 mr-2" />
-                                {t.removeCoCreator}
-                              </DropdownMenuItem>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                    <ShieldOff className="h-3.5 w-3.5 mr-2" />
+                                    {t.removeCoCreator}
+                                  </DropdownMenuItem>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>{t.confirmRemoveCoCreator}</AlertDialogTitle>
+                                    <AlertDialogDescription>{t.confirmRemoveCoCreatorDesc}</AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>{t.cancel}</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDemote(m.user_id)}>
+                                      {t.removeCoCreator}
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
                             ) : (
-                              <DropdownMenuItem onClick={() => handlePromote(m.user_id)}>
-                                <ShieldCheck className="h-3.5 w-3.5 mr-2" />
-                                {t.makeCoCreator}
-                              </DropdownMenuItem>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                    <ShieldCheck className="h-3.5 w-3.5 mr-2" />
+                                    {t.makeCoCreator}
+                                  </DropdownMenuItem>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>{t.confirmMakeCoCreator}</AlertDialogTitle>
+                                    <AlertDialogDescription>{t.confirmMakeCoCreatorDesc}</AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>{t.cancel}</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handlePromote(m.user_id)}>
+                                      {t.makeCoCreator}
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
                             )}
                             <AlertDialog>
                               <AlertDialogTrigger asChild>

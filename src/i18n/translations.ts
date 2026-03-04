@@ -356,6 +356,10 @@ type TranslationKeys = {
   coCreator: string;
   removeMemberConfirm: string;
   removeMemberDesc: string;
+  confirmMakeCoCreator: string;
+  confirmMakeCoCreatorDesc: string;
+  confirmRemoveCoCreator: string;
+  confirmRemoveCoCreatorDesc: string;
 };
 
 const translations: Record<Language, TranslationKeys> = {
@@ -650,6 +654,10 @@ const translations: Record<Language, TranslationKeys> = {
     coCreator: "Co-creador",
     removeMemberConfirm: "¿Eliminar miembro?",
     removeMemberDesc: "Este usuario será eliminado del viaje.",
+    confirmMakeCoCreator: "¿Nombrar co-creador?",
+    confirmMakeCoCreatorDesc: "Este usuario podrá editar y gestionar todos los detalles del viaje.",
+    confirmRemoveCoCreator: "¿Quitar co-creador?",
+    confirmRemoveCoCreatorDesc: "Este usuario perderá los permisos de edición del viaje.",
   },
 
   en: {
@@ -943,6 +951,10 @@ const translations: Record<Language, TranslationKeys> = {
     coCreator: "Co-creator",
     removeMemberConfirm: "Remove member?",
     removeMemberDesc: "This user will be removed from the trip.",
+    confirmMakeCoCreator: "Make co-creator?",
+    confirmMakeCoCreatorDesc: "This user will be able to edit and manage all trip details.",
+    confirmRemoveCoCreator: "Remove co-creator?",
+    confirmRemoveCoCreatorDesc: "This user will lose editing permissions for the trip.",
   },
 
   fr: {
@@ -1236,6 +1248,10 @@ const translations: Record<Language, TranslationKeys> = {
     coCreator: "Co-créateur",
     removeMemberConfirm: "Retirer le membre ?",
     removeMemberDesc: "Cet utilisateur sera retiré du voyage.",
+    confirmMakeCoCreator: "Nommer co-créateur ?",
+    confirmMakeCoCreatorDesc: "Cet utilisateur pourra modifier et gérer tous les détails du voyage.",
+    confirmRemoveCoCreator: "Retirer co-créateur ?",
+    confirmRemoveCoCreatorDesc: "Cet utilisateur perdra les permissions de modification du voyage.",
   },
 
   pt: {
@@ -1529,6 +1545,10 @@ const translations: Record<Language, TranslationKeys> = {
     coCreator: "Co-criador",
     removeMemberConfirm: "Remover membro?",
     removeMemberDesc: "Este utilizador será removido da viagem.",
+    confirmMakeCoCreator: "Nomear co-criador?",
+    confirmMakeCoCreatorDesc: "Este utilizador poderá editar e gerir todos os detalhes da viagem.",
+    confirmRemoveCoCreator: "Remover co-criador?",
+    confirmRemoveCoCreatorDesc: "Este utilizador perderá as permissões de edição da viagem.",
   },
 
   it: {
@@ -1822,6 +1842,10 @@ const translations: Record<Language, TranslationKeys> = {
     coCreator: "Co-creatore",
     removeMemberConfirm: "Rimuovere membro?",
     removeMemberDesc: "Questo utente verrà rimosso dal viaggio.",
+    confirmMakeCoCreator: "Nominare co-creatore?",
+    confirmMakeCoCreatorDesc: "Questo utente potrà modificare e gestire tutti i dettagli del viaggio.",
+    confirmRemoveCoCreator: "Rimuovere co-creatore?",
+    confirmRemoveCoCreatorDesc: "Questo utente perderà i permessi di modifica del viaggio.",
   },
 
   zh: {
@@ -2115,6 +2139,10 @@ const translations: Record<Language, TranslationKeys> = {
     coCreator: "共同创建者",
     removeMemberConfirm: "移除成员？",
     removeMemberDesc: "该用户将从旅行中移除。",
+    confirmMakeCoCreator: "指定为共同创建者？",
+    confirmMakeCoCreatorDesc: "该用户将能够编辑和管理旅行的所有详情。",
+    confirmRemoveCoCreator: "移除共同创建者？",
+    confirmRemoveCoCreatorDesc: "该用户将失去旅行的编辑权限。",
   },
 
   de: {
@@ -2408,6 +2436,10 @@ const translations: Record<Language, TranslationKeys> = {
     coCreator: "Co-Ersteller",
     removeMemberConfirm: "Mitglied entfernen?",
     removeMemberDesc: "Dieser Benutzer wird von der Reise entfernt.",
+    confirmMakeCoCreator: "Zum Co-Ersteller ernennen?",
+    confirmMakeCoCreatorDesc: "Dieser Benutzer kann alle Reisedetails bearbeiten und verwalten.",
+    confirmRemoveCoCreator: "Co-Ersteller entfernen?",
+    confirmRemoveCoCreatorDesc: "Dieser Benutzer verliert die Bearbeitungsrechte für die Reise.",
   },
 };
 
