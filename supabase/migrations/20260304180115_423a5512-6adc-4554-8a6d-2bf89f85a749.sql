@@ -1,0 +1,2 @@
+ALTER TABLE public.trip_members DROP CONSTRAINT trip_members_role_check;
+ALTER TABLE public.trip_members ADD CONSTRAINT trip_members_role_check CHECK (role = ANY (ARRAY['creator'::text, 'co-creator'::text, 'member'::text]));
