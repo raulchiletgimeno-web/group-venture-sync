@@ -815,6 +815,7 @@ const translations: Record<Language, TranslationKeys> = {
     sharedAmong: "Shared among",
     ticketPhoto: "Receipt photo",
     takePhoto: "Take photo",
+    viewReceipt: "View receipt",
     noExpensesTitle: "No expenses recorded",
     noExpensesDesc: "Record expenses and easily split bills among trip members.",
     balances: "Balances",
