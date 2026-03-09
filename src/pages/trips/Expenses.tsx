@@ -157,7 +157,7 @@ const Expenses = () => {
   const uploadReceipt = async (expenseId: string): Promise<string | null> => {
     if (!receiptFile || !tripId) return existingReceiptPath;
     const ext = receiptFile.name.split(".").pop() ?? "jpg";
-    const path = `receipts/${tripId}/${expenseId}.${ext}`;
+    const path = `${tripId}/receipts/${expenseId}.${ext}`;
     const { error } = await supabase.storage.from("trip-photos").upload(path, receiptFile, { upsert: true });
     if (error) {
       toast({ title: t.errorUploading, description: error.message, variant: "destructive" });
@@ -511,12 +511,14 @@ const Expenses = () => {
                         {(exp.amount / (exp.splits.length || 1)).toFixed(2)} € / {t.perPerson}
                       </p>
                       {exp.receipt_path && (
-                        <img
-                          src={getReceiptUrl(exp.receipt_path)}
-                          alt="Ticket"
-                          className="mt-2 h-16 w-16 rounded-lg object-cover border border-border cursor-pointer"
+                        <button
+                          type="button"
                           onClick={() => window.open(getReceiptUrl(exp.receipt_path!), '_blank')}
-                        />
+                          className="mt-2 inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
+                        >
+                          <ImageIcon className="h-4 w-4" />
+                          {t.viewReceipt}
+                        </button>
                       )}
                     </div>
                     {(exp.paid_by === user?.id) && (

@@ -194,6 +194,7 @@ type TranslationKeys = {
   sharedAmong: string;
   ticketPhoto: string;
   takePhoto: string;
+  viewReceipt: string;
   noExpensesTitle: string;
   noExpensesDesc: string;
   balances: string;
@@ -516,6 +517,7 @@ const translations: Record<Language, TranslationKeys> = {
     sharedAmong: "Compartido entre",
     ticketPhoto: "Foto del ticket",
     takePhoto: "Hacer foto",
+    viewReceipt: "Ver ticket",
     noExpensesTitle: "Sin gastos registrados",
     noExpensesDesc: "Registra gastos y divide cuentas fácilmente entre los miembros del viaje.",
     balances: "Saldos",
@@ -813,6 +815,7 @@ const translations: Record<Language, TranslationKeys> = {
     sharedAmong: "Shared among",
     ticketPhoto: "Receipt photo",
     takePhoto: "Take photo",
+    viewReceipt: "View receipt",
     noExpensesTitle: "No expenses recorded",
     noExpensesDesc: "Record expenses and easily split bills among trip members.",
     balances: "Balances",
@@ -1110,6 +1113,7 @@ const translations: Record<Language, TranslationKeys> = {
     sharedAmong: "Partagé entre",
     ticketPhoto: "Photo du reçu",
     takePhoto: "Prendre une photo",
+    viewReceipt: "Voir le reçu",
     noExpensesTitle: "Aucune dépense enregistrée",
     noExpensesDesc: "Enregistrez les dépenses et partagez facilement les comptes entre les membres du voyage.",
     balances: "Soldes",
@@ -1407,6 +1411,7 @@ const translations: Record<Language, TranslationKeys> = {
     sharedAmong: "Partilhado entre",
     ticketPhoto: "Foto do recibo",
     takePhoto: "Tirar foto",
+    viewReceipt: "Ver recibo",
     noExpensesTitle: "Sem despesas registadas",
     noExpensesDesc: "Registe despesas e divida contas facilmente entre os membros da viagem.",
     balances: "Saldos",
@@ -1704,6 +1709,7 @@ const translations: Record<Language, TranslationKeys> = {
     sharedAmong: "Condiviso tra",
     ticketPhoto: "Foto dello scontrino",
     takePhoto: "Scatta foto",
+    viewReceipt: "Vedi ricevuta",
     noExpensesTitle: "Nessuna spesa registrata",
     noExpensesDesc: "Registra le spese e dividi facilmente i conti tra i membri del viaggio.",
     balances: "Saldi",
@@ -2001,6 +2007,7 @@ const translations: Record<Language, TranslationKeys> = {
     sharedAmong: "分摊人员",
     ticketPhoto: "收据照片",
     takePhoto: "拍照",
+    viewReceipt: "查看收据",
     noExpensesTitle: "暂无费用记录",
     noExpensesDesc: "记录费用并在旅行成员之间轻松分摊。",
     balances: "余额",
@@ -2298,6 +2305,7 @@ const translations: Record<Language, TranslationKeys> = {
     sharedAmong: "Geteilt unter",
     ticketPhoto: "Belegfoto",
     takePhoto: "Foto aufnehmen",
+    viewReceipt: "Beleg ansehen",
     noExpensesTitle: "Keine Ausgaben erfasst",
     noExpensesDesc: "Erfasse Ausgaben und teile Rechnungen einfach unter den Reisemitgliedern auf.",
     balances: "Salden",
