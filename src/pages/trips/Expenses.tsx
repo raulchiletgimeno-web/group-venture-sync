@@ -511,12 +511,14 @@ const Expenses = () => {
                         {(exp.amount / (exp.splits.length || 1)).toFixed(2)} € / {t.perPerson}
                       </p>
                       {exp.receipt_path && (
-                        <img
-                          src={getReceiptUrl(exp.receipt_path)}
-                          alt="Ticket"
-                          className="mt-2 h-16 w-16 rounded-lg object-cover border border-border cursor-pointer"
+                        <button
+                          type="button"
                           onClick={() => window.open(getReceiptUrl(exp.receipt_path!), '_blank')}
-                        />
+                          className="mt-2 inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
+                        >
+                          <ImageIcon className="h-4 w-4" />
+                          {t.viewReceipt ?? "Ver ticket"}
+                        </button>
                       )}
                     </div>
                     {(exp.paid_by === user?.id) && (
