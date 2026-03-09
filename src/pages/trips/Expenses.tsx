@@ -517,7 +517,7 @@ const Expenses = () => {
                           className="mt-2 inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
                         >
                           <ImageIcon className="h-4 w-4" />
-                          {t.viewReceipt ?? "Ver ticket"}
+                          {t.viewReceipt}
                         </button>
                       )}
                     </div>
