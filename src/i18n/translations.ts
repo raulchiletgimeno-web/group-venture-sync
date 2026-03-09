@@ -1113,6 +1113,7 @@ const translations: Record<Language, TranslationKeys> = {
     sharedAmong: "Partagé entre",
     ticketPhoto: "Photo du reçu",
     takePhoto: "Prendre une photo",
+    viewReceipt: "Voir le reçu",
     noExpensesTitle: "Aucune dépense enregistrée",
     noExpensesDesc: "Enregistrez les dépenses et partagez facilement les comptes entre les membres du voyage.",
     balances: "Soldes",
