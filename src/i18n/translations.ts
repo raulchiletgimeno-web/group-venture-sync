@@ -194,6 +194,7 @@ type TranslationKeys = {
   sharedAmong: string;
   ticketPhoto: string;
   takePhoto: string;
+  viewReceipt: string;
   noExpensesTitle: string;
   noExpensesDesc: string;
   balances: string;
