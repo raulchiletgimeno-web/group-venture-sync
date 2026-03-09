@@ -2007,6 +2007,7 @@ const translations: Record<Language, TranslationKeys> = {
     sharedAmong: "分摊人员",
     ticketPhoto: "收据照片",
     takePhoto: "拍照",
+    viewReceipt: "查看收据",
     noExpensesTitle: "暂无费用记录",
     noExpensesDesc: "记录费用并在旅行成员之间轻松分摊。",
     balances: "余额",
