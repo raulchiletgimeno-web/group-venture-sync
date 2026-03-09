@@ -157,7 +157,7 @@ const Expenses = () => {
   const uploadReceipt = async (expenseId: string): Promise<string | null> => {
     if (!receiptFile || !tripId) return existingReceiptPath;
     const ext = receiptFile.name.split(".").pop() ?? "jpg";
-    const path = `receipts/${tripId}/${expenseId}.${ext}`;
+    const path = `${tripId}/receipts/${expenseId}.${ext}`;
     const { error } = await supabase.storage.from("trip-photos").upload(path, receiptFile, { upsert: true });
     if (error) {
       toast({ title: t.errorUploading, description: error.message, variant: "destructive" });
