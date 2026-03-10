@@ -80,7 +80,7 @@ const Landing = () => {
               </Button>
               <div
                 onClick={() => setShowVideo(true)}
-                className="relative cursor-pointer group rounded-xl overflow-hidden shadow-xl w-56 h-32 shrink-0 ml-4"
+                className="relative cursor-pointer group rounded-xl overflow-hidden shadow-xl w-64 h-36 shrink-0 ml-8"
               >
                 <video
                   src="/videos/Video_Publicidad_Yormit.mp4#t=0.5"
@@ -90,7 +90,7 @@ const Landing = () => {
                   className="w-full h-full object-cover"
                 />
                 <div className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover:bg-black/50 transition-colors">
-                  <Play className="w-14 h-14 text-white fill-white drop-shadow-lg" />
+                  <Play className="w-16 h-16 text-white fill-white drop-shadow-lg" />
                 </div>
               </div>
             </div>
@@ -247,6 +247,10 @@ const Landing = () => {
             src="/videos/Video_Publicidad_Yormit.mp4"
             controls
             autoPlay
+            onEnded={() => {
+              setShowVideo(false);
+              if (videoRef.current) videoRef.current.pause();
+            }}
             className="w-full h-auto max-h-[80vh]"
           />
         </DialogContent>
