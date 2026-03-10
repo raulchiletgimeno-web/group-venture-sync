@@ -1,21 +1,26 @@
 
 
-## Plan: Adjust Luggage icon size and stroke in YORMIT logo
+## Plan: Arreglar promoción a co-creador y añadir confirmación
 
-**Problem**: The Luggage icon is slightly smaller than the letters and its black outline is thinner than the `2px` `WebkitTextStroke` on the text.
+### Problemas detectados
 
-**Changes** (single file: `src/pages/Landing.tsx`, line 67):
+1. **Sin diálogo de confirmación**: Al pulsar "Nombrar co-creador" se ejecuta directamente sin preguntar. El usuario quiere un AlertDialog de confirmación (igual que ya existe para "Eliminar miembro").
+2. **Errores silenciados**: `handlePromote` y `handleDemote` no muestran error si la operación falla en la base de datos.
+3. **Posible problema con DropdownMenu + Popover**: El click en el DropdownMenuItem cierra el dropdown y potencialmente el Popover, lo que puede interferir con la ejecución asíncrona.
 
-1. **Increase icon size** from `0.85em` to `0.95em` -- this will make the icon match the cap height of the letters.
-2. **Increase strokeWidth** from `0.5` to `0.8` -- the text uses `WebkitTextStroke: 2px`. For an SVG icon rendered at ~72px (text-7xl), a `strokeWidth` of ~0.8 produces a visual stroke equivalent to ~2px text stroke.
+### Cambios en `src/pages/TripDashboard.tsx`
 
-```tsx
-Y<Luggage 
-  className="mx-[-2px]" 
-  style={{ height: '0.95em', width: '0.95em' }} 
-  strokeWidth={0.8} 
-  stroke="black" 
-  fill="hsl(182 50% 62%)" 
-/>RMIT
-```
+1. **Añadir AlertDialog de confirmación** para promover y degradar co-creador, igual que ya se hace para eliminar miembro:
+   - Envolver las opciones de promover/degradar en un `AlertDialog` con `AlertDialogTrigger` usando `onSelect={(e) => e.preventDefault()}` para evitar que el dropdown se cierre.
+   - Mostrar un mensaje de confirmación tipo "¿Estás seguro de que quieres nombrar a este usuario como co-creador?"
+   
+2. **Añadir manejo de errores visible** en `handlePromote` y `handleDemote` — mostrar toast de error si falla.
+
+3. **Añadir traducciones** necesarias para los nuevos textos de confirmación en todos los idiomas (es, en, fr, pt, it, zh, de):
+   - `confirmMakeCoCreator` / `confirmMakeCoCreatorDesc`
+   - `confirmRemoveCoCreator` / `confirmRemoveCoCreatorDesc`
+
+### Cambios en `src/i18n/translations.ts`
+
+- Añadir 4 nuevas claves de traducción en los 7 idiomas.
 
