@@ -63,8 +63,8 @@ const Landing = () => {
         </div>
         <div className="relative max-w-6xl mx-auto px-5 py-24 md:py-36 lg:py-44">
           <div className="max-w-2xl mx-auto text-center">
-            <div className="text-[9rem] font-extrabold tracking-wider uppercase flex items-center justify-center mb-4" style={{ color: 'hsl(182 50% 62%)', WebkitTextStroke: '3px black', textShadow: '0 0 6px rgba(0,0,0,0.5)' }}>
-              Y<Luggage className="h-32 w-32" strokeWidth={0.8} stroke="black" fill="hsl(182 50% 62%)" />RMIT
+            <div className="text-7xl font-extrabold tracking-wider uppercase flex items-center justify-center mb-4" style={{ color: 'hsl(182 50% 62%)', WebkitTextStroke: '2px black', textShadow: '0 0 4px rgba(0,0,0,0.5)' }}>
+              Y<Luggage className="h-16 w-16" strokeWidth={0.8} stroke="black" fill="hsl(182 50% 62%)" />RMIT
             </div>
             <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-primary/20 text-primary-foreground backdrop-blur-sm border border-primary/30 mb-6">
               Organiza viajes en grupo sin caos
