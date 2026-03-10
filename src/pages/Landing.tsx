@@ -43,17 +43,6 @@ const Landing = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {/* Navbar */}
-      <nav className="sticky top-0 z-50 backdrop-blur-lg bg-background/80 border-b border-border">
-        <div className="max-w-6xl mx-auto flex items-center justify-between px-5 h-16">
-          <span className="text-xl font-extrabold tracking-wider uppercase inline-flex items-center text-foreground">
-            Y<Luggage className="h-5 w-5" strokeWidth={2.5} />RMIT
-          </span>
-          <Button onClick={() => navigate("/auth")} size="sm" className="font-semibold">
-            Acceder
-          </Button>
-        </div>
-      </nav>
 
       {/* Hero */}
       <section className="relative overflow-hidden">
