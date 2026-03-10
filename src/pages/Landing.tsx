@@ -90,7 +90,7 @@ const Landing = () => {
                   className="w-full h-full object-cover"
                 />
                 <div className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover:bg-black/50 transition-colors">
-                  <Play className="w-14 h-14 text-white fill-white drop-shadow-lg" />
+                  <Play className="w-16 h-16 text-white fill-white drop-shadow-lg" />
                 </div>
               </div>
             </div>
