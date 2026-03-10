@@ -14,7 +14,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import heroImage from "@/assets/hero-travel.jpg";
 
 const features = [
-  { icon: Hotel, title: "Alojamientos", desc: "Centraliza reservas, direcciones y archivos de booking en un solo lugar." },
+  { icon: Hotel, title: "Alojamientos", desc: "Centraliza reservas, accede a su web, ubicación rápida." },
   { icon: Train, title: "Transportes", desc: "Vuelos, trenes, buses… todo organizado con horarios y billetes adjuntos." },
   { icon: CalendarDays, title: "Actividades", desc: "Planifica el itinerario día a día con horarios, ubicaciones y entradas." },
   { icon: Wallet, title: "Gastos compartidos", desc: "Registra gastos, divide cuentas y lleva un balance claro entre todos." },
