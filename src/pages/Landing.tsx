@@ -22,7 +22,7 @@ const features = [
   { icon: Camera, title: "Fotos", desc: "Sube y comparte las mejores fotos del viaje con todos los miembros." },
   { icon: CloudSun, title: "Meteorología", desc: "Consulta la previsión del tiempo en destino para planificar mejor." },
   { icon: Phone, title: "Teléfonos útiles", desc: "Accede rápidamente a números de emergencia y contactos del destino." },
-  { icon: Info, title: "Info del viaje", desc: "Toda la información relevante del viaje siempre accesible." },
+  
 ];
 
 const benefits = [
