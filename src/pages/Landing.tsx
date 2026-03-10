@@ -247,6 +247,10 @@ const Landing = () => {
             src="/videos/Video_Publicidad_Yormit.mp4"
             controls
             autoPlay
+            onEnded={() => {
+              setShowVideo(false);
+              if (videoRef.current) videoRef.current.pause();
+            }}
             className="w-full h-auto max-h-[80vh]"
           />
         </DialogContent>
