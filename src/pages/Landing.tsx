@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import {
   Luggage, Hotel, Train, CalendarDays, Wallet, MessageCircle,
   Camera, CloudSun, Phone, Info, ArrowRight, CheckCircle2,
-  Users, Zap, Shield, Globe
+  Users, Zap, Shield, Globe, Play
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
