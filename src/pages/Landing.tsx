@@ -54,7 +54,7 @@ const Landing = () => {
           <img src={heroImage} alt="Viaje en grupo" className="w-full h-full object-cover" />
           <div className="absolute inset-0 bg-black/60" />
         </div>
-        <div className="relative max-w-6xl mx-auto px-5 py-24 md:py-36 lg:py-44">
+        <div className="relative max-w-6xl mx-auto px-5 py-16 md:py-28 lg:py-36">
           <div className="max-w-2xl mx-auto text-center">
             <div className="text-8xl font-extrabold tracking-wider uppercase flex items-center justify-center mb-4 text-white">
               Y<Luggage className="mx-[-2px]" style={{ height: '0.95em', width: '0.95em' }} strokeWidth={2.5} />RMIT
