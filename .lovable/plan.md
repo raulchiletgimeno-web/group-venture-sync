@@ -1,26 +1,14 @@
 
 
-## Plan: Arreglar promoción a co-creador y añadir confirmación
+## Plan: Reemplazar botón "Descubre más" por miniatura de vídeo con icono play
 
-### Problemas detectados
+### Cambio en `src/pages/Landing.tsx`
 
-1. **Sin diálogo de confirmación**: Al pulsar "Nombrar co-creador" se ejecuta directamente sin preguntar. El usuario quiere un AlertDialog de confirmación (igual que ya existe para "Eliminar miembro").
-2. **Errores silenciados**: `handlePromote` y `handleDemote` no muestran error si la operación falla en la base de datos.
-3. **Posible problema con DropdownMenu + Popover**: El click en el DropdownMenuItem cierra el dropdown y potencialmente el Popover, lo que puede interferir con la ejecución asíncrona.
+Reemplazar el `<Button>` de "Descubre más" (líneas 81-87) por un elemento clickable que muestre el primer frame del vídeo con un icono de play superpuesto:
 
-### Cambios en `src/pages/TripDashboard.tsx`
-
-1. **Añadir AlertDialog de confirmación** para promover y degradar co-creador, igual que ya se hace para eliminar miembro:
-   - Envolver las opciones de promover/degradar en un `AlertDialog` con `AlertDialogTrigger` usando `onSelect={(e) => e.preventDefault()}` para evitar que el dropdown se cierre.
-   - Mostrar un mensaje de confirmación tipo "¿Estás seguro de que quieres nombrar a este usuario como co-creador?"
-   
-2. **Añadir manejo de errores visible** en `handlePromote` y `handleDemote` — mostrar toast de error si falla.
-
-3. **Añadir traducciones** necesarias para los nuevos textos de confirmación en todos los idiomas (es, en, fr, pt, it, zh, de):
-   - `confirmMakeCoCreator` / `confirmMakeCoCreatorDesc`
-   - `confirmRemoveCoCreator` / `confirmRemoveCoCreatorDesc`
-
-### Cambios en `src/i18n/translations.ts`
-
-- Añadir 4 nuevas claves de traducción en los 7 idiomas.
+- Usar un `<div>` clickable con `cursor-pointer` que contenga:
+  - Un `<video>` sin controles, sin autoplay, con `preload="metadata"` y el src del vídeo + `#t=0.5` para capturar un frame como thumbnail
+  - Un overlay semitransparente oscuro con el icono `Play` de lucide-react centrado encima
+- Al hacer clic, se abre el mismo modal de vídeo que ya existe (`setShowVideo(true)`)
+- Estilo: bordes redondeados, sombra, tamaño ~200x120px aprox, integrado en el hero junto al botón "Comenzar ahora"
 
