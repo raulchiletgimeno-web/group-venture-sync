@@ -1,3 +1,4 @@
+import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Luggage, Hotel, Train, CalendarDays, Wallet, MessageCircle,
