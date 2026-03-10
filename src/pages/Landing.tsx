@@ -10,6 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import {
   Accordion, AccordionContent, AccordionItem, AccordionTrigger
 } from "@/components/ui/accordion";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import heroImage from "@/assets/hero-travel.jpg";
 
 const features = [
