@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import {
   Luggage, Hotel, Train, CalendarDays, Wallet, MessageCircle,
   Camera, CloudSun, Phone, Info, ArrowRight, CheckCircle2,
-  Users, Zap, Shield, Globe
+  Users, Zap, Shield, Globe, Play
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -78,13 +78,21 @@ const Landing = () => {
                 Comenzar ahora
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
-              <Button
-                size="lg"
+              <div
                 onClick={() => setShowVideo(true)}
-                className="font-bold text-base px-8 shadow-card-hover"
+                className="relative cursor-pointer group rounded-xl overflow-hidden shadow-xl w-48 h-28 shrink-0"
               >
-                Descubre más
-              </Button>
+                <video
+                  src="/videos/Video_Publicidad_Yormit.mp4#t=0.5"
+                  preload="metadata"
+                  muted
+                  playsInline
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover:bg-black/50 transition-colors">
+                  <Play className="w-10 h-10 text-white fill-white drop-shadow-lg" />
+                </div>
+              </div>
             </div>
           </div>
         </div>
