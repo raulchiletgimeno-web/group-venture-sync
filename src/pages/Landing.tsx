@@ -75,7 +75,7 @@ const Landing = () => {
                 onClick={() => navigate("/auth")}
                 className="font-bold text-base px-8 shadow-card-hover"
               >
-                Comenzar ahora
+                Empezar gratis
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
               <div
