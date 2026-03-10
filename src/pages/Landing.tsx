@@ -54,33 +54,33 @@ const Landing = () => {
           <img src={heroImage} alt="Viaje en grupo" className="w-full h-full object-cover" />
           <div className="absolute inset-0 bg-black/60" />
         </div>
-        <div className="relative max-w-6xl mx-auto px-5 py-16 md:py-28 lg:py-36">
+        <div className="relative max-w-6xl mx-auto px-5 py-12 md:py-28 lg:py-36">
           <div className="max-w-2xl mx-auto text-center">
-            <div className="text-8xl font-extrabold tracking-wider uppercase flex items-center justify-center mb-4 text-white">
+            <div className="text-5xl md:text-8xl font-extrabold tracking-wider uppercase flex items-center justify-center mb-4 text-white">
               Y<Luggage className="mx-[-2px]" style={{ height: '0.95em', width: '0.95em' }} strokeWidth={2.5} />RMIT
             </div>
             <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-primary/20 text-primary-foreground backdrop-blur-sm border border-primary/30 mb-6">
               Organiza viajes en grupo sin caos
             </span>
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-white leading-tight">
+            <h1 className="text-3xl md:text-5xl lg:text-6xl font-extrabold text-white leading-tight">
               Tu viaje perfecto,{" "}
               <span className="text-primary">organizado entre todos</span>
             </h1>
-            <p className="mt-5 text-lg md:text-xl text-white/80 leading-relaxed max-w-xl">
+            <p className="mt-5 text-base md:text-xl text-white/80 leading-relaxed max-w-xl mx-auto">
               YORMIT es la plataforma que centraliza toda la información de tu viaje en grupo: alojamientos, transportes, gastos, actividades y mucho más. Sin caos, sin estrés.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 mt-8 items-center">
               <Button
                 size="lg"
                 onClick={() => navigate("/auth")}
-                className="font-bold text-base px-8 shadow-card-hover"
+                className="w-full sm:w-auto font-bold text-base px-8 shadow-card-hover"
               >
                 Empezar gratis
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
               <div
                 onClick={() => setShowVideo(true)}
-                className="relative cursor-pointer group rounded-xl overflow-hidden shadow-xl w-64 h-36 shrink-0 ml-20"
+                className="relative cursor-pointer group rounded-xl overflow-hidden shadow-xl w-56 h-32 sm:w-64 sm:h-36 shrink-0 sm:ml-20"
               >
                 <video
                   src="/videos/Video_Publicidad_Yormit.mp4#t=0.5"
@@ -90,7 +90,7 @@ const Landing = () => {
                   className="w-full h-full object-cover"
                 />
                 <div className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover:bg-black/50 transition-colors">
-                  <Play className="w-16 h-16 text-white fill-white drop-shadow-lg" />
+                  <Play className="w-12 h-12 sm:w-16 sm:h-16 text-white fill-white drop-shadow-lg" />
                 </div>
               </div>
             </div>
