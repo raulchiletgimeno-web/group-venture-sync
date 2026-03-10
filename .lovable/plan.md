@@ -1,26 +1,59 @@
 
 
-## Plan: Arreglar promoción a co-creador y añadir confirmación
+## Plan: Landing page publica + reestructuracion de rutas
 
-### Problemas detectados
+### Resumen
 
-1. **Sin diálogo de confirmación**: Al pulsar "Nombrar co-creador" se ejecuta directamente sin preguntar. El usuario quiere un AlertDialog de confirmación (igual que ya existe para "Eliminar miembro").
-2. **Errores silenciados**: `handlePromote` y `handleDemote` no muestran error si la operación falla en la base de datos.
-3. **Posible problema con DropdownMenu + Popover**: El click en el DropdownMenuItem cierra el dropdown y potencialmente el Popover, lo que puede interferir con la ejecución asíncrona.
+Crear una landing page publica en `/` que presente YORMIT como producto. Mover la app privada (dashboard de viajes) a `/dashboard`. Mantener toda la logica de auth intacta.
 
-### Cambios en `src/pages/TripDashboard.tsx`
+### Cambios
 
-1. **Añadir AlertDialog de confirmación** para promover y degradar co-creador, igual que ya se hace para eliminar miembro:
-   - Envolver las opciones de promover/degradar en un `AlertDialog` con `AlertDialogTrigger` usando `onSelect={(e) => e.preventDefault()}` para evitar que el dropdown se cierre.
-   - Mostrar un mensaje de confirmación tipo "¿Estás seguro de que quieres nombrar a este usuario como co-creador?"
-   
-2. **Añadir manejo de errores visible** en `handlePromote` y `handleDemote` — mostrar toast de error si falla.
+#### 1. Nueva pagina: `src/pages/Landing.tsx`
 
-3. **Añadir traducciones** necesarias para los nuevos textos de confirmación en todos los idiomas (es, en, fr, pt, it, zh, de):
-   - `confirmMakeCoCreator` / `confirmMakeCoCreatorDesc`
-   - `confirmRemoveCoCreator` / `confirmRemoveCoCreatorDesc`
+Landing page publica con las siguientes secciones, usando los componentes UI existentes (Button, Card, Accordion) y las clases CSS del proyecto (gradient-hero, shadow-card, etc.):
 
-### Cambios en `src/i18n/translations.ts`
+- **Navbar**: Logo YORMIT (con icono Luggage) + boton "Acceder" que lleva a `/auth`
+- **Hero**: Titular potente, subtitulo explicativo, CTA "Comenzar ahora" → `/auth`, imagen hero existente (`hero-travel.jpg`)
+- **Funcionalidades**: Grid responsive con iconos (Lucide) para cada feature: alojamientos, transportes, actividades, gastos, chat, fotos, meteo, telefonos, info util
+- **Previews/Capturas**: Seccion visual con mockups o cards que simulan la interfaz de la app
+- **Beneficios**: 3-4 cards con beneficios clave (todo centralizado, sin caos, gratis, etc.)
+- **FAQ**: Usando componente Accordion existente con preguntas frecuentes
+- **Footer**: Links, copyright, branding YORMIT
 
-- Añadir 4 nuevas claves de traducción en los 7 idiomas.
+Responsive: mobile-first con grid adaptativo. Coherente con la paleta de colores actual (primary azul, secondary verde, accent naranja).
+
+#### 2. Renombrar `src/pages/Index.tsx` → `src/pages/Dashboard.tsx`
+
+Solo renombrar el import, el componente sigue igual. Es la app privada del usuario autenticado.
+
+#### 3. Actualizar `src/App.tsx` - Rutas
+
+```
+/           → Landing (publica, sin auth)
+/auth       → Auth (publica)
+/reset-password → ResetPassword (publica)
+/dashboard  → Dashboard (protegida, antes era Index en /)
+/join/:code → JoinTrip (protegida)
+/trip/:id/* → TripLayout (protegida)
+```
+
+#### 4. Actualizar `src/pages/Auth.tsx`
+
+Cambiar la redireccion post-login de `/` a `/dashboard` (linea donde hace `navigate("/")`).
+
+#### 5. Actualizar `src/components/ProtectedRoute.tsx`
+
+Sin cambios necesarios, ya redirige a `/auth` si no hay sesion.
+
+#### 6. Actualizar `src/contexts/AuthContext.tsx`
+
+Sin cambios necesarios.
+
+#### 7. Revisar cualquier `navigate("/")` en el proyecto
+
+Buscar y cambiar a `/dashboard` donde corresponda para que la app privada siga funcionando.
+
+### Sin cambios en base de datos
+
+No se requieren migraciones ni cambios en backend.
 
