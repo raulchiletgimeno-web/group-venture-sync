@@ -80,7 +80,7 @@ const Landing = () => {
               </Button>
               <div
                 onClick={() => setShowVideo(true)}
-                className="relative cursor-pointer group rounded-xl overflow-hidden shadow-xl w-64 h-36 shrink-0 ml-12"
+                className="relative cursor-pointer group rounded-xl overflow-hidden shadow-xl w-64 h-36 shrink-0 ml-20"
               >
                 <video
                   src="/videos/Video_Publicidad_Yormit.mp4#t=0.5"
