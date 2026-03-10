@@ -22,7 +22,7 @@ const Auth = () => {
   const { toast } = useToast();
 
   if (session) {
-    navigate("/", { replace: true });
+    navigate("/dashboard", { replace: true });
     return null;
   }
 
