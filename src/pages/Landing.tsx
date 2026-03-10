@@ -69,7 +69,7 @@ const Landing = () => {
             <p className="mt-5 text-lg md:text-xl text-white/80 leading-relaxed max-w-xl">
               YORMIT es la plataforma que centraliza toda la información de tu viaje en grupo: alojamientos, transportes, gastos, actividades y mucho más. Sin caos, sin estrés.
             </p>
-            <div className="flex flex-col sm:flex-row gap-3 mt-8">
+            <div className="flex flex-col sm:flex-row gap-3 mt-8 items-center">
               <Button
                 size="lg"
                 onClick={() => navigate("/auth")}
