@@ -63,7 +63,7 @@ const Landing = () => {
         </div>
         <div className="relative max-w-6xl mx-auto px-5 py-24 md:py-36 lg:py-44">
           <div className="max-w-2xl">
-            <div className="text-2xl font-extrabold tracking-wider uppercase inline-flex items-center mb-4" style={{ color: 'hsl(182 50% 62%)' }}>
+            <div className="text-2xl font-extrabold tracking-wider uppercase flex items-center mb-4" style={{ color: 'hsl(182 50% 62%)' }}>
               Y<Luggage className="h-6 w-6" strokeWidth={2.5} />RMIT
             </div>
             <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-primary/20 text-primary-foreground backdrop-blur-sm border border-primary/30 mb-6">
