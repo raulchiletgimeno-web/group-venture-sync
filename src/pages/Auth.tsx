@@ -22,7 +22,7 @@ const Auth = () => {
   const { toast } = useToast();
 
   if (session) {
-    navigate("/", { replace: true });
+    navigate("/dashboard", { replace: true });
     return null;
   }
 
@@ -35,7 +35,7 @@ const Auth = () => {
       if (error) {
         toast({ title: t.loginError, description: error.message, variant: "destructive" });
       } else {
-        navigate("/");
+        navigate("/dashboard");
       }
     } else {
       const nameParts = name.trim().split(/\s+/);

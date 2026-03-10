@@ -41,7 +41,7 @@ const JoinTrip = () => {
       <div className="min-h-screen flex flex-col items-center justify-center bg-background px-5 text-center">
         <p className="text-destructive font-semibold mb-2">{t.error}</p>
         <p className="text-muted-foreground text-sm">{error}</p>
-        <button onClick={() => navigate("/")} className="mt-4 text-primary font-semibold text-sm hover:underline">{t.goHome}</button>
+        <button onClick={() => navigate("/dashboard")} className="mt-4 text-primary font-semibold text-sm hover:underline">{t.goHome}</button>
       </div>
     );
   }
