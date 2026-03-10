@@ -1,20 +1,26 @@
 
 
-## Plan: Logo YORMIT sobre el badge del hero
+## Plan: Arreglar promoción a co-creador y añadir confirmación
 
-### Cambio
+### Problemas detectados
 
-En `src/pages/Landing.tsx`, en la sección Hero, añadir el logo YORMIT (texto + icono Luggage) justo encima del span "Organiza viajes en grupo sin caos", usando el color del gradiente hero (azul-verdoso, clase `text-primary` o color inline `hsl(200 80% 50%)`).
+1. **Sin diálogo de confirmación**: Al pulsar "Nombrar co-creador" se ejecuta directamente sin preguntar. El usuario quiere un AlertDialog de confirmación (igual que ya existe para "Eliminar miembro").
+2. **Errores silenciados**: `handlePromote` y `handleDemote` no muestran error si la operación falla en la base de datos.
+3. **Posible problema con DropdownMenu + Popover**: El click en el DropdownMenuItem cierra el dropdown y potencialmente el Popover, lo que puede interferir con la ejecución asíncrona.
 
-### Detalle
+### Cambios en `src/pages/TripDashboard.tsx`
 
-Insertar antes del `<span className="inline-block px-3 py-1 rounded-full...">` un elemento con el logo:
+1. **Añadir AlertDialog de confirmación** para promover y degradar co-creador, igual que ya se hace para eliminar miembro:
+   - Envolver las opciones de promover/degradar en un `AlertDialog` con `AlertDialogTrigger` usando `onSelect={(e) => e.preventDefault()}` para evitar que el dropdown se cierre.
+   - Mostrar un mensaje de confirmación tipo "¿Estás seguro de que quieres nombrar a este usuario como co-creador?"
+   
+2. **Añadir manejo de errores visible** en `handlePromote` y `handleDemote` — mostrar toast de error si falla.
 
-```tsx
-<span className="text-2xl font-extrabold tracking-wider uppercase inline-flex items-center mb-4" style={{ color: 'hsl(182 50% 62%)' }}>
-  Y<Luggage className="h-6 w-6" strokeWidth={2.5} />RMIT
-</span>
-```
+3. **Añadir traducciones** necesarias para los nuevos textos de confirmación en todos los idiomas (es, en, fr, pt, it, zh, de):
+   - `confirmMakeCoCreator` / `confirmMakeCoCreatorDesc`
+   - `confirmRemoveCoCreator` / `confirmRemoveCoCreatorDesc`
 
-El color será un azul-verdoso coherente con los iconos de funcionalidades (gradient-hero). Se usará un tono intermedio tipo `hsl(182 50% 62%)` para que destaque sobre el fondo oscuro del hero.
+### Cambios en `src/i18n/translations.ts`
+
+- Añadir 4 nuevas claves de traducción en los 7 idiomas.
 
