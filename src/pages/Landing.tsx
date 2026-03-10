@@ -226,6 +226,23 @@ const Landing = () => {
           </div>
         </div>
       </footer>
+      {/* Video Modal */}
+      <Dialog open={showVideo} onOpenChange={(open) => {
+        setShowVideo(open);
+        if (!open && videoRef.current) {
+          videoRef.current.pause();
+        }
+      }}>
+        <DialogContent className="max-w-4xl p-0 overflow-hidden bg-black border-none">
+          <video
+            ref={videoRef}
+            src="/videos/Video_Publicidad_Yormit.mp4"
+            controls
+            autoPlay
+            className="w-full h-auto max-h-[80vh]"
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
