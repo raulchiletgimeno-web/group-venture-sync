@@ -69,7 +69,7 @@ const Landing = () => {
             <p className="mt-5 text-lg md:text-xl text-white/80 leading-relaxed max-w-xl">
               YORMIT es la plataforma que centraliza toda la información de tu viaje en grupo: alojamientos, transportes, gastos, actividades y mucho más. Sin caos, sin estrés.
             </p>
-            <div className="flex flex-col sm:flex-row gap-3 mt-8">
+            <div className="flex flex-col sm:flex-row gap-3 mt-8 items-center">
               <Button
                 size="lg"
                 onClick={() => navigate("/auth")}
@@ -80,7 +80,7 @@ const Landing = () => {
               </Button>
               <div
                 onClick={() => setShowVideo(true)}
-                className="relative cursor-pointer group rounded-xl overflow-hidden shadow-xl w-64 h-36 shrink-0 ml-8"
+                className="relative cursor-pointer group rounded-xl overflow-hidden shadow-xl w-64 h-36 shrink-0 ml-12"
               >
                 <video
                   src="/videos/Video_Publicidad_Yormit.mp4#t=0.5"
