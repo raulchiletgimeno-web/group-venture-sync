@@ -1,26 +1,10 @@
 
 
-## Plan: Arreglar promoción a co-creador y añadir confirmación
+## Plan
 
-### Problemas detectados
+### Cambios en `src/pages/Landing.tsx`
 
-1. **Sin diálogo de confirmación**: Al pulsar "Nombrar co-creador" se ejecuta directamente sin preguntar. El usuario quiere un AlertDialog de confirmación (igual que ya existe para "Eliminar miembro").
-2. **Errores silenciados**: `handlePromote` y `handleDemote` no muestran error si la operación falla en la base de datos.
-3. **Posible problema con DropdownMenu + Popover**: El click en el DropdownMenuItem cierra el dropdown y potencialmente el Popover, lo que puede interferir con la ejecución asíncrona.
+1. **Miniatura más grande y más a la derecha**: Cambiar el contenedor de `w-56 h-32 ml-4` a `w-64 h-36 ml-8`, y el icono Play de `w-14 h-14` a `w-16 h-16`.
 
-### Cambios en `src/pages/TripDashboard.tsx`
-
-1. **Añadir AlertDialog de confirmación** para promover y degradar co-creador, igual que ya se hace para eliminar miembro:
-   - Envolver las opciones de promover/degradar en un `AlertDialog` con `AlertDialogTrigger` usando `onSelect={(e) => e.preventDefault()}` para evitar que el dropdown se cierre.
-   - Mostrar un mensaje de confirmación tipo "¿Estás seguro de que quieres nombrar a este usuario como co-creador?"
-   
-2. **Añadir manejo de errores visible** en `handlePromote` y `handleDemote` — mostrar toast de error si falla.
-
-3. **Añadir traducciones** necesarias para los nuevos textos de confirmación en todos los idiomas (es, en, fr, pt, it, zh, de):
-   - `confirmMakeCoCreator` / `confirmMakeCoCreatorDesc`
-   - `confirmRemoveCoCreator` / `confirmRemoveCoCreatorDesc`
-
-### Cambios en `src/i18n/translations.ts`
-
-- Añadir 4 nuevas claves de traducción en los 7 idiomas.
+2. **Cerrar modal al terminar el vídeo**: Añadir un handler `onEnded` al `<video>` del modal que cierre el diálogo (`setShowVideo(false)`) y pause el vídeo.
 
