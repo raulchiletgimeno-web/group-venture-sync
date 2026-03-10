@@ -1,3 +1,4 @@
+import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Luggage, Hotel, Train, CalendarDays, Wallet, MessageCircle,
@@ -9,6 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import {
   Accordion, AccordionContent, AccordionItem, AccordionTrigger
 } from "@/components/ui/accordion";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import heroImage from "@/assets/hero-travel.jpg";
 
 const features = [
@@ -40,6 +42,8 @@ const faqs = [
 
 const Landing = () => {
   const navigate = useNavigate();
+  const [showVideo, setShowVideo] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -76,7 +80,7 @@ const Landing = () => {
               </Button>
               <Button
                 size="lg"
-                onClick={() => document.getElementById("features")?.scrollIntoView({ behavior: "smooth" })}
+                onClick={() => setShowVideo(true)}
                 className="font-bold text-base px-8 shadow-card-hover"
               >
                 Descubre más
@@ -222,6 +226,23 @@ const Landing = () => {
           </div>
         </div>
       </footer>
+      {/* Video Modal */}
+      <Dialog open={showVideo} onOpenChange={(open) => {
+        setShowVideo(open);
+        if (!open && videoRef.current) {
+          videoRef.current.pause();
+        }
+      }}>
+        <DialogContent className="max-w-4xl p-0 overflow-hidden bg-black border-none">
+          <video
+            ref={videoRef}
+            src="/videos/Video_Publicidad_Yormit.mp4"
+            controls
+            autoPlay
+            className="w-full h-auto max-h-[80vh]"
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -1,17 +1,26 @@
 
 
-## Plan: Video modal al pinchar "Descubre más"
+## Plan: Arreglar promoción a co-creador y añadir confirmación
 
-### Cambios
+### Problemas detectados
 
-1. **Copiar el vídeo** al proyecto en `public/videos/Video_Publicidad_Yormit.mp4` (carpeta public porque es un asset estático grande, no conviene bundlearlo con Vite).
+1. **Sin diálogo de confirmación**: Al pulsar "Nombrar co-creador" se ejecuta directamente sin preguntar. El usuario quiere un AlertDialog de confirmación (igual que ya existe para "Eliminar miembro").
+2. **Errores silenciados**: `handlePromote` y `handleDemote` no muestran error si la operación falla en la base de datos.
+3. **Posible problema con DropdownMenu + Popover**: El click en el DropdownMenuItem cierra el dropdown y potencialmente el Popover, lo que puede interferir con la ejecución asíncrona.
 
-2. **Modificar `src/pages/Landing.tsx`**:
-   - Añadir estado `showVideo` (boolean) con `useState`.
-   - Cambiar el `onClick` del botón "Descubre más" para abrir el modal (`setShowVideo(true)`).
-   - Añadir un **Dialog** (de Radix/shadcn) que contenga un `<video>` con controles, autoplay y el src apuntando a `/videos/Video_Publicidad_Yormit.mp4`.
-   - El modal se cierra al hacer clic fuera o en la X, y pausa el vídeo al cerrarse.
+### Cambios en `src/pages/TripDashboard.tsx`
 
-### Resultado
-Al pinchar "Descubre más", se abre un popup centrado con el vídeo reproduciéndose automáticamente, sin salir de la landing.
+1. **Añadir AlertDialog de confirmación** para promover y degradar co-creador, igual que ya se hace para eliminar miembro:
+   - Envolver las opciones de promover/degradar en un `AlertDialog` con `AlertDialogTrigger` usando `onSelect={(e) => e.preventDefault()}` para evitar que el dropdown se cierre.
+   - Mostrar un mensaje de confirmación tipo "¿Estás seguro de que quieres nombrar a este usuario como co-creador?"
+   
+2. **Añadir manejo de errores visible** en `handlePromote` y `handleDemote` — mostrar toast de error si falla.
+
+3. **Añadir traducciones** necesarias para los nuevos textos de confirmación en todos los idiomas (es, en, fr, pt, it, zh, de):
+   - `confirmMakeCoCreator` / `confirmMakeCoCreatorDesc`
+   - `confirmRemoveCoCreator` / `confirmRemoveCoCreatorDesc`
+
+### Cambios en `src/i18n/translations.ts`
+
+- Añadir 4 nuevas claves de traducción en los 7 idiomas.
 
