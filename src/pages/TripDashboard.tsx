@@ -184,7 +184,7 @@ const TripDashboard = () => {
       return;
     }
     toast({ title: t.tripDeleted });
-    navigate("/");
+    navigate("/dashboard");
   };
 
   const handlePromote = async (userId: string) => {
