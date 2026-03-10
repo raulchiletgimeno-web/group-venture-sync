@@ -42,6 +42,8 @@ const faqs = [
 
 const Landing = () => {
   const navigate = useNavigate();
+  const [showVideo, setShowVideo] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   return (
     <div className="min-h-screen bg-background text-foreground">
