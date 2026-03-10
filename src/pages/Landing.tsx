@@ -80,7 +80,7 @@ const Landing = () => {
               </Button>
               <Button
                 size="lg"
-                onClick={() => document.getElementById("features")?.scrollIntoView({ behavior: "smooth" })}
+                onClick={() => setShowVideo(true)}
                 className="font-bold text-base px-8 shadow-card-hover"
               >
                 Descubre más
