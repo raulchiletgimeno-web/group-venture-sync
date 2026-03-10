@@ -76,9 +76,8 @@ const Landing = () => {
               </Button>
               <Button
                 size="lg"
-                variant="outline"
                 onClick={() => document.getElementById("features")?.scrollIntoView({ behavior: "smooth" })}
-                className="font-semibold text-base border-white/40 text-white hover:bg-white/10 hover:text-white"
+                className="font-bold text-base px-8 shadow-card-hover"
               >
                 Descubre más
               </Button>
