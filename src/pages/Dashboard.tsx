@@ -180,23 +180,6 @@ const Index = () => {
             </Button>
           </div>
 
-          {/* Language flags */}
-          <div className="flex items-center gap-3 mt-5">
-            {flagLanguages.map((lang) => (
-              <button
-                key={lang}
-                onClick={() => setLanguage(lang)}
-                className={`transition-all duration-200 rounded-sm ${
-                  language === lang
-                    ? "scale-125 drop-shadow-lg ring-2 ring-white"
-                    : "opacity-70 hover:opacity-100 hover:scale-110"
-                }`}
-                title={lang.toUpperCase()}
-              >
-                <img src={languageFlags[lang]} alt={lang.toUpperCase()} className="w-8 h-6 rounded-sm object-cover border border-white/30" />
-              </button>
-            ))}
-          </div>
         </div>
       </div>
 
