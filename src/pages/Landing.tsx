@@ -63,7 +63,7 @@ const Landing = () => {
     <div className="min-h-screen bg-background text-foreground">
 
       {/* Language flags */}
-      <div className="absolute top-3 right-4 z-50 flex gap-1.5">
+      <div className="absolute top-3 left-4 z-50 flex gap-1.5">
         {langs.map((lang) => (
           <button
             key={lang}
