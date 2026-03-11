@@ -1,26 +1,24 @@
 
 
-## Plan: Arreglar promoción a co-creador y añadir confirmación
+## Plan: Mostrar fecha de creación en cada gasto
 
-### Problemas detectados
+### Cambio
 
-1. **Sin diálogo de confirmación**: Al pulsar "Nombrar co-creador" se ejecuta directamente sin preguntar. El usuario quiere un AlertDialog de confirmación (igual que ya existe para "Eliminar miembro").
-2. **Errores silenciados**: `handlePromote` y `handleDemote` no muestran error si la operación falla en la base de datos.
-3. **Posible problema con DropdownMenu + Popover**: El click en el DropdownMenuItem cierra el dropdown y potencialmente el Popover, lo que puede interferir con la ejecución asíncrona.
+En `src/pages/trips/Expenses.tsx`, añadir una línea con la fecha formateada (`created_at`) en cada tarjeta de gasto de la pestaña "Gastos".
 
-### Cambios en `src/pages/TripDashboard.tsx`
+El campo `created_at` ya existe en la interfaz `Expense` y se obtiene de la base de datos, así que no hace falta ningún cambio en backend ni en la query.
 
-1. **Añadir AlertDialog de confirmación** para promover y degradar co-creador, igual que ya se hace para eliminar miembro:
-   - Envolver las opciones de promover/degradar en un `AlertDialog` con `AlertDialogTrigger` usando `onSelect={(e) => e.preventDefault()}` para evitar que el dropdown se cierre.
-   - Mostrar un mensaje de confirmación tipo "¿Estás seguro de que quieres nombrar a este usuario como co-creador?"
-   
-2. **Añadir manejo de errores visible** en `handlePromote` y `handleDemote` — mostrar toast de error si falla.
+### Implementación
 
-3. **Añadir traducciones** necesarias para los nuevos textos de confirmación en todos los idiomas (es, en, fr, pt, it, zh, de):
-   - `confirmMakeCoCreator` / `confirmMakeCoCreatorDesc`
-   - `confirmRemoveCoCreator` / `confirmRemoveCoCreatorDesc`
+En la sección de renderizado de cada gasto (línea ~504), añadir debajo del título una línea mostrando la fecha formateada:
 
-### Cambios en `src/i18n/translations.ts`
+```tsx
+<p className="text-xs text-muted-foreground mt-0.5">
+  {new Date(exp.created_at).toLocaleDateString(getLocale(language), { day: "numeric", month: "short", year: "numeric" })}
+</p>
+```
 
-- Añadir 4 nuevas claves de traducción en los 7 idiomas.
+Se usará `getLocale(language)` que ya está importado en el archivo para formatear según el idioma del usuario.
+
+Un solo archivo modificado, sin cambios en base de datos.
 
