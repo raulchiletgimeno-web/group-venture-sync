@@ -8,7 +8,7 @@ import JoinTripDialog from "@/components/JoinTripDialog";
 import HelpChatBot from "@/components/HelpChatBot";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { languageFlags, Language } from "@/i18n/translations";
+import { getLocale } from "@/i18n/translations";
 import { getLocale } from "@/i18n/translations";
 import { supabase } from "@/integrations/supabase/client";
 import heroImage from "@/assets/hero-travel.jpg";
