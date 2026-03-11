@@ -19,7 +19,7 @@ export default defineConfig(({ mode }) => ({
     VitePWA({
       registerType: "autoUpdate",
       workbox: {
-        navigateFallbackDenylist: [/^\/~oauth/],
+        navigateFallbackDenylist: [/^\/~oauth/, /^\/robots\.txt$/, /^\/sitemap\.xml$/],
         globPatterns: ["**/*.{js,css,html,ico,png,svg,jpg,webp,woff,woff2}"],
       },
       manifest: {
