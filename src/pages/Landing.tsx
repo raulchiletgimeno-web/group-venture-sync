@@ -2,8 +2,8 @@ import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Luggage, Hotel, Train, CalendarDays, Wallet, MessageCircle,
-  Camera, CloudSun, Phone, Info, ArrowRight, CheckCircle2,
-  Users, Zap, Shield, Globe, Play
+  Camera, CloudSun, Phone, ArrowRight, Play,
+  Users, Zap, Shield, Globe
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -12,41 +12,68 @@ import {
 } from "@/components/ui/accordion";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import heroImage from "@/assets/hero-travel.jpg";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { languageFlags, Language } from "@/i18n/translations";
 
-const features = [
-  { icon: Hotel, title: "Alojamientos", desc: "Centraliza reservas, accede a su web, ubicación rápida." },
-  { icon: Train, title: "Transportes", desc: "Vuelos, trenes, buses… todo organizado con horarios y billetes adjuntos." },
-  { icon: CalendarDays, title: "Actividades", desc: "Planifica el itinerario día a día con horarios, ubicaciones y entradas." },
-  { icon: Wallet, title: "Gastos compartidos", desc: "Registra gastos, divide cuentas y lleva un balance claro entre todos." },
-  { icon: MessageCircle, title: "Chat grupal", desc: "Comunícate con tu grupo en tiempo real sin salir de la plataforma." },
-  { icon: Camera, title: "Fotos", desc: "Sube y comparte las mejores fotos del viaje con todos los miembros." },
-  { icon: CloudSun, title: "Meteorología", desc: "Consulta la previsión del tiempo en destino para planificar mejor." },
-  { icon: Phone, title: "Teléfonos útiles", desc: "Accede rápidamente a números de emergencia y contactos del destino." },
-  
-];
-
-const benefits = [
-  { icon: Zap, title: "Todo centralizado", desc: "Olvídate de WhatsApps interminables, hojas de cálculo y notas dispersas. Todo en un solo sitio." },
-  { icon: Users, title: "Colaboración real", desc: "Cada miembro del grupo puede aportar, consultar y organizar. Sin depender de una sola persona." },
-  { icon: Shield, title: "Privado y seguro", desc: "Cada viaje es privado. Solo los miembros invitados tienen acceso a la información." },
-  { icon: Globe, title: "Multiidioma", desc: "Disponible en 7 idiomas para que cada viajero se sienta como en casa." },
-];
-
-const faqs = [
-  { q: "¿Es gratis usar YORMIT?", a: "Sí, YORMIT es completamente gratuito. Puedes crear y unirte a tantos viajes como quieras sin coste alguno." },
-  { q: "¿Cómo invito a mis amigos?", a: "Al crear un viaje se genera un código de invitación único. Compártelo por WhatsApp o cualquier medio y tus amigos podrán unirse con un clic." },
-  { q: "¿Puedo usar YORMIT en el móvil?", a: "Por supuesto. YORMIT está diseñado mobile-first y funciona como una webapp progresiva que puedes añadir a tu pantalla de inicio." },
-  { q: "¿Qué pasa con mis datos?", a: "Tus datos son privados y solo accesibles por los miembros aprobados de cada viaje. No compartimos información con terceros." },
-  { q: "¿Cuántas personas pueden unirse a un viaje?", a: "No hay límite. Puedes organizar viajes para parejas, familias, grupos de amigos o grandes comunidades." },
-];
+const featureIcons = [Hotel, Train, CalendarDays, Wallet, MessageCircle, Camera, CloudSun, Phone];
+const benefitIcons = [Zap, Users, Shield, Globe];
+const previewIcons = [CalendarDays, Wallet, MessageCircle];
 
 const Landing = () => {
   const navigate = useNavigate();
   const [showVideo, setShowVideo] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const { language, setLanguage, t } = useLanguage();
+
+  const features = [
+    { icon: featureIcons[0], title: t.landingFeatureAccommodation, desc: t.landingFeatureAccommodationDesc },
+    { icon: featureIcons[1], title: t.landingFeatureTransport, desc: t.landingFeatureTransportDesc },
+    { icon: featureIcons[2], title: t.landingFeatureActivities, desc: t.landingFeatureActivitiesDesc },
+    { icon: featureIcons[3], title: t.landingFeatureExpenses, desc: t.landingFeatureExpensesDesc },
+    { icon: featureIcons[4], title: t.landingFeatureChat, desc: t.landingFeatureChatDesc },
+    { icon: featureIcons[5], title: t.landingFeaturePhotos, desc: t.landingFeaturePhotosDesc },
+    { icon: featureIcons[6], title: t.landingFeatureWeather, desc: t.landingFeatureWeatherDesc },
+    { icon: featureIcons[7], title: t.landingFeaturePhones, desc: t.landingFeaturePhonesDesc },
+  ];
+
+  const benefits = [
+    { icon: benefitIcons[0], title: t.landingBenefitCentralized, desc: t.landingBenefitCentralizedDesc },
+    { icon: benefitIcons[1], title: t.landingBenefitCollaboration, desc: t.landingBenefitCollaborationDesc },
+    { icon: benefitIcons[2], title: t.landingBenefitPrivate, desc: t.landingBenefitPrivateDesc },
+    { icon: benefitIcons[3], title: t.landingBenefitMultilang, desc: t.landingBenefitMultilangDesc },
+  ];
+
+  const faqs = [
+    { q: t.landingFaq1Q, a: t.landingFaq1A },
+    { q: t.landingFaq2Q, a: t.landingFaq2A },
+    { q: t.landingFaq3Q, a: t.landingFaq3A },
+    { q: t.landingFaq4Q, a: t.landingFaq4A },
+    { q: t.landingFaq5Q, a: t.landingFaq5A },
+  ];
+
+  const previews = [
+    { title: t.landingPreviewDashboard, desc: t.landingPreviewDashboardDesc, icon: previewIcons[0] },
+    { title: t.landingPreviewExpenses, desc: t.landingPreviewExpensesDesc, icon: previewIcons[1] },
+    { title: t.landingPreviewChat, desc: t.landingPreviewChatDesc, icon: previewIcons[2] },
+  ];
+
+  const langs: Language[] = ["es", "en", "fr", "pt", "it", "zh", "de"];
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+
+      {/* Language flags */}
+      <div className="absolute top-3 right-4 z-50 flex gap-1.5">
+        {langs.map((lang) => (
+          <button
+            key={lang}
+            onClick={() => setLanguage(lang)}
+            className={`rounded overflow-hidden transition-all ${language === lang ? "ring-2 ring-primary scale-110" : "opacity-70 hover:opacity-100"}`}
+          >
+            <img src={languageFlags[lang]} alt={lang} className="w-6 h-4 object-cover" />
+          </button>
+        ))}
+      </div>
 
       {/* Hero */}
       <section className="relative overflow-hidden">
@@ -60,15 +87,15 @@ const Landing = () => {
               Y<Luggage className="mx-[-2px]" style={{ height: '0.95em', width: '0.95em' }} strokeWidth={2.5} />RMIT
             </div>
             <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-primary/20 text-primary-foreground backdrop-blur-sm border border-primary/30 mb-6">
-              Organiza viajes en grupo sin caos
+              {t.landingBadge}
             </span>
             <h1 className="text-3xl md:text-5xl lg:text-6xl font-extrabold text-white leading-tight">
-              Tú viaje perfecto,
+              {t.landingHeroTitle}
               <br />
-              <span className="text-primary">todo en una app</span>
+              <span className="text-primary">{t.landingHeroHighlight}</span>
             </h1>
             <p className="mt-5 text-base md:text-xl text-white/80 leading-relaxed max-w-xl mx-auto">
-              YORMIT es la plataforma que centraliza toda la información de tú viaje en grupo: alojamientos, transportes, gastos, actividades y mucho más. Sin caos, sin estrés.
+              {t.landingHeroDesc}
             </p>
             <div className="flex flex-col sm:flex-row gap-3 mt-8 items-center">
               <Button
@@ -76,7 +103,7 @@ const Landing = () => {
                 onClick={() => navigate("/auth")}
                 className="w-full sm:w-auto font-bold text-base px-8 shadow-card-hover"
               >
-                Empezar gratis
+                {t.landingCta}
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
               <div
@@ -103,9 +130,9 @@ const Landing = () => {
       <section id="features" className="py-20 md:py-28 bg-muted/30">
         <div className="max-w-6xl mx-auto px-5">
           <div className="text-center mb-14">
-            <h2 className="text-3xl md:text-4xl font-extrabold">Todo lo que necesitas en un solo lugar</h2>
+            <h2 className="text-3xl md:text-4xl font-extrabold">{t.landingFeaturesTitle}</h2>
             <p className="text-muted-foreground mt-3 max-w-lg mx-auto text-lg">
-              Cada aspecto de tu viaje, organizado y accesible para todo el grupo.
+              {t.landingFeaturesDesc}
             </p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -130,17 +157,13 @@ const Landing = () => {
       <section className="py-20 md:py-28">
         <div className="max-w-6xl mx-auto px-5">
           <div className="text-center mb-14">
-            <h2 className="text-3xl md:text-4xl font-extrabold">Así se ve por dentro</h2>
+            <h2 className="text-3xl md:text-4xl font-extrabold">{t.landingPreviewTitle}</h2>
             <p className="text-muted-foreground mt-3 max-w-lg mx-auto text-lg">
-              Una interfaz limpia y pensada para que organizar sea un placer.
+              {t.landingPreviewDesc}
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {[
-              { title: "Dashboard del viaje", desc: "Vista general con fechas, miembros y accesos directos a cada sección.", icon: CalendarDays },
-              { title: "Gastos compartidos", desc: "Registra quién paga, divide entre los miembros y visualiza balances.", icon: Wallet },
-              { title: "Chat en tiempo real", desc: "Mensajes instantáneos con tu grupo sin salir de la plataforma.", icon: MessageCircle },
-            ].map((card) => (
+            {previews.map((card) => (
               <Card key={card.title} className="overflow-hidden border-border/50">
                 <div className="h-40 gradient-hero flex items-center justify-center">
                   <card.icon className="h-16 w-16 text-white/80" />
@@ -159,9 +182,9 @@ const Landing = () => {
       <section className="py-20 md:py-28 bg-muted/30">
         <div className="max-w-6xl mx-auto px-5">
           <div className="text-center mb-14">
-            <h2 className="text-3xl md:text-4xl font-extrabold">¿Por qué YORMIT?</h2>
+            <h2 className="text-3xl md:text-4xl font-extrabold">{t.landingBenefitsTitle}</h2>
             <p className="text-muted-foreground mt-3 max-w-lg mx-auto text-lg">
-              Diseñado para hacerte la vida más fácil cuando viajas en grupo.
+              {t.landingBenefitsDesc}
             </p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -184,7 +207,7 @@ const Landing = () => {
       <section className="py-20 md:py-28">
         <div className="max-w-3xl mx-auto px-5">
           <div className="text-center mb-14">
-            <h2 className="text-3xl md:text-4xl font-extrabold">Preguntas frecuentes</h2>
+            <h2 className="text-3xl md:text-4xl font-extrabold">{t.landingFaqTitle}</h2>
           </div>
           <Accordion type="single" collapsible className="w-full">
             {faqs.map((faq, i) => (
@@ -206,17 +229,17 @@ const Landing = () => {
         <div className="absolute inset-0 gradient-hero opacity-90" />
         <div className="relative max-w-3xl mx-auto px-5 text-center">
           <h2 className="text-3xl md:text-4xl font-extrabold text-white">
-            ¿Listo para tu próximo viaje?
+            {t.landingCtaTitle}
           </h2>
           <p className="mt-4 text-white/80 text-lg max-w-md mx-auto">
-            Crea tu primer viaje en menos de un minuto. Gratis, sin tarjeta.
+            {t.landingCtaDesc}
           </p>
           <Button
             size="lg"
             onClick={() => navigate("/auth")}
             className="mt-8 bg-card text-foreground hover:bg-card/90 font-bold text-base px-10 shadow-card-hover"
           >
-            Empezar gratis
+            {t.landingCta}
             <ArrowRight className="ml-2 h-5 w-5" />
           </Button>
         </div>
@@ -230,11 +253,12 @@ const Landing = () => {
               Y<Luggage className="h-4 w-4" strokeWidth={2.5} />RMIT
             </span>
             <p className="text-sm text-muted-foreground">
-              © {new Date().getFullYear()} YORMIT. Todos los derechos reservados.
+              © {new Date().getFullYear()} YORMIT. {t.landingFooter}
             </p>
           </div>
         </div>
       </footer>
+
       {/* Video Modal */}
       <Dialog open={showVideo} onOpenChange={(open) => {
         setShowVideo(open);

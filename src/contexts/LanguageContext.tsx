@@ -13,7 +13,10 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 
 export const LanguageProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth();
-  const [language, setLanguageState] = useState<Language>("es");
+  const [language, setLanguageState] = useState<Language>(() => {
+    const saved = localStorage.getItem("app-language");
+    return saved && saved in translations ? (saved as Language) : "es";
+  });
   const [loaded, setLoaded] = useState(false);
 
   // Load language from DB on auth
@@ -29,7 +32,9 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
       .single()
       .then(({ data }) => {
         if (data?.language && data.language in translations) {
-          setLanguageState(data.language as Language);
+          const lang = data.language as Language;
+          setLanguageState(lang);
+          localStorage.setItem("app-language", lang);
         }
         setLoaded(true);
       });
@@ -38,6 +43,7 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
   const setLanguage = useCallback(
     (lang: Language) => {
       setLanguageState(lang);
+      localStorage.setItem("app-language", lang);
       if (user) {
         supabase
           .from("profiles")
