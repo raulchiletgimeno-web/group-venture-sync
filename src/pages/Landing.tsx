@@ -64,7 +64,7 @@ const Landing = () => {
             </span>
             <h1 className="text-3xl md:text-5xl lg:text-6xl font-extrabold text-white leading-tight">
               Tu viaje perfecto,{" "}
-              <span className="text-primary">organizado entre todos</span>
+              <span className="text-primary">todo en una app</span>
             </h1>
             <p className="mt-5 text-base md:text-xl text-white/80 leading-relaxed max-w-xl mx-auto">
               YORMIT es la plataforma que centraliza toda la información de tu viaje en grupo: alojamientos, transportes, gastos, actividades y mucho más. Sin caos, sin estrés.
