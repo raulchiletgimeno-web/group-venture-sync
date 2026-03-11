@@ -14,6 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { getLocale } from "@/i18n/translations";
 import { formatDisplayName } from "@/lib/formatDisplayName";
 
 interface Member {
@@ -35,7 +36,7 @@ const Expenses = () => {
   const { tripId } = useParams();
   const { user } = useAuth();
   const { toast } = useToast();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
@@ -501,6 +502,9 @@ const Expenses = () => {
                   <div className="flex items-start justify-between">
                     <div>
                       <p className="text-sm font-semibold text-card-foreground">{exp.title}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {new Date(exp.created_at).toLocaleDateString(getLocale(language), { day: "numeric", month: "short", year: "numeric" })}
+                      </p>
                        <p className="text-xs text-muted-foreground mt-1">
                          {t.paidByLabel} {memberName(exp.paid_by)} — {exp.amount.toFixed(2)} €
                        </p>
