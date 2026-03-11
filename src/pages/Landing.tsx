@@ -63,7 +63,8 @@ const Landing = () => {
               Organiza viajes en grupo sin caos
             </span>
             <h1 className="text-3xl md:text-5xl lg:text-6xl font-extrabold text-white leading-tight">
-              Tu viaje perfecto,{" "}
+              Tu viaje perfecto,
+              <br />
               <span className="text-primary">todo en una app</span>
             </h1>
             <p className="mt-5 text-base md:text-xl text-white/80 leading-relaxed max-w-xl mx-auto">
