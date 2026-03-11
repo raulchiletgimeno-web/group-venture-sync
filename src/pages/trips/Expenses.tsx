@@ -14,6 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { getLocale } from "@/i18n/translations";
 import { formatDisplayName } from "@/lib/formatDisplayName";
 
 interface Member {
