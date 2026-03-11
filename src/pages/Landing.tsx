@@ -70,7 +70,7 @@ const Landing = () => {
             onClick={() => setLanguage(lang)}
             className={`rounded overflow-hidden transition-all ${language === lang ? "ring-2 ring-primary scale-110" : "opacity-70 hover:opacity-100"}`}
           >
-            <img src={languageFlags[lang]} alt={lang} className="w-6 h-4 object-cover" />
+            <img src={languageFlags[lang]} alt={lang} className="w-8 h-6 object-cover" />
           </button>
         ))}
       </div>
