@@ -1,28 +1,26 @@
 
 
-## Plan: Banderas de idioma en Landing + traducción completa
+## Plan: Arreglar promoción a co-creador y añadir confirmación
 
-### Resumen
-Añadir un selector de banderas en la esquina superior derecha de la Landing page y hacer que todo el contenido de la página se traduzca al idioma seleccionado.
+### Problemas detectados
 
-### Cambios necesarios
+1. **Sin diálogo de confirmación**: Al pulsar "Nombrar co-creador" se ejecuta directamente sin preguntar. El usuario quiere un AlertDialog de confirmación (igual que ya existe para "Eliminar miembro").
+2. **Errores silenciados**: `handlePromote` y `handleDemote` no muestran error si la operación falla en la base de datos.
+3. **Posible problema con DropdownMenu + Popover**: El click en el DropdownMenuItem cierra el dropdown y potencialmente el Popover, lo que puede interferir con la ejecución asíncrona.
 
-**1. Añadir traducciones de la Landing en `src/i18n/translations.ts`**
-- Añadir ~25 nuevas claves para todo el contenido de la Landing: título hero, subtítulo, botones, secciones de features (8), benefits (4), FAQs (5), sección CTA, footer, y textos de las previews.
-- Traducir a los 7 idiomas (es, en, fr, pt, it, zh, de).
+### Cambios en `src/pages/TripDashboard.tsx`
 
-**2. Modificar `src/contexts/LanguageContext.tsx`**
-- Actualmente depende de `useAuth` y no funciona sin usuario logueado (siempre usa "es" sin auth).
-- Añadir persistencia en `localStorage` para usuarios no autenticados, de modo que la Landing pueda usar el idioma seleccionado.
+1. **Añadir AlertDialog de confirmación** para promover y degradar co-creador, igual que ya se hace para eliminar miembro:
+   - Envolver las opciones de promover/degradar en un `AlertDialog` con `AlertDialogTrigger` usando `onSelect={(e) => e.preventDefault()}` para evitar que el dropdown se cierre.
+   - Mostrar un mensaje de confirmación tipo "¿Estás seguro de que quieres nombrar a este usuario como co-creador?"
+   
+2. **Añadir manejo de errores visible** en `handlePromote` y `handleDemote` — mostrar toast de error si falla.
 
-**3. Modificar `src/pages/Landing.tsx`**
-- Importar `useLanguage`, `languageFlags` y `Language`.
-- Añadir las banderas en la esquina superior derecha (posición absoluta/fixed sobre el hero), usando las mismas imágenes de banderas que ya existen en el Dashboard (w-6 h-4, pequeñitas).
-- Reemplazar todos los textos hardcodeados por claves de traducción `t.landingXxx`.
-- Convertir los arrays `features`, `benefits`, `faqs` y previews en funciones que reciban `t` para devolver el contenido traducido.
+3. **Añadir traducciones** necesarias para los nuevos textos de confirmación en todos los idiomas (es, en, fr, pt, it, zh, de):
+   - `confirmMakeCoCreator` / `confirmMakeCoCreatorDesc`
+   - `confirmRemoveCoCreator` / `confirmRemoveCoCreatorDesc`
 
-### Estimación
-- ~200 líneas nuevas de traducciones (25 claves × 7 idiomas + claves tipo).
-- ~30 líneas modificadas en Landing.tsx.
-- ~5 líneas en LanguageContext.tsx para localStorage fallback.
+### Cambios en `src/i18n/translations.ts`
+
+- Añadir 4 nuevas claves de traducción en los 7 idiomas.
 
