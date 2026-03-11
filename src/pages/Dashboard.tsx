@@ -25,7 +25,7 @@ interface Trip {
 
 const Index = () => {
   const { profile, signOut } = useAuth();
-  const { t, language, setLanguage } = useLanguage();
+  const { t, language } = useLanguage();
   const [trips, setTrips] = useState<Trip[]>([]);
   const [translatedTitles, setTranslatedTitles] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
