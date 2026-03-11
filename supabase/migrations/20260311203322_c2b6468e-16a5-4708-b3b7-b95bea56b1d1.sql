@@ -1,0 +1,2 @@
+DELETE FROM trip_expense_splits WHERE expense_id IN ('f0fcf81a-725d-4910-a9d6-bcf9878b3c6d', '2d3a7004-9298-4f02-9deb-1d54e1e1d1a4', '0df9cb73-1356-4bfb-98ae-8bc1b5cd44dd');
+DELETE FROM trip_expenses WHERE id IN ('f0fcf81a-725d-4910-a9d6-bcf9878b3c6d', '2d3a7004-9298-4f02-9deb-1d54e1e1d1a4', '0df9cb73-1356-4bfb-98ae-8bc1b5cd44dd');
