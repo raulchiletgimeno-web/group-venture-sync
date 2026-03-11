@@ -1,26 +1,47 @@
 
 
-## Plan: Arreglar promoción a co-creador y añadir confirmación
+## Plan: Generar sitemap.xml y robots.txt para yormit.com
 
-### Problemas detectados
+### Páginas públicas identificadas
+- `/` — Landing page (indexable)
 
-1. **Sin diálogo de confirmación**: Al pulsar "Nombrar co-creador" se ejecuta directamente sin preguntar. El usuario quiere un AlertDialog de confirmación (igual que ya existe para "Eliminar miembro").
-2. **Errores silenciados**: `handlePromote` y `handleDemote` no muestran error si la operación falla en la base de datos.
-3. **Posible problema con DropdownMenu + Popover**: El click en el DropdownMenuItem cierra el dropdown y potencialmente el Popover, lo que puede interferir con la ejecución asíncrona.
+### Páginas a excluir (privadas o no indexables)
+- `/auth`, `/reset-password` — login/registro
+- `/dashboard` — área privada
+- `/join/:inviteCode` — invitaciones privadas
+- `/trip/*` — todas las subrutas de viaje
 
-### Cambios en `src/pages/TripDashboard.tsx`
+### Cambios
 
-1. **Añadir AlertDialog de confirmación** para promover y degradar co-creador, igual que ya se hace para eliminar miembro:
-   - Envolver las opciones de promover/degradar en un `AlertDialog` con `AlertDialogTrigger` usando `onSelect={(e) => e.preventDefault()}` para evitar que el dropdown se cierre.
-   - Mostrar un mensaje de confirmación tipo "¿Estás seguro de que quieres nombrar a este usuario como co-creador?"
-   
-2. **Añadir manejo de errores visible** en `handlePromote` y `handleDemote` — mostrar toast de error si falla.
+**1. Crear `public/sitemap.xml`**
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://yormit.com/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+</urlset>
+```
 
-3. **Añadir traducciones** necesarias para los nuevos textos de confirmación en todos los idiomas (es, en, fr, pt, it, zh, de):
-   - `confirmMakeCoCreator` / `confirmMakeCoCreatorDesc`
-   - `confirmRemoveCoCreator` / `confirmRemoveCoCreatorDesc`
+**2. Actualizar `public/robots.txt`**
+- Permitir rastreo de `/`
+- Bloquear rutas privadas: `/dashboard`, `/trip/`, `/join/`, `/auth`, `/reset-password`
+- Incluir referencia al sitemap en `https://yormit.com/sitemap.xml`
 
-### Cambios en `src/i18n/translations.ts`
+```
+User-agent: *
+Allow: /
 
-- Añadir 4 nuevas claves de traducción en los 7 idiomas.
+Disallow: /auth
+Disallow: /reset-password
+Disallow: /dashboard
+Disallow: /trip/
+Disallow: /join/
+
+Sitemap: https://yormit.com/sitemap.xml
+```
+
+Ambos archivos se sirven automáticamente desde la carpeta `public/` de Vite. Solo hay que republicar el proyecto para que estén accesibles.
 
