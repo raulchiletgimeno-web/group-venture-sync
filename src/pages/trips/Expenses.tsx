@@ -502,6 +502,9 @@ const Expenses = () => {
                   <div className="flex items-start justify-between">
                     <div>
                       <p className="text-sm font-semibold text-card-foreground">{exp.title}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {new Date(exp.created_at).toLocaleDateString(getLocale(language), { day: "numeric", month: "short", year: "numeric" })}
+                      </p>
                        <p className="text-xs text-muted-foreground mt-1">
                          {t.paidByLabel} {memberName(exp.paid_by)} — {exp.amount.toFixed(2)} €
                        </p>
