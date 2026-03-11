@@ -8,7 +8,6 @@ import JoinTripDialog from "@/components/JoinTripDialog";
 import HelpChatBot from "@/components/HelpChatBot";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { languageFlags, Language } from "@/i18n/translations";
 import { getLocale } from "@/i18n/translations";
 import { supabase } from "@/integrations/supabase/client";
 import heroImage from "@/assets/hero-travel.jpg";
@@ -26,7 +25,7 @@ interface Trip {
 
 const Index = () => {
   const { profile, signOut } = useAuth();
-  const { t, language, setLanguage } = useLanguage();
+  const { t, language } = useLanguage();
   const [trips, setTrips] = useState<Trip[]>([]);
   const [translatedTitles, setTranslatedTitles] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
@@ -123,7 +122,7 @@ const Index = () => {
     translateTitles();
   }, [language, trips]);
 
-  const flagLanguages: Language[] = ["es", "en", "fr", "pt", "it", "zh", "de"];
+  
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[hsl(175_45%_75%)] via-[hsl(190_35%_85%)] to-background">
@@ -180,23 +179,6 @@ const Index = () => {
             </Button>
           </div>
 
-          {/* Language flags */}
-          <div className="flex items-center gap-3 mt-5">
-            {flagLanguages.map((lang) => (
-              <button
-                key={lang}
-                onClick={() => setLanguage(lang)}
-                className={`transition-all duration-200 rounded-sm ${
-                  language === lang
-                    ? "scale-125 drop-shadow-lg ring-2 ring-white"
-                    : "opacity-70 hover:opacity-100 hover:scale-110"
-                }`}
-                title={lang.toUpperCase()}
-              >
-                <img src={languageFlags[lang]} alt={lang.toUpperCase()} className="w-8 h-6 rounded-sm object-cover border border-white/30" />
-              </button>
-            ))}
-          </div>
         </div>
       </div>
 
