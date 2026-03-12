@@ -1,26 +1,21 @@
 
 
-## Plan: Arreglar promoción a co-creador y añadir confirmación
+## Plan: Video de fondo en el Hero de la Landing
 
-### Problemas detectados
+### Resumen
+Reemplazar la imagen de fondo del hero (`hero-travel.jpg`) por un video en bucle de temática de viajes (~10s), manteniendo la misma capa oscura superpuesta y todo el contenido actual.
 
-1. **Sin diálogo de confirmación**: Al pulsar "Nombrar co-creador" se ejecuta directamente sin preguntar. El usuario quiere un AlertDialog de confirmación (igual que ya existe para "Eliminar miembro").
-2. **Errores silenciados**: `handlePromote` y `handleDemote` no muestran error si la operación falla en la base de datos.
-3. **Posible problema con DropdownMenu + Popover**: El click en el DropdownMenuItem cierra el dropdown y potencialmente el Popover, lo que puede interferir con la ejecución asíncrona.
+### Cambios
 
-### Cambios en `src/pages/TripDashboard.tsx`
+**1. Obtener un video de fondo**
+- Usar un video libre de derechos de temática viajes (aviones, maletas, paisajes). Se puede descargar uno de Pexels/Pixabay y añadirlo a `public/videos/hero-background.mp4`, o usar una URL externa de un CDN gratuito para evitar aumentar el tamaño del proyecto.
 
-1. **Añadir AlertDialog de confirmación** para promover y degradar co-creador, igual que ya se hace para eliminar miembro:
-   - Envolver las opciones de promover/degradar en un `AlertDialog` con `AlertDialogTrigger` usando `onSelect={(e) => e.preventDefault()}` para evitar que el dropdown se cierre.
-   - Mostrar un mensaje de confirmación tipo "¿Estás seguro de que quieres nombrar a este usuario como co-creador?"
-   
-2. **Añadir manejo de errores visible** en `handlePromote` y `handleDemote` — mostrar toast de error si falla.
+**2. Modificar `src/pages/Landing.tsx`**
+- En la sección Hero, reemplazar el `<img src={heroImage}>` por un `<video>` con atributos: `autoPlay`, `muted`, `loop`, `playsInline`, `preload="auto"`.
+- Mantener el overlay `bg-black/60` encima del video.
+- Eliminar el import de `heroImage` si ya no se usa en ningún sitio.
+- Clases del video: `w-full h-full object-cover absolute inset-0` para cubrir todo el fondo igual que la imagen actual.
 
-3. **Añadir traducciones** necesarias para los nuevos textos de confirmación en todos los idiomas (es, en, fr, pt, it, zh, de):
-   - `confirmMakeCoCreator` / `confirmMakeCoCreatorDesc`
-   - `confirmRemoveCoCreator` / `confirmRemoveCoCreatorDesc`
-
-### Cambios en `src/i18n/translations.ts`
-
-- Añadir 4 nuevas claves de traducción en los 7 idiomas.
+### Nota
+Necesitaré confirmar la fuente del video: ¿tienes un video propio que quieras usar, o prefieres que use uno libre de derechos de internet?
 
