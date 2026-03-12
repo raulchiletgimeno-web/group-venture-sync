@@ -720,7 +720,7 @@ const translations: Record<Language, TranslationKeys> = {
     landingBadge: "Organiza viajes en grupo sin caos",
     landingHeroTitle: "Tu viaje en grupo,",
     landingHeroHighlight: "todo en una app",
-    landingHeroDesc: "YORMIT reúne alojamientos, transportes, gastos, actividades, chat y fotos en un solo lugar para que organizar un viaje en grupo sea fácil y sin estrés.",
+    landingHeroDesc: "YORMIT reúne alojamientos, transportes, gastos, actividades, chat y fotos para que organizar un viaje en grupo sea fácil, ordenado y sin estrés.",
     landingCta: "Empezar gratis",
     landingFeaturesTitle: "Todo lo que necesitas en un solo lugar",
     landingFeaturesDesc: "Cada aspecto de tu viaje, organizado y accesible para todo el grupo.",
