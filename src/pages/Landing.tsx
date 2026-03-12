@@ -25,6 +25,13 @@ const Landing = () => {
   const videoSectionRef = useRef<HTMLDivElement>(null);
   const { language, setLanguage, t } = useLanguage();
 
+  useEffect(() => {
+    if (showVideo && videoRef.current) {
+      videoRef.current.muted = false;
+      videoRef.current.play().catch(() => {});
+    }
+  }, [showVideo]);
+
   const features = [
     { icon: featureIcons[0], title: t.landingFeatureAccommodation, desc: t.landingFeatureAccommodationDesc },
     { icon: featureIcons[1], title: t.landingFeatureTransport, desc: t.landingFeatureTransportDesc },
