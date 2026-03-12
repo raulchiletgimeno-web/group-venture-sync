@@ -332,6 +332,15 @@ const Landing = () => {
           />
         </DialogContent>
       </Dialog>
+
+      {/* Floating FAQ button */}
+      <button
+        onClick={() => faqRef.current?.scrollIntoView({ behavior: "smooth" })}
+        className="fixed bottom-5 right-5 z-50 flex items-center gap-2 rounded-full bg-primary px-4 py-2.5 text-primary-foreground shadow-lg hover:bg-primary/90 transition-colors text-sm font-semibold"
+      >
+        <HelpCircle className="h-4 w-4" />
+        {t.landingFaqTitle}
+      </button>
     </div>
   );
 };
