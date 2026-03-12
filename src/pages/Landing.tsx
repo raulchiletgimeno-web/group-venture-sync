@@ -104,7 +104,7 @@ const Landing = () => {
           </video>
           <div className="absolute inset-0 bg-black/55" />
         </div>
-        <div className="relative max-w-5xl mx-auto px-5 py-16 md:py-24 lg:py-32">
+        <div className="relative max-w-5xl mx-auto px-5 py-10 md:py-20 lg:py-28">
           <div className="max-w-2xl mx-auto text-center">
             {/* Logo */}
             <div className="text-4xl md:text-6xl font-extrabold tracking-wider uppercase flex items-center justify-center mb-6 text-white [text-shadow:_0_2px_8px_rgba(0,0,0,0.5)]">
