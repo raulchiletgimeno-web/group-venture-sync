@@ -123,7 +123,7 @@ const Landing = () => {
               </Button>
               <Button
                 size="lg"
-                onClick={scrollToVideo}
+                onClick={() => setShowVideo(true)}
                 className="w-full sm:w-auto font-bold text-base px-8 shadow-card-hover"
               >
                 <Play className="mr-2 h-4 w-4" />
