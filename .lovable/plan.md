@@ -1,26 +1,26 @@
 
 
-## Plan: Arreglar promoción a co-creador y añadir confirmación
+## Plan: Nuevo video de fondo + mejor legibilidad del texto
 
-### Problemas detectados
+### Problema
+El video actual es demasiado claro/colorido y las letras blancas del hero no se leen bien. El overlay `bg-black/30` es insuficiente.
 
-1. **Sin diálogo de confirmación**: Al pulsar "Nombrar co-creador" se ejecuta directamente sin preguntar. El usuario quiere un AlertDialog de confirmación (igual que ya existe para "Eliminar miembro").
-2. **Errores silenciados**: `handlePromote` y `handleDemote` no muestran error si la operación falla en la base de datos.
-3. **Posible problema con DropdownMenu + Popover**: El click en el DropdownMenuItem cierra el dropdown y potencialmente el Popover, lo que puede interferir con la ejecución asíncrona.
+### Cambios
 
-### Cambios en `src/pages/TripDashboard.tsx`
+**1. Reemplazar `public/videos/hero-background.mp4`**
+- Buscar un video libre de derechos con 3 amigos paseando por un lugar emblemático (Coliseo, Torre Eiffel, etc.) — temática de amistad, felicidad, buen rollo.
+- Idealmente con tonos medios-oscuros naturales (atardecer, sombras urbanas) que faciliten la lectura del texto blanco superpuesto.
 
-1. **Añadir AlertDialog de confirmación** para promover y degradar co-creador, igual que ya se hace para eliminar miembro:
-   - Envolver las opciones de promover/degradar en un `AlertDialog` con `AlertDialogTrigger` usando `onSelect={(e) => e.preventDefault()}` para evitar que el dropdown se cierre.
-   - Mostrar un mensaje de confirmación tipo "¿Estás seguro de que quieres nombrar a este usuario como co-creador?"
-   
-2. **Añadir manejo de errores visible** en `handlePromote` y `handleDemote` — mostrar toast de error si falla.
+**2. Ajustar overlay en `src/pages/Landing.tsx`**
+- Subir el overlay de `bg-black/30` a `bg-black/40` para garantizar contraste suficiente con el texto blanco sin oscurecer demasiado el video.
 
-3. **Añadir traducciones** necesarias para los nuevos textos de confirmación en todos los idiomas (es, en, fr, pt, it, zh, de):
-   - `confirmMakeCoCreator` / `confirmMakeCoCreatorDesc`
-   - `confirmRemoveCoCreator` / `confirmRemoveCoCreatorDesc`
+**3. Añadir text-shadow al texto del hero** (en `src/index.css` o inline)
+- Aplicar un `text-shadow` sutil al título y descripción del hero para que las letras se lean con claridad independientemente del fotograma del video:
+  ```css
+  text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  ```
+- Esto se aplicará al logo YORMIT, al h1, y al párrafo descriptivo.
 
-### Cambios en `src/i18n/translations.ts`
-
-- Añadir 4 nuevas claves de traducción en los 7 idiomas.
+### Resultado
+Video alegre de amigos en lugar emblemático + overlay equilibrado + sombra en texto = contenido perfectamente legible sobre un fondo bonito y vibrante.
 
