@@ -88,22 +88,22 @@ const Landing = () => {
           >
             <source src="/videos/hero-background.mp4" type="video/mp4" />
           </video>
-          <div className="absolute inset-0 bg-black/30" />
+          <div className="absolute inset-0 bg-black/40" />
         </div>
         <div className="relative max-w-6xl mx-auto px-5 py-12 md:py-28 lg:py-36">
           <div className="max-w-2xl mx-auto text-center">
-            <div className="text-5xl md:text-8xl font-extrabold tracking-wider uppercase flex items-center justify-center mb-4 text-white">
+            <div className="text-5xl md:text-8xl font-extrabold tracking-wider uppercase flex items-center justify-center mb-4 text-white [text-shadow:_0_2px_8px_rgba(0,0,0,0.5)]">
               Y<Luggage className="mx-[-2px]" style={{ height: '0.95em', width: '0.95em' }} strokeWidth={2.5} />RMIT
             </div>
             <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-primary/20 text-primary-foreground backdrop-blur-sm border border-primary/30 mb-6">
               {t.landingBadge}
             </span>
-            <h1 className="text-3xl md:text-5xl lg:text-6xl font-extrabold text-white leading-tight">
+            <h1 className="text-3xl md:text-5xl lg:text-6xl font-extrabold text-white leading-tight [text-shadow:_0_2px_8px_rgba(0,0,0,0.5)]">
               {t.landingHeroTitle}
               <br />
-              <span className="text-primary">{t.landingHeroHighlight}</span>
+              <span className="text-primary [text-shadow:_0_2px_8px_rgba(0,0,0,0.5)]">{t.landingHeroHighlight}</span>
             </h1>
-            <p className="mt-5 text-base md:text-xl text-white/80 leading-relaxed max-w-xl mx-auto">
+            <p className="mt-5 text-base md:text-xl text-white/80 leading-relaxed max-w-xl mx-auto [text-shadow:_0_1px_6px_rgba(0,0,0,0.4)]">
               {t.landingHeroDesc}
             </p>
             <div className="flex flex-col sm:flex-row gap-3 mt-8 items-center">
