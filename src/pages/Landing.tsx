@@ -11,7 +11,7 @@ import {
   Accordion, AccordionContent, AccordionItem, AccordionTrigger
 } from "@/components/ui/accordion";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import heroImage from "@/assets/hero-travel.jpg";
+
 import { useLanguage } from "@/contexts/LanguageContext";
 import { languageFlags, Language } from "@/i18n/translations";
 
