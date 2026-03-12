@@ -88,7 +88,7 @@ const Landing = () => {
           >
             <source src="/videos/hero-background.mp4" type="video/mp4" />
           </video>
-          <div className="absolute inset-0 bg-black/30" />
+          <div className="absolute inset-0 bg-black/40" />
         </div>
         <div className="relative max-w-6xl mx-auto px-5 py-12 md:py-28 lg:py-36">
           <div className="max-w-2xl mx-auto text-center">
