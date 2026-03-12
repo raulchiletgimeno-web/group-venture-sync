@@ -138,7 +138,7 @@ const Landing = () => {
                   onClick={() => setShowVideo(true)}
                   className="w-full sm:w-auto font-bold text-base px-8 shadow-card-hover"
                 >
-                  <Play className="mr-2 h-4 w-4" />
+                  <Play className="mr-2 h-4 w-4 relative top-px" />
                   {t.landingCtaSecondary}
                 </Button>
               </div>
