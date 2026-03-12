@@ -103,7 +103,7 @@ const Landing = () => {
               <br />
               <span className="text-primary [text-shadow:_0_2px_8px_rgba(0,0,0,0.5)]">{t.landingHeroHighlight}</span>
             </h1>
-            <p className="mt-5 text-base md:text-xl text-white/80 leading-relaxed max-w-xl mx-auto">
+            <p className="mt-5 text-base md:text-xl text-white/80 leading-relaxed max-w-xl mx-auto [text-shadow:_0_1px_6px_rgba(0,0,0,0.4)]">
               {t.landingHeroDesc}
             </p>
             <div className="flex flex-col sm:flex-row gap-3 mt-8 items-center">
