@@ -1,13 +1,26 @@
 
 
-## Plan: Reproducción instantánea del vídeo al hacer clic en "Ver cómo funciona"
+## Plan: Arreglar promoción a co-creador y añadir confirmación
 
-### Cambio
-Modificar el botón "Ver cómo funciona" del hero para que en lugar de hacer scroll a la sección de vídeo, abra directamente el modal de vídeo con reproducción instantánea (con audio).
+### Problemas detectados
 
-### Archivo: `src/pages/Landing.tsx`
+1. **Sin diálogo de confirmación**: Al pulsar "Nombrar co-creador" se ejecuta directamente sin preguntar. El usuario quiere un AlertDialog de confirmación (igual que ya existe para "Eliminar miembro").
+2. **Errores silenciados**: `handlePromote` y `handleDemote` no muestran error si la operación falla en la base de datos.
+3. **Posible problema con DropdownMenu + Popover**: El click en el DropdownMenuItem cierra el dropdown y potencialmente el Popover, lo que puede interferir con la ejecución asíncrona.
 
-1. Cambiar el `onClick` del botón secundario (línea 126) de `scrollToVideo` a `() => setShowVideo(true)`
-2. Añadir un `useEffect` que cuando `showVideo` cambie a `true`, haga `play()` en el `videoRef` para asegurar reproducción instantánea con audio
-3. El vídeo ya tiene `autoPlay` en el modal, pero los navegadores pueden bloquearlo con audio. Se añadirá lógica para forzar el play programáticamente.
+### Cambios en `src/pages/TripDashboard.tsx`
+
+1. **Añadir AlertDialog de confirmación** para promover y degradar co-creador, igual que ya se hace para eliminar miembro:
+   - Envolver las opciones de promover/degradar en un `AlertDialog` con `AlertDialogTrigger` usando `onSelect={(e) => e.preventDefault()}` para evitar que el dropdown se cierre.
+   - Mostrar un mensaje de confirmación tipo "¿Estás seguro de que quieres nombrar a este usuario como co-creador?"
+   
+2. **Añadir manejo de errores visible** en `handlePromote` y `handleDemote` — mostrar toast de error si falla.
+
+3. **Añadir traducciones** necesarias para los nuevos textos de confirmación en todos los idiomas (es, en, fr, pt, it, zh, de):
+   - `confirmMakeCoCreator` / `confirmMakeCoCreatorDesc`
+   - `confirmRemoveCoCreator` / `confirmRemoveCoCreatorDesc`
+
+### Cambios en `src/i18n/translations.ts`
+
+- Añadir 4 nuevas claves de traducción en los 7 idiomas.
 
