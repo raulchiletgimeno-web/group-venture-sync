@@ -90,7 +90,7 @@ const Landing = () => {
           </video>
           <div className="absolute inset-0 bg-black/40" />
         </div>
-        <div className="relative max-w-6xl mx-auto px-5 py-12 md:py-28 lg:py-36">
+        <div className="relative max-w-6xl mx-auto px-5 py-8 md:py-20 lg:py-28">
           <div className="max-w-2xl mx-auto text-center">
             <div className="text-5xl md:text-8xl font-extrabold tracking-wider uppercase flex items-center justify-center mb-4 text-white [text-shadow:_0_2px_8px_rgba(0,0,0,0.5)]">
               Y<Luggage className="mx-[-2px]" style={{ height: '0.95em', width: '0.95em' }} strokeWidth={2.5} />RMIT
