@@ -123,9 +123,8 @@ const Landing = () => {
               </Button>
               <Button
                 size="lg"
-                variant="outline"
                 onClick={scrollToVideo}
-                className="w-full sm:w-auto font-bold text-base px-8 border-primary/50 text-primary bg-primary/10 hover:bg-primary/20 hover:text-primary backdrop-blur-sm"
+                className="w-full sm:w-auto font-bold text-base px-8 shadow-card-hover"
               >
                 <Play className="mr-2 h-4 w-4" />
                 {t.landingCtaSecondary}
