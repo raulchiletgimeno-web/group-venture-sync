@@ -1,24 +1,26 @@
 
 
-## Plan: Configurar icono PWA de YORMIT
+## Plan: Arreglar promoción a co-creador y añadir confirmación
 
-### Archivos de icono
-Copiar la imagen subida a `public/` como los iconos PWA y favicon:
-- `public/pwa-icon-192.png` (reemplazar existente)
-- `public/pwa-icon-512.png` (reemplazar existente)
-- `public/favicon.png` (nuevo, reemplazar el .ico)
-- `public/apple-touch-icon.png` (nuevo, para iOS)
+### Problemas detectados
 
-Todas serán copias de la misma imagen subida (los navegadores las redimensionan correctamente).
+1. **Sin diálogo de confirmación**: Al pulsar "Nombrar co-creador" se ejecuta directamente sin preguntar. El usuario quiere un AlertDialog de confirmación (igual que ya existe para "Eliminar miembro").
+2. **Errores silenciados**: `handlePromote` y `handleDemote` no muestran error si la operación falla en la base de datos.
+3. **Posible problema con DropdownMenu + Popover**: El click en el DropdownMenuItem cierra el dropdown y potencialmente el Popover, lo que puede interferir con la ejecución asíncrona.
 
-### Archivo: `index.html`
-- Añadir `<link rel="icon" href="/favicon.png" type="image/png">` 
-- Añadir `<link rel="apple-touch-icon" href="/apple-touch-icon.png">`
-- Eliminar referencia al antiguo `favicon.ico`
+### Cambios en `src/pages/TripDashboard.tsx`
 
-### Archivo: `vite.config.ts`
-El manifest PWA ya está configurado correctamente con los nombres y rutas de iconos. Solo añadir una entrada adicional para el icono maskable 512x512 separado (con `purpose: "maskable"`) y dejar el otro con `purpose: "any"`.
+1. **Añadir AlertDialog de confirmación** para promover y degradar co-creador, igual que ya se hace para eliminar miembro:
+   - Envolver las opciones de promover/degradar en un `AlertDialog` con `AlertDialogTrigger` usando `onSelect={(e) => e.preventDefault()}` para evitar que el dropdown se cierre.
+   - Mostrar un mensaje de confirmación tipo "¿Estás seguro de que quieres nombrar a este usuario como co-creador?"
+   
+2. **Añadir manejo de errores visible** en `handlePromote` y `handleDemote` — mostrar toast de error si falla.
 
-### Resultado
-Al borrar el acceso directo y volver a añadir la webapp, aparecerá el nuevo icono con la maleta sobre fondo azul degradado.
+3. **Añadir traducciones** necesarias para los nuevos textos de confirmación en todos los idiomas (es, en, fr, pt, it, zh, de):
+   - `confirmMakeCoCreator` / `confirmMakeCoCreatorDesc`
+   - `confirmRemoveCoCreator` / `confirmRemoveCoCreatorDesc`
+
+### Cambios en `src/i18n/translations.ts`
+
+- Añadir 4 nuevas claves de traducción en los 7 idiomas.
 
