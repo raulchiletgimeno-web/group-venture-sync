@@ -78,7 +78,16 @@ const Landing = () => {
       {/* Hero */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0">
-          <img src={heroImage} alt="Viaje en grupo" className="w-full h-full object-cover" />
+          <video
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="auto"
+            className="w-full h-full object-cover"
+          >
+            <source src="/videos/hero-background.mp4" type="video/mp4" />
+          </video>
           <div className="absolute inset-0 bg-black/60" />
         </div>
         <div className="relative max-w-6xl mx-auto px-5 py-12 md:py-28 lg:py-36">
