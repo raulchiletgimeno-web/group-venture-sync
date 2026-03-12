@@ -131,7 +131,7 @@ const Landing = () => {
                   className="w-full sm:w-auto font-bold text-base px-8 shadow-card-hover"
                 >
                   {t.landingCta}
-                  <ArrowRight className="ml-2 h-5 w-5" />
+                  <ArrowRight className="ml-2 h-5 w-5 relative top-px" />
                 </Button>
                 <Button
                   size="lg"
