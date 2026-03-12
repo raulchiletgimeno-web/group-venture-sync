@@ -1,26 +1,19 @@
 
 
-## Plan: Arreglar promoción a co-creador y añadir confirmación
+## Plan: Cambio de titular + mejora de legibilidad
 
-### Problemas detectados
+### Cambios
 
-1. **Sin diálogo de confirmación**: Al pulsar "Nombrar co-creador" se ejecuta directamente sin preguntar. El usuario quiere un AlertDialog de confirmación (igual que ya existe para "Eliminar miembro").
-2. **Errores silenciados**: `handlePromote` y `handleDemote` no muestran error si la operación falla en la base de datos.
-3. **Posible problema con DropdownMenu + Popover**: El click en el DropdownMenuItem cierra el dropdown y potencialmente el Popover, lo que puede interferir con la ejecución asíncrona.
+**1. Actualizar texto del hero en español** (`src/i18n/translations.ts`)
+- Línea 721: `"Tú viaje perfecto,"` → `"Tu viaje en grupo,"`
+- Línea 723: Actualizar también la descripción para quitar la tilde incorrecta en "tú viaje" → "tu viaje"
 
-### Cambios en `src/pages/TripDashboard.tsx`
+**2. Oscurecer overlay del hero** (`src/pages/Landing.tsx`)
+- Línea 91: `bg-black/40` → `bg-black/50` — suficiente para mejorar contraste sin apagar el video
 
-1. **Añadir AlertDialog de confirmación** para promover y degradar co-creador, igual que ya se hace para eliminar miembro:
-   - Envolver las opciones de promover/degradar en un `AlertDialog` con `AlertDialogTrigger` usando `onSelect={(e) => e.preventDefault()}` para evitar que el dropdown se cierre.
-   - Mostrar un mensaje de confirmación tipo "¿Estás seguro de que quieres nombrar a este usuario como co-creador?"
-   
-2. **Añadir manejo de errores visible** en `handlePromote` y `handleDemote` — mostrar toast de error si falla.
+**3. Publicar los cambios** tras aplicar las ediciones.
 
-3. **Añadir traducciones** necesarias para los nuevos textos de confirmación en todos los idiomas (es, en, fr, pt, it, zh, de):
-   - `confirmMakeCoCreator` / `confirmMakeCoCreatorDesc`
-   - `confirmRemoveCoCreator` / `confirmRemoveCoCreatorDesc`
-
-### Cambios en `src/i18n/translations.ts`
-
-- Añadir 4 nuevas claves de traducción en los 7 idiomas.
+### Notas
+- Solo se modifica el texto en español; los demás idiomas ya dicen "your group trip" o equivalente y no necesitan cambio.
+- El overlay pasa de 40% a 50% de opacidad: mejora notable de legibilidad sin perder el atractivo visual del video.
 
