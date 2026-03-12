@@ -5,7 +5,7 @@ import {
   Camera, CloudSun, Phone, ArrowRight, Play,
   MessageSquare, MapPinOff, ReceiptText, SearchX, FolderOpen,
   PlusCircle, LayoutDashboard, Share2,
-  Zap, HeartHandshake, ListChecks, Users, Clock
+  Zap, HeartHandshake, ListChecks, Users, Clock, HelpCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -23,6 +23,7 @@ const Landing = () => {
   const [showVideo, setShowVideo] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const videoSectionRef = useRef<HTMLDivElement>(null);
+  const faqRef = useRef<HTMLDivElement>(null);
   const { language, setLanguage, t } = useLanguage();
 
   useEffect(() => {
@@ -261,7 +262,7 @@ const Landing = () => {
       </section>
 
       {/* ═══════════ FAQ ═══════════ */}
-      <section className="py-16 md:py-24">
+      <section ref={faqRef} className="py-16 md:py-24">
         <div className="max-w-3xl mx-auto px-5">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-extrabold">{t.landingFaqTitle}</h2>
@@ -331,6 +332,15 @@ const Landing = () => {
           />
         </DialogContent>
       </Dialog>
+
+      {/* Floating FAQ button */}
+      <button
+        onClick={() => faqRef.current?.scrollIntoView({ behavior: "smooth" })}
+        className="fixed bottom-5 right-5 z-50 flex items-center gap-2 rounded-full bg-primary px-4 py-2.5 text-primary-foreground shadow-lg hover:bg-primary/90 transition-colors text-sm font-semibold"
+      >
+        <HelpCircle className="h-4 w-4" />
+        {t.landingFaqTitle}
+      </button>
     </div>
   );
 };
