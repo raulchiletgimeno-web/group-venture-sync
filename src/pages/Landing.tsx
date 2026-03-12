@@ -5,7 +5,7 @@ import {
   Camera, CloudSun, Phone, ArrowRight, Play,
   MessageSquare, MapPinOff, ReceiptText, SearchX, FolderOpen,
   PlusCircle, LayoutDashboard, Share2,
-  Zap, HeartHandshake, ListChecks, Users, Clock
+  Zap, HeartHandshake, ListChecks, Users, Clock, HelpCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
