@@ -346,7 +346,7 @@ const Landing = () => {
         onClick={() => faqRef.current?.scrollIntoView({ behavior: "smooth" })}
         className="fixed bottom-52 right-5 z-50 flex items-center gap-1.5 rounded-full bg-primary px-3 py-2 text-primary-foreground shadow-lg hover:bg-primary/90 transition-colors text-xs font-semibold"
       >
-        <HelpCircle className="h-3.5 w-3.5" />
+        <HelpCircle className="h-3.5 w-3.5 relative top-px" />
         {t.landingFaqTitle}
       </button>
     </div>
