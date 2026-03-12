@@ -124,7 +124,7 @@ const Landing = () => {
                 {t.landingHeroDesc}
               </p>
               {/* Dual CTAs */}
-              <div className="flex flex-col sm:flex-row gap-3 mt-12 justify-center">
+              <div className="flex flex-col sm:flex-row gap-3 mt-16 justify-center">
                 <Button
                   size="lg"
                   onClick={() => navigate("/auth")}
