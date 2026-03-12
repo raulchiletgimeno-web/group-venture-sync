@@ -131,14 +131,14 @@ const Landing = () => {
                   className="w-full sm:w-auto font-bold text-base px-8 shadow-card-hover"
                 >
                   {t.landingCta}
-                  <ArrowRight className="ml-2 h-5 w-5" />
+                  <ArrowRight className="ml-2 h-5 w-5 relative top-px" />
                 </Button>
                 <Button
                   size="lg"
                   onClick={() => setShowVideo(true)}
                   className="w-full sm:w-auto font-bold text-base px-8 shadow-card-hover"
                 >
-                  <Play className="mr-2 h-4 w-4" />
+                  <Play className="mr-2 h-4 w-4 relative top-px" />
                   {t.landingCtaSecondary}
                 </Button>
               </div>
@@ -346,7 +346,7 @@ const Landing = () => {
         onClick={() => faqRef.current?.scrollIntoView({ behavior: "smooth" })}
         className="fixed bottom-52 right-5 z-50 flex items-center gap-1.5 rounded-full bg-primary px-3 py-2 text-primary-foreground shadow-lg hover:bg-primary/90 transition-colors text-xs font-semibold"
       >
-        <HelpCircle className="h-3.5 w-3.5" />
+        <HelpCircle className="h-3.5 w-3.5 relative top-px" />
         {t.landingFaqTitle}
       </button>
     </div>
