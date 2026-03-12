@@ -98,10 +98,10 @@ const Landing = () => {
             <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-primary/20 text-primary-foreground backdrop-blur-sm border border-primary/30 mb-6">
               {t.landingBadge}
             </span>
-            <h1 className="text-3xl md:text-5xl lg:text-6xl font-extrabold text-white leading-tight">
+            <h1 className="text-3xl md:text-5xl lg:text-6xl font-extrabold text-white leading-tight [text-shadow:_0_2px_8px_rgba(0,0,0,0.5)]">
               {t.landingHeroTitle}
               <br />
-              <span className="text-primary">{t.landingHeroHighlight}</span>
+              <span className="text-primary [text-shadow:_0_2px_8px_rgba(0,0,0,0.5)]">{t.landingHeroHighlight}</span>
             </h1>
             <p className="mt-5 text-base md:text-xl text-white/80 leading-relaxed max-w-xl mx-auto">
               {t.landingHeroDesc}
