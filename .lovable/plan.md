@@ -1,26 +1,40 @@
 
 
-## Plan: Arreglar promoción a co-creador y añadir confirmación
+## Plan: Transición visual suave entre Hero y Video Section
 
-### Problemas detectados
+### Enfoque
+Extender el video de fondo del hero para que cubra también la sección de video, creando una única zona visual inmersiva con transición gradual hacia el resto de la página.
 
-1. **Sin diálogo de confirmación**: Al pulsar "Nombrar co-creador" se ejecuta directamente sin preguntar. El usuario quiere un AlertDialog de confirmación (igual que ya existe para "Eliminar miembro").
-2. **Errores silenciados**: `handlePromote` y `handleDemote` no muestran error si la operación falla en la base de datos.
-3. **Posible problema con DropdownMenu + Popover**: El click en el DropdownMenuItem cierra el dropdown y potencialmente el Popover, lo que puede interferir con la ejecución asíncrona.
+### Cambios en `src/pages/Landing.tsx`
 
-### Cambios en `src/pages/TripDashboard.tsx`
+1. **Envolver Hero + Video Section en un contenedor común** con el video de fondo compartido:
+   - Un `div` padre con `relative overflow-hidden` que contenga ambas secciones
+   - El video de fondo y overlay oscuro se mueven al contenedor padre
+   - El hero section pierde su propio fondo (pasa a ser `relative` sin video)
+   - La video section mantiene su contenido pero con textos en blanco/claro en vez de `text-muted-foreground`
 
-1. **Añadir AlertDialog de confirmación** para promover y degradar co-creador, igual que ya se hace para eliminar miembro:
-   - Envolver las opciones de promover/degradar en un `AlertDialog` con `AlertDialogTrigger` usando `onSelect={(e) => e.preventDefault()}` para evitar que el dropdown se cierre.
-   - Mostrar un mensaje de confirmación tipo "¿Estás seguro de que quieres nombrar a este usuario como co-creador?"
-   
-2. **Añadir manejo de errores visible** en `handlePromote` y `handleDemote` — mostrar toast de error si falla.
+2. **Añadir un degradado de transición** al final del contenedor combinado:
+   - Un `div` con gradiente de transparente a `bg-background` en la parte inferior para fundir suavemente con la siguiente sección
 
-3. **Añadir traducciones** necesarias para los nuevos textos de confirmación en todos los idiomas (es, en, fr, pt, it, zh, de):
-   - `confirmMakeCoCreator` / `confirmMakeCoCreatorDesc`
-   - `confirmRemoveCoCreator` / `confirmRemoveCoCreatorDesc`
+3. **Ajustar estilos de texto** de la video section para legibilidad sobre fondo oscuro:
+   - Texto descriptivo: `text-white/70` en lugar de `text-muted-foreground`
 
-### Cambios en `src/i18n/translations.ts`
+### Estructura resultante
+```text
+┌─────────────────────────────┐
+│  Video background + overlay │
+│  ┌───────────────────────┐  │
+│  │   HERO content        │  │
+│  └───────────────────────┘  │
+│  ┌───────────────────────┐  │
+│  │   VIDEO section       │  │
+│  │   (texto claro)       │  │
+│  └───────────────────────┘  │
+│  ▓▓▓ gradient fade ▓▓▓▓▓▓  │
+└─────────────────────────────┘
+│  PROBLEM section (normal)   │
+```
 
-- Añadir 4 nuevas claves de traducción en los 7 idiomas.
+### Publicación
+Se publicarán los cambios tras implementar.
 
