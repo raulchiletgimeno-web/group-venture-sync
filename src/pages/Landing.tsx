@@ -96,77 +96,85 @@ const Landing = () => {
         ))}
       </div>
 
-      {/* ═══════════ HERO ═══════════ */}
-      <section className="relative overflow-hidden">
+      {/* ═══════════ HERO + VIDEO (shared background) ═══════════ */}
+      <div className="relative overflow-hidden">
+        {/* Shared video background */}
         <div className="absolute inset-0">
           <video autoPlay muted loop playsInline preload="auto" className="w-full h-full object-cover">
             <source src="/videos/hero-background.mp4" type="video/mp4" />
           </video>
           <div className="absolute inset-0 bg-black/55" />
         </div>
-        <div className="relative max-w-5xl mx-auto px-5 py-16 md:py-24 lg:py-32">
-          <div className="max-w-2xl mx-auto text-center">
-            {/* Logo */}
-            <div className="text-4xl md:text-6xl font-extrabold tracking-wider uppercase flex items-center justify-center mb-6 text-white [text-shadow:_0_2px_8px_rgba(0,0,0,0.5)]">
-              Y<Luggage className="mx-[-2px]" style={{ height: '0.9em', width: '0.9em' }} strokeWidth={2.5} />RMIT
-            </div>
-            {/* Headline */}
-            <h1 className="text-3xl md:text-5xl lg:text-6xl font-extrabold text-white leading-tight [text-shadow:_0_2px_8px_rgba(0,0,0,0.5)]">
-              {t.landingHeroTitle}
-              <br />
-              <span className="text-primary [text-shadow:_0_2px_8px_rgba(0,0,0,0.5)]">{t.landingHeroHighlight}</span>
-            </h1>
-            <p className="mt-5 text-base md:text-lg text-white/80 leading-relaxed max-w-xl mx-auto [text-shadow:_0_1px_6px_rgba(0,0,0,0.4)]">
-              {t.landingHeroDesc}
-            </p>
-            {/* Dual CTAs */}
-            <div className="flex flex-col sm:flex-row gap-3 mt-8 justify-center">
-              <Button
-                size="lg"
-                onClick={() => navigate("/auth")}
-                className="w-full sm:w-auto font-bold text-base px-8 shadow-card-hover"
-              >
-                {t.landingCta}
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-              <Button
-                size="lg"
-                onClick={() => setShowVideo(true)}
-                className="w-full sm:w-auto font-bold text-base px-8 shadow-card-hover"
-              >
-                <Play className="mr-2 h-4 w-4" />
-                {t.landingCtaSecondary}
-              </Button>
-            </div>
-          </div>
-        </div>
-      </section>
 
-      {/* ═══════════ VIDEO SECTION ═══════════ */}
-      <section ref={videoSectionRef} className="py-16 md:py-24 bg-muted/30">
-        <div className="max-w-4xl mx-auto px-5 text-center">
-          <p className="text-muted-foreground text-lg md:text-xl max-w-2xl mx-auto mb-10 leading-relaxed">
-            {t.landingVideoText}
-          </p>
-          <div
-            onClick={() => setShowVideo(true)}
-            className="relative cursor-pointer group rounded-2xl overflow-hidden shadow-card-hover mx-auto max-w-3xl aspect-video"
-          >
-            <video
-              src="/videos/Video_Publicidad_Yormit.mp4#t=0.5"
-              preload="metadata"
-              muted
-              playsInline
-              className="w-full h-full object-cover"
-            />
-            <div className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover:bg-black/45 transition-colors">
-              <div className="h-16 w-16 md:h-20 md:w-20 rounded-full bg-primary/90 flex items-center justify-center shadow-card-hover group-hover:scale-110 transition-transform">
-                <Play className="w-7 h-7 md:w-9 md:h-9 text-primary-foreground fill-primary-foreground ml-1" />
+        {/* Hero content */}
+        <section className="relative">
+          <div className="max-w-5xl mx-auto px-5 py-16 md:py-24 lg:py-32">
+            <div className="max-w-2xl mx-auto text-center">
+              {/* Logo */}
+              <div className="text-4xl md:text-6xl font-extrabold tracking-wider uppercase flex items-center justify-center mb-6 text-white [text-shadow:_0_2px_8px_rgba(0,0,0,0.5)]">
+                Y<Luggage className="mx-[-2px]" style={{ height: '0.9em', width: '0.9em' }} strokeWidth={2.5} />RMIT
+              </div>
+              {/* Headline */}
+              <h1 className="text-3xl md:text-5xl lg:text-6xl font-extrabold text-white leading-tight [text-shadow:_0_2px_8px_rgba(0,0,0,0.5)]">
+                {t.landingHeroTitle}
+                <br />
+                <span className="text-primary [text-shadow:_0_2px_8px_rgba(0,0,0,0.5)]">{t.landingHeroHighlight}</span>
+              </h1>
+              <p className="mt-5 text-base md:text-lg text-white/80 leading-relaxed max-w-xl mx-auto [text-shadow:_0_1px_6px_rgba(0,0,0,0.4)]">
+                {t.landingHeroDesc}
+              </p>
+              {/* Dual CTAs */}
+              <div className="flex flex-col sm:flex-row gap-3 mt-8 justify-center">
+                <Button
+                  size="lg"
+                  onClick={() => navigate("/auth")}
+                  className="w-full sm:w-auto font-bold text-base px-8 shadow-card-hover"
+                >
+                  {t.landingCta}
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+                <Button
+                  size="lg"
+                  onClick={() => setShowVideo(true)}
+                  className="w-full sm:w-auto font-bold text-base px-8 shadow-card-hover"
+                >
+                  <Play className="mr-2 h-4 w-4" />
+                  {t.landingCtaSecondary}
+                </Button>
               </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+
+        {/* Video section */}
+        <section ref={videoSectionRef} className="relative py-16 md:py-24">
+          <div className="max-w-4xl mx-auto px-5 text-center">
+            <p className="text-white/70 text-lg md:text-xl max-w-2xl mx-auto mb-10 leading-relaxed [text-shadow:_0_1px_4px_rgba(0,0,0,0.3)]">
+              {t.landingVideoText}
+            </p>
+            <div
+              onClick={() => setShowVideo(true)}
+              className="relative cursor-pointer group rounded-2xl overflow-hidden shadow-card-hover mx-auto max-w-3xl aspect-video"
+            >
+              <video
+                src="/videos/Video_Publicidad_Yormit.mp4#t=0.5"
+                preload="metadata"
+                muted
+                playsInline
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover:bg-black/45 transition-colors">
+                <div className="h-16 w-16 md:h-20 md:w-20 rounded-full bg-primary/90 flex items-center justify-center shadow-card-hover group-hover:scale-110 transition-transform">
+                  <Play className="w-7 h-7 md:w-9 md:h-9 text-primary-foreground fill-primary-foreground ml-1" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Gradient fade to background */}
+        <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-background to-transparent pointer-events-none" />
+      </div>
 
       {/* ═══════════ PROBLEM ═══════════ */}
       <section className="py-16 md:py-24">
