@@ -431,6 +431,15 @@ type TranslationKeys = {
   landingCtaTitle: string;
   landingCtaDesc: string;
   landingFooter: string;
+
+  // Install PWA
+  installTitle: string;
+  installButton: string;
+  installIOSDesc: string;
+  installIOSStep1: string;
+  installIOSStep2: string;
+  installIOSStep3: string;
+  installDismiss: string;
 };
 
 const translations: Record<Language, TranslationKeys> = {
