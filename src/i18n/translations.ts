@@ -1571,6 +1571,10 @@ const translations: Record<Language, TranslationKeys> = {
     installIOSStep1: "Appuyez sur le bouton Partager",
     installIOSStep2: "Sélectionnez \"Sur l'écran d'accueil\"",
     installIOSStep3: "Appuyez sur \"Ajouter\" pour confirmer",
+    installAndroidDesc: "Suivez ces étapes pour installer YORMIT",
+    installAndroidStep1: "Appuyez sur le menu ⋮ de votre navigateur",
+    installAndroidStep2: "Sélectionnez \"Ajouter à l'écran d'accueil\"",
+    installAndroidStep3: "Appuyez sur \"Ajouter\" pour confirmer",
     installDismiss: "Compris",
   },
 
