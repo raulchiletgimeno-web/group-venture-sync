@@ -11,6 +11,7 @@ interface TripCardProps {
   memberCount: number;
   status: "upcoming" | "active" | "finished";
   memberStatus?: "approved" | "pending";
+  unseenCount?: number;
 }
 
 const TripCard = ({ id, title, destination, startDate, endDate, memberCount, status, memberStatus = "approved" }: TripCardProps) => {
