@@ -173,18 +173,21 @@ export type Database = {
         Row: {
           id: string
           last_seen_at: string
+          section: string
           trip_id: string
           user_id: string
         }
         Insert: {
           id?: string
           last_seen_at?: string
+          section?: string
           trip_id: string
           user_id: string
         }
         Update: {
           id?: string
           last_seen_at?: string
+          section?: string
           trip_id?: string
           user_id?: string
         }

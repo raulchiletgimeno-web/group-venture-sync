@@ -15,6 +15,7 @@ import { useTripRole } from "@/hooks/use-trip-role";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { getLocale } from "@/i18n/translations";
+import { useMarkSectionSeen } from "@/hooks/use-mark-section-seen";
 
 interface TransportItem {
   id: string;
@@ -40,6 +41,7 @@ const emptyForm = {
 
 const Transport = () => {
   const { tripId } = useParams();
+  useMarkSectionSeen(tripId, "transport");
   const { isCreator } = useTripRole(tripId);
   const { toast } = useToast();
   const { t, language } = useLanguage();

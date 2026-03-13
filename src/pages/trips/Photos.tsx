@@ -10,6 +10,7 @@ import { formatDisplayName } from "@/lib/formatDisplayName";
 import EmptyState from "@/components/EmptyState";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { useMarkSectionSeen } from "@/hooks/use-mark-section-seen";
 
 interface MemberName {
   id: string;
@@ -18,6 +19,7 @@ interface MemberName {
 
 const Photos = () => {
   const { tripId } = useParams();
+  useMarkSectionSeen(tripId, "photos");
   const { user } = useAuth();
   const { isCreator } = useTripRole(tripId);
   const { t } = useLanguage();

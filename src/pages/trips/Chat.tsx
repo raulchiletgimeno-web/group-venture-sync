@@ -11,6 +11,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { getLocale } from "@/i18n/translations";
 import { useToast } from "@/hooks/use-toast";
 import { formatDisplayName } from "@/lib/formatDisplayName";
+import { useMarkSectionSeen } from "@/hooks/use-mark-section-seen";
 
 interface Message {
   id: string;
@@ -28,6 +29,7 @@ interface Member {
 
 const Chat = () => {
   const { tripId } = useParams();
+  useMarkSectionSeen(tripId, "chat");
   const { user } = useAuth();
   const { toast } = useToast();
   const { t, language } = useLanguage();
