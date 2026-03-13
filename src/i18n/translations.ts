@@ -2325,6 +2325,10 @@ const translations: Record<Language, TranslationKeys> = {
     installIOSStep1: "Tocca il pulsante Condividi",
     installIOSStep2: "Seleziona \"Aggiungi a schermata Home\"",
     installIOSStep3: "Tocca \"Aggiungi\" per confermare",
+    installAndroidDesc: "Segui questi passaggi per installare YORMIT",
+    installAndroidStep1: "Tocca il menu ⋮ del browser",
+    installAndroidStep2: "Seleziona \"Aggiungi a schermata Home\"",
+    installAndroidStep3: "Tocca \"Aggiungi\" per confermare",
     installDismiss: "Capito",
   },
 
