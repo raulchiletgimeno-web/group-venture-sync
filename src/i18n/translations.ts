@@ -3045,6 +3045,13 @@ const translations: Record<Language, TranslationKeys> = {
     landingCtaTitle: "Bereit für deine nächste Reise?",
     landingCtaDesc: "Erstelle deine erste Reise in weniger als einer Minute. Kostenlos, ohne Kreditkarte.",
     landingFooter: "Alle Rechte vorbehalten.",
+    installTitle: "YORMIT auf deinem Handy installieren",
+    installButton: "Installieren",
+    installIOSDesc: "Folge diesen Schritten, um YORMIT zum Startbildschirm hinzuzufügen",
+    installIOSStep1: "Tippe auf den Teilen-Button",
+    installIOSStep2: "Wähle \"Zum Home-Bildschirm\"",
+    installIOSStep3: "Tippe auf \"Hinzufügen\" zum Bestätigen",
+    installDismiss: "Verstanden",
   },
 };
 
