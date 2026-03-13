@@ -355,7 +355,7 @@ const Landing = () => {
             if (canInstall) promptInstall();
             else setShowInstallGuide(true);
           }}
-          className="fixed bottom-[17rem] right-5 z-50 flex items-center gap-1.5 rounded-full bg-primary px-3 py-2 text-primary-foreground shadow-lg hover:bg-primary/90 transition-colors text-xs font-semibold"
+          className="fixed bottom-40 right-5 z-50 flex items-center gap-1.5 rounded-full bg-primary px-3 py-2 text-primary-foreground shadow-lg hover:bg-primary/90 transition-colors text-xs font-semibold"
         >
           <Download className="h-3.5 w-3.5 relative top-px" />
           {t.installButton ? "Instalar en móvil" : "Instalar en móvil"}
