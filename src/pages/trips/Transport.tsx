@@ -41,6 +41,7 @@ const emptyForm = {
 
 const Transport = () => {
   const { tripId } = useParams();
+  useMarkSectionSeen(tripId, "transport");
   const { isCreator } = useTripRole(tripId);
   const { toast } = useToast();
   const { t, language } = useLanguage();
