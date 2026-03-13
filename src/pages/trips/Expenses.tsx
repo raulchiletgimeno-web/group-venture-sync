@@ -35,6 +35,7 @@ interface Expense {
 
 const Expenses = () => {
   const { tripId } = useParams();
+  useMarkSectionSeen(tripId, "expenses");
   const { user } = useAuth();
   const { toast } = useToast();
   const { t, language } = useLanguage();

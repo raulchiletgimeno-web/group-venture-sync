@@ -19,6 +19,7 @@ interface MemberName {
 
 const Photos = () => {
   const { tripId } = useParams();
+  useMarkSectionSeen(tripId, "photos");
   const { user } = useAuth();
   const { isCreator } = useTripRole(tripId);
   const { t } = useLanguage();

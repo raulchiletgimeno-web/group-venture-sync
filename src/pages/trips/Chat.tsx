@@ -29,6 +29,7 @@ interface Member {
 
 const Chat = () => {
   const { tripId } = useParams();
+  useMarkSectionSeen(tripId, "chat");
   const { user } = useAuth();
   const { toast } = useToast();
   const { t, language } = useLanguage();
