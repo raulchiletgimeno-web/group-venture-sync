@@ -18,11 +18,12 @@ interface InstallAppBannerProps {
 }
 
 const InstallAppBanner = ({ variant = "dashboard" }: InstallAppBannerProps) => {
-  const { isIOS, canInstall, promptInstall, shouldShow, dismiss } = useInstallPrompt();
+  const { isIOS, canInstall, promptInstall, shouldShow, shouldShowMobileOnly, dismiss } = useInstallPrompt();
   const { t } = useLanguage();
   const [showGuide, setShowGuide] = useState(false);
 
-  if (!shouldShow) return null;
+  const visible = variant === "landing" ? shouldShow : shouldShowMobileOnly;
+  if (!visible) return null;
 
   const handleClick = () => {
     if (canInstall) {
