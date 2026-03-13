@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Download, X, Share, PlusSquare, Smartphone } from "lucide-react";
+import { Download, X, Share, PlusSquare, Smartphone, MoreVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useInstallPrompt } from "@/hooks/use-install-prompt";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -20,15 +20,15 @@ interface InstallAppBannerProps {
 const InstallAppBanner = ({ variant = "dashboard" }: InstallAppBannerProps) => {
   const { isIOS, canInstall, promptInstall, shouldShow, dismiss } = useInstallPrompt();
   const { t } = useLanguage();
-  const [showIOSGuide, setShowIOSGuide] = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
 
   if (!shouldShow) return null;
 
   const handleClick = () => {
     if (canInstall) {
       promptInstall();
-    } else if (isIOS) {
-      setShowIOSGuide(true);
+    } else {
+      setShowGuide(true);
     }
   };
 
@@ -46,12 +46,11 @@ const InstallAppBanner = ({ variant = "dashboard" }: InstallAppBannerProps) => {
             <X className="h-4 w-4" />
           </button>
         </div>
-        <IOSGuideDrawer open={showIOSGuide} onOpenChange={setShowIOSGuide} />
+        <InstallGuideDrawer open={showGuide} onOpenChange={setShowGuide} isIOS={isIOS} />
       </>
     );
   }
 
-  // Dashboard variant — compact inline banner
   return (
     <>
       <div className="flex items-center gap-3 rounded-xl bg-primary/10 border border-primary/20 px-4 py-3 mx-5 mt-2">
@@ -67,26 +66,34 @@ const InstallAppBanner = ({ variant = "dashboard" }: InstallAppBannerProps) => {
           <X className="h-4 w-4" />
         </button>
       </div>
-      <IOSGuideDrawer open={showIOSGuide} onOpenChange={setShowIOSGuide} />
+      <InstallGuideDrawer open={showGuide} onOpenChange={setShowGuide} isIOS={isIOS} />
     </>
   );
 };
 
-function IOSGuideDrawer({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
+function InstallGuideDrawer({ open, onOpenChange, isIOS }: { open: boolean; onOpenChange: (v: boolean) => void; isIOS: boolean }) {
   const { t } = useLanguage();
 
-  const steps = [
+  const iosSteps = [
     { icon: Share, text: t.installIOSStep1 },
     { icon: PlusSquare, text: t.installIOSStep2 },
     { icon: Download, text: t.installIOSStep3 },
   ];
+
+  const androidSteps = [
+    { icon: MoreVertical, text: t.installAndroidStep1 || "Pulsa el menú ⋮ de tu navegador" },
+    { icon: PlusSquare, text: t.installAndroidStep2 || "Selecciona \"Añadir a pantalla de inicio\"" },
+    { icon: Download, text: t.installAndroidStep3 || "Pulsa \"Añadir\" para confirmar" },
+  ];
+
+  const steps = isIOS ? iosSteps : androidSteps;
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent>
         <DrawerHeader className="text-center pb-2">
           <DrawerTitle className="text-xl font-extrabold">{t.installTitle}</DrawerTitle>
-          <DrawerDescription>{t.installIOSDesc}</DrawerDescription>
+          <DrawerDescription>{isIOS ? t.installIOSDesc : (t.installAndroidDesc || "Sigue estos pasos para instalar YORMIT")}</DrawerDescription>
         </DrawerHeader>
         <div className="px-6 py-4 space-y-5">
           {steps.map((step, i) => (
