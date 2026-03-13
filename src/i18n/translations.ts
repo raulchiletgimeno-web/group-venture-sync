@@ -439,6 +439,10 @@ type TranslationKeys = {
   installIOSStep1: string;
   installIOSStep2: string;
   installIOSStep3: string;
+  installAndroidDesc: string;
+  installAndroidStep1: string;
+  installAndroidStep2: string;
+  installAndroidStep3: string;
   installDismiss: string;
 };
 
@@ -813,6 +817,10 @@ const translations: Record<Language, TranslationKeys> = {
     installIOSStep1: "Pulsa el botón Compartir",
     installIOSStep2: "Selecciona \"Añadir a pantalla de inicio\"",
     installIOSStep3: "Pulsa \"Añadir\" para confirmar",
+    installAndroidDesc: "Sigue estos pasos para instalar YORMIT",
+    installAndroidStep1: "Pulsa el menú ⋮ de tu navegador",
+    installAndroidStep2: "Selecciona \"Añadir a pantalla de inicio\"",
+    installAndroidStep3: "Pulsa \"Añadir\" para confirmar",
     installDismiss: "Entendido",
   },
 
@@ -1186,6 +1194,10 @@ const translations: Record<Language, TranslationKeys> = {
     installIOSStep1: "Tap the Share button",
     installIOSStep2: "Select \"Add to Home Screen\"",
     installIOSStep3: "Tap \"Add\" to confirm",
+    installAndroidDesc: "Follow these steps to install YORMIT",
+    installAndroidStep1: "Tap the ⋮ menu in your browser",
+    installAndroidStep2: "Select \"Add to Home screen\"",
+    installAndroidStep3: "Tap \"Add\" to confirm",
     installDismiss: "Got it",
   },
 
@@ -1559,6 +1571,10 @@ const translations: Record<Language, TranslationKeys> = {
     installIOSStep1: "Appuyez sur le bouton Partager",
     installIOSStep2: "Sélectionnez \"Sur l'écran d'accueil\"",
     installIOSStep3: "Appuyez sur \"Ajouter\" pour confirmer",
+    installAndroidDesc: "Suivez ces étapes pour installer YORMIT",
+    installAndroidStep1: "Appuyez sur le menu ⋮ de votre navigateur",
+    installAndroidStep2: "Sélectionnez \"Ajouter à l'écran d'accueil\"",
+    installAndroidStep3: "Appuyez sur \"Ajouter\" pour confirmer",
     installDismiss: "Compris",
   },
 
@@ -1932,6 +1948,10 @@ const translations: Record<Language, TranslationKeys> = {
     installIOSStep1: "Toque no botão Partilhar",
     installIOSStep2: "Selecione \"Adicionar ao ecrã inicial\"",
     installIOSStep3: "Toque em \"Adicionar\" para confirmar",
+    installAndroidDesc: "Siga estes passos para instalar o YORMIT",
+    installAndroidStep1: "Toque no menu ⋮ do navegador",
+    installAndroidStep2: "Selecione \"Adicionar ao ecrã inicial\"",
+    installAndroidStep3: "Toque em \"Adicionar\" para confirmar",
     installDismiss: "Entendido",
   },
 
@@ -2305,6 +2325,10 @@ const translations: Record<Language, TranslationKeys> = {
     installIOSStep1: "Tocca il pulsante Condividi",
     installIOSStep2: "Seleziona \"Aggiungi a schermata Home\"",
     installIOSStep3: "Tocca \"Aggiungi\" per confermare",
+    installAndroidDesc: "Segui questi passaggi per installare YORMIT",
+    installAndroidStep1: "Tocca il menu ⋮ del browser",
+    installAndroidStep2: "Seleziona \"Aggiungi a schermata Home\"",
+    installAndroidStep3: "Tocca \"Aggiungi\" per confermare",
     installDismiss: "Capito",
   },
 
@@ -2678,6 +2702,10 @@ const translations: Record<Language, TranslationKeys> = {
     installIOSStep1: "点击分享按钮",
     installIOSStep2: "选择「添加到主屏幕」",
     installIOSStep3: "点击「添加」确认",
+    installAndroidDesc: "按照以下步骤安装YORMIT",
+    installAndroidStep1: "点击浏览器的 ⋮ 菜单",
+    installAndroidStep2: "选择「添加到主屏幕」",
+    installAndroidStep3: "点击「添加」确认",
     installDismiss: "知道了",
   },
 
@@ -3051,6 +3079,10 @@ const translations: Record<Language, TranslationKeys> = {
     installIOSStep1: "Tippe auf den Teilen-Button",
     installIOSStep2: "Wähle \"Zum Home-Bildschirm\"",
     installIOSStep3: "Tippe auf \"Hinzufügen\" zum Bestätigen",
+    installAndroidDesc: "Folge diesen Schritten, um YORMIT zu installieren",
+    installAndroidStep1: "Tippe auf das ⋮ Menü deines Browsers",
+    installAndroidStep2: "Wähle \"Zum Home-Bildschirm\"",
+    installAndroidStep3: "Tippe auf \"Hinzufügen\" zum Bestätigen",
     installDismiss: "Verstanden",
   },
 };
