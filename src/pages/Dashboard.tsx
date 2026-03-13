@@ -6,6 +6,7 @@ import EmptyState from "@/components/EmptyState";
 import CreateTripDialog from "@/components/CreateTripDialog";
 import JoinTripDialog from "@/components/JoinTripDialog";
 import HelpChatBot from "@/components/HelpChatBot";
+import InstallAppBanner from "@/components/InstallAppBanner";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { getLocale } from "@/i18n/translations";
@@ -181,6 +182,9 @@ const Index = () => {
 
         </div>
       </div>
+
+      {/* Install Banner */}
+      <InstallAppBanner variant="dashboard" />
 
       {/* Trips List */}
       <div className="px-5 py-6">

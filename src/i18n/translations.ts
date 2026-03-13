@@ -431,6 +431,15 @@ type TranslationKeys = {
   landingCtaTitle: string;
   landingCtaDesc: string;
   landingFooter: string;
+
+  // Install PWA
+  installTitle: string;
+  installButton: string;
+  installIOSDesc: string;
+  installIOSStep1: string;
+  installIOSStep2: string;
+  installIOSStep3: string;
+  installDismiss: string;
 };
 
 const translations: Record<Language, TranslationKeys> = {
@@ -798,6 +807,13 @@ const translations: Record<Language, TranslationKeys> = {
     landingCtaTitle: "¿Listo para tu próximo viaje?",
     landingCtaDesc: "Crea tu primer viaje en menos de un minuto. Gratis, sin tarjeta.",
     landingFooter: "Todos los derechos reservados.",
+    installTitle: "Lleva YORMIT en tu móvil",
+    installButton: "Instalar",
+    installIOSDesc: "Sigue estos pasos para añadir YORMIT a tu pantalla de inicio",
+    installIOSStep1: "Pulsa el botón Compartir",
+    installIOSStep2: "Selecciona \"Añadir a pantalla de inicio\"",
+    installIOSStep3: "Pulsa \"Añadir\" para confirmar",
+    installDismiss: "Entendido",
   },
 
   en: {
@@ -1164,6 +1180,13 @@ const translations: Record<Language, TranslationKeys> = {
     landingCtaTitle: "Ready for your next trip?",
     landingCtaDesc: "Create your first trip in less than a minute. Free, no card required.",
     landingFooter: "All rights reserved.",
+    installTitle: "Get YORMIT on your phone",
+    installButton: "Install",
+    installIOSDesc: "Follow these steps to add YORMIT to your home screen",
+    installIOSStep1: "Tap the Share button",
+    installIOSStep2: "Select \"Add to Home Screen\"",
+    installIOSStep3: "Tap \"Add\" to confirm",
+    installDismiss: "Got it",
   },
 
   fr: {
@@ -1530,6 +1553,13 @@ const translations: Record<Language, TranslationKeys> = {
     landingCtaTitle: "Prêt pour votre prochain voyage ?",
     landingCtaDesc: "Créez votre premier voyage en moins d'une minute. Gratuit, sans carte.",
     landingFooter: "Tous droits réservés.",
+    installTitle: "Installez YORMIT sur votre téléphone",
+    installButton: "Installer",
+    installIOSDesc: "Suivez ces étapes pour ajouter YORMIT à votre écran d'accueil",
+    installIOSStep1: "Appuyez sur le bouton Partager",
+    installIOSStep2: "Sélectionnez \"Sur l'écran d'accueil\"",
+    installIOSStep3: "Appuyez sur \"Ajouter\" pour confirmer",
+    installDismiss: "Compris",
   },
 
   pt: {
@@ -1896,6 +1926,13 @@ const translations: Record<Language, TranslationKeys> = {
     landingCtaTitle: "Pronto para a sua próxima viagem?",
     landingCtaDesc: "Crie a sua primeira viagem em menos de um minuto. Grátis, sem cartão.",
     landingFooter: "Todos os direitos reservados.",
+    installTitle: "Tenha o YORMIT no seu telemóvel",
+    installButton: "Instalar",
+    installIOSDesc: "Siga estes passos para adicionar o YORMIT ao ecrã inicial",
+    installIOSStep1: "Toque no botão Partilhar",
+    installIOSStep2: "Selecione \"Adicionar ao ecrã inicial\"",
+    installIOSStep3: "Toque em \"Adicionar\" para confirmar",
+    installDismiss: "Entendido",
   },
 
   it: {
@@ -2262,6 +2299,13 @@ const translations: Record<Language, TranslationKeys> = {
     landingCtaTitle: "Pronto per il tuo prossimo viaggio?",
     landingCtaDesc: "Crea il tuo primo viaggio in meno di un minuto. Gratis, senza carta.",
     landingFooter: "Tutti i diritti riservati.",
+    installTitle: "Installa YORMIT sul tuo telefono",
+    installButton: "Installa",
+    installIOSDesc: "Segui questi passaggi per aggiungere YORMIT alla schermata iniziale",
+    installIOSStep1: "Tocca il pulsante Condividi",
+    installIOSStep2: "Seleziona \"Aggiungi a schermata Home\"",
+    installIOSStep3: "Tocca \"Aggiungi\" per confermare",
+    installDismiss: "Capito",
   },
 
   zh: {
@@ -2628,6 +2672,13 @@ const translations: Record<Language, TranslationKeys> = {
     landingCtaTitle: "准备好下一次旅行了吗？",
     landingCtaDesc: "不到一分钟即可创建你的第一次旅行。免费，无需信用卡。",
     landingFooter: "版权所有。",
+    installTitle: "将YORMIT安装到手机",
+    installButton: "安装",
+    installIOSDesc: "按照以下步骤将YORMIT添加到主屏幕",
+    installIOSStep1: "点击分享按钮",
+    installIOSStep2: "选择「添加到主屏幕」",
+    installIOSStep3: "点击「添加」确认",
+    installDismiss: "知道了",
   },
 
   de: {
@@ -2994,6 +3045,13 @@ const translations: Record<Language, TranslationKeys> = {
     landingCtaTitle: "Bereit für deine nächste Reise?",
     landingCtaDesc: "Erstelle deine erste Reise in weniger als einer Minute. Kostenlos, ohne Kreditkarte.",
     landingFooter: "Alle Rechte vorbehalten.",
+    installTitle: "YORMIT auf deinem Handy installieren",
+    installButton: "Installieren",
+    installIOSDesc: "Folge diesen Schritten, um YORMIT zum Startbildschirm hinzuzufügen",
+    installIOSStep1: "Tippe auf den Teilen-Button",
+    installIOSStep2: "Wähle \"Zum Home-Bildschirm\"",
+    installIOSStep3: "Tippe auf \"Hinzufügen\" zum Bestätigen",
+    installDismiss: "Verstanden",
   },
 };
 

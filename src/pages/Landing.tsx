@@ -15,6 +15,7 @@ import {
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { languageFlags, Language } from "@/i18n/translations";
+import InstallAppBanner from "@/components/InstallAppBanner";
 
 const featureIcons = [Hotel, Train, CalendarDays, Wallet, MessageCircle, Camera, CloudSun, Phone];
 
@@ -308,6 +309,9 @@ const Landing = () => {
           </Button>
         </div>
       </section>
+
+      {/* ═══════════ INSTALL BANNER ═══════════ */}
+      <InstallAppBanner variant="landing" />
 
       {/* ═══════════ FOOTER ═══════════ */}
       <footer className="border-t border-border bg-card">
