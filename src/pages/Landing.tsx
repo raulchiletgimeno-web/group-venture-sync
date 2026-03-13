@@ -27,6 +27,8 @@ const Landing = () => {
   const videoSectionRef = useRef<HTMLDivElement>(null);
   const faqRef = useRef<HTMLDivElement>(null);
   const { language, setLanguage, t } = useLanguage();
+  const { isIOS, canInstall, promptInstall, shouldShow } = useInstallPrompt();
+  const [showInstallGuide, setShowInstallGuide] = useState(false);
 
   useEffect(() => {
     if (showVideo && videoRef.current) {
