@@ -807,6 +807,13 @@ const translations: Record<Language, TranslationKeys> = {
     landingCtaTitle: "¿Listo para tu próximo viaje?",
     landingCtaDesc: "Crea tu primer viaje en menos de un minuto. Gratis, sin tarjeta.",
     landingFooter: "Todos los derechos reservados.",
+    installTitle: "Lleva YORMIT en tu móvil",
+    installButton: "Instalar",
+    installIOSDesc: "Sigue estos pasos para añadir YORMIT a tu pantalla de inicio",
+    installIOSStep1: "Pulsa el botón Compartir",
+    installIOSStep2: "Selecciona \"Añadir a pantalla de inicio\"",
+    installIOSStep3: "Pulsa \"Añadir\" para confirmar",
+    installDismiss: "Entendido",
   },
 
   en: {
