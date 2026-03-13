@@ -8,6 +8,7 @@ import JoinTripDialog from "@/components/JoinTripDialog";
 import HelpChatBot from "@/components/HelpChatBot";
 import InstallAppBanner from "@/components/InstallAppBanner";
 import { useAuth } from "@/contexts/AuthContext";
+import { useUnseenCounts } from "@/hooks/use-unseen-counts";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { getLocale } from "@/i18n/translations";
 import { supabase } from "@/integrations/supabase/client";
