@@ -64,6 +64,15 @@ const TripDashboard = () => {
   const [editEndDate, setEditEndDate] = useState("");
   const [saving, setSaving] = useState(false);
 
+  const sectionKey: Record<string, string> = {
+    transport: "transport",
+    accommodation: "accommodation",
+    expenses: "expenses",
+    photos: "photos",
+    chat: "chat",
+    schedule: "schedule",
+  };
+
   const sections = [
     { path: "transport", label: t.transport, icon: Plane, color: "bg-primary/10 text-primary" },
     { path: "accommodation", label: t.accommodation, icon: Hotel, color: "bg-accent/10 text-accent" },
