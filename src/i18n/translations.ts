@@ -439,6 +439,10 @@ type TranslationKeys = {
   installIOSStep1: string;
   installIOSStep2: string;
   installIOSStep3: string;
+  installAndroidDesc: string;
+  installAndroidStep1: string;
+  installAndroidStep2: string;
+  installAndroidStep3: string;
   installDismiss: string;
 };
 
