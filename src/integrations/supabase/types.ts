@@ -558,6 +558,13 @@ export type Database = {
           unseen_count: number
         }[]
       }
+      get_unseen_section_counts: {
+        Args: { p_trip_id: string; p_user_id: string }
+        Returns: {
+          section: string
+          unseen_count: number
+        }[]
+      }
       is_trip_creator: { Args: { p_trip_id: string }; Returns: boolean }
       is_trip_member: { Args: { p_trip_id: string }; Returns: boolean }
     }
