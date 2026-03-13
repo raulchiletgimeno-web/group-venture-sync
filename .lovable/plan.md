@@ -1,27 +1,26 @@
 
 
-## Plan: Arreglar autoplay del video modal
+## Plan: Arreglar promoción a co-creador y añadir confirmación
 
-### Problema
-Los navegadores modernos bloquean `play()` en videos con audio activo. El código actual desmutea el video antes de reproducirlo, por lo que el autoplay falla silenciosamente.
+### Problemas detectados
 
-### Solución en `src/pages/Landing.tsx`
+1. **Sin diálogo de confirmación**: Al pulsar "Nombrar co-creador" se ejecuta directamente sin preguntar. El usuario quiere un AlertDialog de confirmación (igual que ya existe para "Eliminar miembro").
+2. **Errores silenciados**: `handlePromote` y `handleDemote` no muestran error si la operación falla en la base de datos.
+3. **Posible problema con DropdownMenu + Popover**: El click en el DropdownMenuItem cierra el dropdown y potencialmente el Popover, lo que puede interferir con la ejecución asíncrona.
 
-Cambiar el `useEffect` para iniciar el video muteado (lo que sí permite autoplay), y desmutearlo justo después de que comience la reproducción:
+### Cambios en `src/pages/TripDashboard.tsx`
 
-```ts
-useEffect(() => {
-  if (showVideo && videoRef.current) {
-    videoRef.current.muted = true;
-    videoRef.current.play().then(() => {
-      if (videoRef.current) videoRef.current.muted = false;
-    }).catch(() => {});
-  }
-}, [showVideo]);
-```
+1. **Añadir AlertDialog de confirmación** para promover y degradar co-creador, igual que ya se hace para eliminar miembro:
+   - Envolver las opciones de promover/degradar en un `AlertDialog` con `AlertDialogTrigger` usando `onSelect={(e) => e.preventDefault()}` para evitar que el dropdown se cierre.
+   - Mostrar un mensaje de confirmación tipo "¿Estás seguro de que quieres nombrar a este usuario como co-creador?"
+   
+2. **Añadir manejo de errores visible** en `handlePromote` y `handleDemote` — mostrar toast de error si falla.
 
-Esto garantiza que:
-1. El video se reproduce automáticamente al abrir el modal
-2. El audio se activa inmediatamente después
-3. Al terminar el video, el modal se cierra y vuelve a la landing (ya funciona con `onEnded`)
+3. **Añadir traducciones** necesarias para los nuevos textos de confirmación en todos los idiomas (es, en, fr, pt, it, zh, de):
+   - `confirmMakeCoCreator` / `confirmMakeCoCreatorDesc`
+   - `confirmRemoveCoCreator` / `confirmRemoveCoCreatorDesc`
+
+### Cambios en `src/i18n/translations.ts`
+
+- Añadir 4 nuevas claves de traducción en los 7 idiomas.
 

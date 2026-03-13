@@ -28,8 +28,10 @@ const Landing = () => {
 
   useEffect(() => {
     if (showVideo && videoRef.current) {
-      videoRef.current.muted = false;
-      videoRef.current.play().catch(() => {});
+      videoRef.current.muted = true;
+      videoRef.current.play().then(() => {
+        if (videoRef.current) videoRef.current.muted = false;
+      }).catch(() => {});
     }
   }, [showVideo]);
 
