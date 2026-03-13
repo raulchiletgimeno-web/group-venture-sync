@@ -348,6 +348,20 @@ const Landing = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Floating install button */}
+      {shouldShow && (
+        <button
+          onClick={() => {
+            if (canInstall) promptInstall();
+            else setShowInstallGuide(true);
+          }}
+          className="fixed bottom-[17rem] right-5 z-50 flex items-center gap-1.5 rounded-full bg-primary px-3 py-2 text-primary-foreground shadow-lg hover:bg-primary/90 transition-colors text-xs font-semibold"
+        >
+          <Download className="h-3.5 w-3.5 relative top-px" />
+          {t.installButton ? "Instalar en móvil" : "Instalar en móvil"}
+        </button>
+      )}
+
       {/* Floating FAQ button */}
       <button
         onClick={() => faqRef.current?.scrollIntoView({ behavior: "smooth" })}
@@ -356,6 +370,9 @@ const Landing = () => {
         <HelpCircle className="h-3.5 w-3.5 relative top-px" />
         {t.landingFaqTitle}
       </button>
+
+      {/* Install guide drawer */}
+      <InstallGuideDrawer open={showInstallGuide} onOpenChange={setShowInstallGuide} isIOS={isIOS} />
     </div>
   );
 };

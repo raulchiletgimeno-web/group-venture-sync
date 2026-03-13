@@ -72,7 +72,7 @@ const InstallAppBanner = ({ variant = "dashboard" }: InstallAppBannerProps) => {
   );
 };
 
-function InstallGuideDrawer({ open, onOpenChange, isIOS }: { open: boolean; onOpenChange: (v: boolean) => void; isIOS: boolean }) {
+export function InstallGuideDrawer({ open, onOpenChange, isIOS }: { open: boolean; onOpenChange: (v: boolean) => void; isIOS: boolean }) {
   const { t } = useLanguage();
 
   const iosSteps = [
