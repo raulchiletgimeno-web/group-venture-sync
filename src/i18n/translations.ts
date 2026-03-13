@@ -2672,6 +2672,13 @@ const translations: Record<Language, TranslationKeys> = {
     landingCtaTitle: "准备好下一次旅行了吗？",
     landingCtaDesc: "不到一分钟即可创建你的第一次旅行。免费，无需信用卡。",
     landingFooter: "版权所有。",
+    installTitle: "将YORMIT安装到手机",
+    installButton: "安装",
+    installIOSDesc: "按照以下步骤将YORMIT添加到主屏幕",
+    installIOSStep1: "点击分享按钮",
+    installIOSStep2: "选择「添加到主屏幕」",
+    installIOSStep3: "点击「添加」确认",
+    installDismiss: "知道了",
   },
 
   de: {
