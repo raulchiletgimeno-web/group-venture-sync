@@ -5,7 +5,7 @@ import {
   Camera, CloudSun, Phone, ArrowRight, Play,
   MessageSquare, MapPinOff, ReceiptText, SearchX, FolderOpen,
   PlusCircle, LayoutDashboard, Share2,
-  Zap, HeartHandshake, ListChecks, Users, Clock, HelpCircle
+  Zap, HeartHandshake, ListChecks, Users, Clock, HelpCircle, Download
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -15,7 +15,8 @@ import {
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { languageFlags, Language } from "@/i18n/translations";
-import InstallAppBanner from "@/components/InstallAppBanner";
+import { InstallGuideDrawer } from "@/components/InstallAppBanner";
+import { useInstallPrompt } from "@/hooks/use-install-prompt";
 
 const featureIcons = [Hotel, Train, CalendarDays, Wallet, MessageCircle, Camera, CloudSun, Phone];
 
