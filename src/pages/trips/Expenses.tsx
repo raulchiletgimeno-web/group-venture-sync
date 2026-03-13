@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { getLocale } from "@/i18n/translations";
 import { formatDisplayName } from "@/lib/formatDisplayName";
+import { useMarkSectionSeen } from "@/hooks/use-mark-section-seen";
 
 interface Member {
   user_id: string;
