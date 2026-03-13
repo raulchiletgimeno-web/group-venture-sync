@@ -10,6 +10,7 @@ import { formatDisplayName } from "@/lib/formatDisplayName";
 import EmptyState from "@/components/EmptyState";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { useMarkSectionSeen } from "@/hooks/use-mark-section-seen";
 
 interface MemberName {
   id: string;
