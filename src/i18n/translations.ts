@@ -1194,6 +1194,10 @@ const translations: Record<Language, TranslationKeys> = {
     installIOSStep1: "Tap the Share button",
     installIOSStep2: "Select \"Add to Home Screen\"",
     installIOSStep3: "Tap \"Add\" to confirm",
+    installAndroidDesc: "Follow these steps to install YORMIT",
+    installAndroidStep1: "Tap the ⋮ menu in your browser",
+    installAndroidStep2: "Select \"Add to Home screen\"",
+    installAndroidStep3: "Tap \"Add\" to confirm",
     installDismiss: "Got it",
   },
 
