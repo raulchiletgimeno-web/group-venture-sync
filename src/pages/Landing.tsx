@@ -310,6 +310,9 @@ const Landing = () => {
         </div>
       </section>
 
+      {/* ═══════════ INSTALL BANNER ═══════════ */}
+      <InstallAppBanner variant="landing" />
+
       {/* ═══════════ FOOTER ═══════════ */}
       <footer className="border-t border-border bg-card">
         <div className="max-w-6xl mx-auto px-5 py-10">

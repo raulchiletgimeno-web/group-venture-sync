@@ -183,6 +183,9 @@ const Index = () => {
         </div>
       </div>
 
+      {/* Install Banner */}
+      <InstallAppBanner variant="dashboard" />
+
       {/* Trips List */}
       <div className="px-5 py-6">
         <div className="flex items-center justify-between mb-4">
