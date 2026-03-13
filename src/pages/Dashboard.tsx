@@ -222,6 +222,7 @@ const Index = () => {
                 memberCount={trip.memberCount}
                 status={trip.status}
                 memberStatus={trip.memberStatus}
+                unseenCount={unseenCounts[trip.id] || 0}
               />
             ))}
           </div>
