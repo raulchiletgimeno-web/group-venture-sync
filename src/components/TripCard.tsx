@@ -14,7 +14,7 @@ interface TripCardProps {
   unseenCount?: number;
 }
 
-const TripCard = ({ id, title, destination, startDate, endDate, memberCount, status, memberStatus = "approved" }: TripCardProps) => {
+const TripCard = ({ id, title, destination, startDate, endDate, memberCount, status, memberStatus = "approved", unseenCount = 0 }: TripCardProps) => {
   const { t } = useLanguage();
 
   const statusConfig = {
