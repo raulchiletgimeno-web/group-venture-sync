@@ -35,6 +35,13 @@ export function useUnseenCounts(): UnseenResult {
     return () => clearInterval(interval);
   }, [fetchCounts]);
 
+  // Listen for section-seen events to refetch immediately
+  useEffect(() => {
+    const handler = () => fetchCounts();
+    window.addEventListener("section-seen", handler);
+    return () => window.removeEventListener("section-seen", handler);
+  }, [fetchCounts]);
+
   // Realtime subscriptions for relevant tables
   useEffect(() => {
     const tables = [

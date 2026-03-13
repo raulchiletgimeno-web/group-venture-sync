@@ -1,47 +1,26 @@
 
 
-## Plan: Lógica de notificaciones robusta y profesional
+## Plan: Arreglar promoción a co-creador y añadir confirmación
 
 ### Problemas detectados
 
-1. **`useUnseenSectionCounts`** solo consulta una vez al montar. Sin polling ni realtime. Cuando el usuario vuelve de una sección al TripDashboard, los badges no se actualizan.
+1. **Sin diálogo de confirmación**: Al pulsar "Nombrar co-creador" se ejecuta directamente sin preguntar. El usuario quiere un AlertDialog de confirmación (igual que ya existe para "Eliminar miembro").
+2. **Errores silenciados**: `handlePromote` y `handleDemote` no muestran error si la operación falla en la base de datos.
+3. **Posible problema con DropdownMenu + Popover**: El click en el DropdownMenuItem cierra el dropdown y potencialmente el Popover, lo que puede interferir con la ejecución asíncrona.
 
-2. **`useMarkSectionSeen`** no notifica a ningún otro hook que se ha marcado como visto. Los contadores quedan desactualizados hasta recargar.
+### Cambios en `src/pages/TripDashboard.tsx`
 
-3. **`useUnseenCounts`** (trip-level) no se refresca cuando el usuario marca una sección como vista. El badge en TripCard persiste tras visitar todas las secciones.
+1. **Añadir AlertDialog de confirmación** para promover y degradar co-creador, igual que ya se hace para eliminar miembro:
+   - Envolver las opciones de promover/degradar en un `AlertDialog` con `AlertDialogTrigger` usando `onSelect={(e) => e.preventDefault()}` para evitar que el dropdown se cierre.
+   - Mostrar un mensaje de confirmación tipo "¿Estás seguro de que quieres nombrar a este usuario como co-creador?"
+   
+2. **Añadir manejo de errores visible** en `handlePromote` y `handleDemote` — mostrar toast de error si falla.
 
-4. No hay realtime en `useUnseenSectionCounts`, así que si otro miembro añade contenido mientras estás en el TripDashboard, no lo ves.
+3. **Añadir traducciones** necesarias para los nuevos textos de confirmación en todos los idiomas (es, en, fr, pt, it, zh, de):
+   - `confirmMakeCoCreator` / `confirmMakeCoCreatorDesc`
+   - `confirmRemoveCoCreator` / `confirmRemoveCoCreatorDesc`
 
-### Solución
+### Cambios en `src/i18n/translations.ts`
 
-#### 1. Refactorizar `useUnseenSectionCounts` con polling + realtime
-
-- Añadir polling cada 30s (igual que `useUnseenCounts`)
-- Suscribirse a INSERT en las 6 tablas de contenido filtrando por `trip_id`
-- Exponer un método `refetch` para que otros hooks puedan forzar la recarga
-- Re-fetch al cambiar `tripId` (ya lo hace) y al volver al componente
-
-#### 2. Refactorizar `useMarkSectionSeen` para invalidar caches
-
-- Tras el upsert exitoso, emitir un evento custom `section-seen` via `window.dispatchEvent`
-- `useUnseenSectionCounts` y `useUnseenCounts` escucharán este evento para refetch inmediato
-- Esto garantiza que al salir de Chat y volver al TripDashboard, el badge de chat desaparece
-
-#### 3. Mejorar `useUnseenCounts` para escuchar `section-seen`
-
-- Añadir listener del evento `section-seen` para refetch inmediato
-- Así el badge en TripCard del Dashboard principal también se actualiza
-
-#### 4. Marcar como visto también al desmontar (no solo al montar)
-
-- En `useMarkSectionSeen`, marcar también en el cleanup del `useEffect` (al salir de la sección)
-- Esto cubre el caso donde el usuario está leyendo contenido nuevo que llega mientras está en la sección
-
-### Archivos a modificar
-
-| Archivo | Cambio |
-|---|---|
-| `src/hooks/use-unseen-section-counts.ts` | Polling 30s + realtime + listener de `section-seen` |
-| `src/hooks/use-mark-section-seen.ts` | Emitir evento `section-seen` tras upsert + mark on unmount |
-| `src/hooks/use-unseen-counts.ts` | Listener de `section-seen` para refetch |
+- Añadir 4 nuevas claves de traducción en los 7 idiomas.
 
