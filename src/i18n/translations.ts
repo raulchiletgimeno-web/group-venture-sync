@@ -2702,6 +2702,10 @@ const translations: Record<Language, TranslationKeys> = {
     installIOSStep1: "点击分享按钮",
     installIOSStep2: "选择「添加到主屏幕」",
     installIOSStep3: "点击「添加」确认",
+    installAndroidDesc: "按照以下步骤安装YORMIT",
+    installAndroidStep1: "点击浏览器的 ⋮ 菜单",
+    installAndroidStep2: "选择「添加到主屏幕」",
+    installAndroidStep3: "点击「添加」确认",
     installDismiss: "知道了",
   },
 
