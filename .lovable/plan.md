@@ -1,26 +1,64 @@
 
 
-## Plan: Arreglar promoción a co-creador y añadir confirmación
+## Plan: Instalar YORMIT en pantalla de inicio (PWA Install Prompt)
 
-### Problemas detectados
+### Resumen
+Crear un componente reutilizable `InstallAppPrompt` que detecte el sistema operativo (Android/iOS/desktop) y muestre el flujo de instalación adecuado. Integrarlo en la Landing pública, el Dashboard privado, y verificar la configuración PWA existente.
 
-1. **Sin diálogo de confirmación**: Al pulsar "Nombrar co-creador" se ejecuta directamente sin preguntar. El usuario quiere un AlertDialog de confirmación (igual que ya existe para "Eliminar miembro").
-2. **Errores silenciados**: `handlePromote` y `handleDemote` no muestran error si la operación falla en la base de datos.
-3. **Posible problema con DropdownMenu + Popover**: El click en el DropdownMenuItem cierra el dropdown y potencialmente el Popover, lo que puede interferir con la ejecución asíncrona.
+### 1. Crear hook `useInstallPrompt`
+**Archivo nuevo: `src/hooks/use-install-prompt.ts`**
 
-### Cambios en `src/pages/TripDashboard.tsx`
+- Capturar el evento `beforeinstallprompt` (Android/Chrome)
+- Detectar si la app ya está instalada (`display-mode: standalone`)
+- Detectar iOS via `navigator.userAgent`
+- Exponer: `{ isInstalled, isIOS, isAndroid, canInstall, promptInstall, showIOSGuide }`
 
-1. **Añadir AlertDialog de confirmación** para promover y degradar co-creador, igual que ya se hace para eliminar miembro:
-   - Envolver las opciones de promover/degradar en un `AlertDialog` con `AlertDialogTrigger` usando `onSelect={(e) => e.preventDefault()}` para evitar que el dropdown se cierre.
-   - Mostrar un mensaje de confirmación tipo "¿Estás seguro de que quieres nombrar a este usuario como co-creador?"
-   
-2. **Añadir manejo de errores visible** en `handlePromote` y `handleDemote` — mostrar toast de error si falla.
+### 2. Crear componente `InstallAppBanner`
+**Archivo nuevo: `src/components/InstallAppBanner.tsx`**
 
-3. **Añadir traducciones** necesarias para los nuevos textos de confirmación en todos los idiomas (es, en, fr, pt, it, zh, de):
-   - `confirmMakeCoCreator` / `confirmMakeCoCreatorDesc`
-   - `confirmRemoveCoCreator` / `confirmRemoveCoCreatorDesc`
+- **Android**: Botón "Añadir YORMIT a mi móvil" que llama a `promptInstall()` directamente
+- **iOS**: Botón que abre un modal/drawer con guía visual paso a paso:
+  1. Icono de compartir + "Pulsa Compartir"
+  2. Icono de cuadrado con flecha + "Añadir a pantalla de inicio"
+  3. "Pulsa Añadir"
+- **Desktop / ya instalado**: No mostrar nada
+- Diseño premium: iconos SVG inline, animaciones sutiles, estilo coherente con la app
+- Botón de cerrar para descartar (con localStorage para no volver a mostrar)
 
-### Cambios en `src/i18n/translations.ts`
+### 3. Añadir traducciones (7 idiomas)
+**Archivo: `src/i18n/translations.ts`**
 
-- Añadir 4 nuevas claves de traducción en los 7 idiomas.
+Añadir claves para:
+- `installTitle` / `installButton` / `installIOSStep1` / `installIOSStep2` / `installIOSStep3` / `installDismiss` / `installAlreadyInstalled`
+
+### 4. Integrar en Landing
+**Archivo: `src/pages/Landing.tsx`**
+
+- Añadir el `InstallAppBanner` como floating banner o sección visible antes del CTA final
+- Solo visible en móvil y si no está instalado
+
+### 5. Integrar en Dashboard
+**Archivo: `src/pages/Dashboard.tsx`**
+
+- Añadir un botón discreto en la zona del hero o junto a los botones de acción
+- Solo visible si no está instalado y el usuario está en móvil
+
+### 6. Verificar configuración PWA
+La configuración en `vite.config.ts` ya tiene:
+- `display: "standalone"` 
+- Iconos 192x192 y 512x512
+- `apple-touch-icon` en `index.html`
+- Service worker con `autoUpdate`
+- `navigateFallbackDenylist` para `/~oauth`
+
+Todo correcto, no requiere cambios.
+
+### Archivos a modificar/crear
+| Archivo | Acción |
+|---|---|
+| `src/hooks/use-install-prompt.ts` | Crear |
+| `src/components/InstallAppBanner.tsx` | Crear |
+| `src/i18n/translations.ts` | Añadir ~10 claves x 7 idiomas |
+| `src/pages/Landing.tsx` | Importar e integrar banner |
+| `src/pages/Dashboard.tsx` | Importar e integrar botón |
 
