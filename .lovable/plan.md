@@ -1,26 +1,36 @@
 
 
-## Plan: Arreglar promoción a co-creador y añadir confirmación
+## Plan: Diseño Premium de Notificaciones + Indicadores por Sección
 
-### Problemas detectados
+### Parte 1: Badge premium en TripCard
 
-1. **Sin diálogo de confirmación**: Al pulsar "Nombrar co-creador" se ejecuta directamente sin preguntar. El usuario quiere un AlertDialog de confirmación (igual que ya existe para "Eliminar miembro").
-2. **Errores silenciados**: `handlePromote` y `handleDemote` no muestran error si la operación falla en la base de datos.
-3. **Posible problema con DropdownMenu + Popover**: El click en el DropdownMenuItem cierra el dropdown y potencialmente el Popover, lo que puede interferir con la ejecución asíncrona.
+Refinar el badge actual en `TripCard.tsx`:
+- Cambiar de `bg-destructive` a un gradiente sutil rojo-coral con sombra glow
+- Añadir `shadow-[0_2px_8px_rgba(239,68,68,0.4)]` para efecto glow premium
+- Tamaño ligeramente mayor: `min-w-[22px] h-[22px]`
+- Tipografía: `text-[11px] font-bold tracking-tight`
+- Posición: mantener `-top-2 -right-2` pero con `ring-2 ring-card` para separar visualmente del borde de la tarjeta
 
-### Cambios en `src/pages/TripDashboard.tsx`
+### Parte 2: Contadores por sección en TripDashboard
 
-1. **Añadir AlertDialog de confirmación** para promover y degradar co-creador, igual que ya se hace para eliminar miembro:
-   - Envolver las opciones de promover/degradar en un `AlertDialog` con `AlertDialogTrigger` usando `onSelect={(e) => e.preventDefault()}` para evitar que el dropdown se cierre.
-   - Mostrar un mensaje de confirmación tipo "¿Estás seguro de que quieres nombrar a este usuario como co-creador?"
-   
-2. **Añadir manejo de errores visible** en `handlePromote` y `handleDemote` — mostrar toast de error si falla.
+Necesita una nueva función SQL que devuelva conteos desglosados por sección y viaje, para mostrar indicadores en cada botón de sección dentro del dashboard del viaje.
 
-3. **Añadir traducciones** necesarias para los nuevos textos de confirmación en todos los idiomas (es, en, fr, pt, it, zh, de):
-   - `confirmMakeCoCreator` / `confirmMakeCoCreatorDesc`
-   - `confirmRemoveCoCreator` / `confirmRemoveCoCreatorDesc`
+**Migración SQL**: Nueva función `get_unseen_section_counts(p_user_id, p_trip_id)` que devuelve `(section text, unseen_count bigint)` para un viaje específico.
 
-### Cambios en `src/i18n/translations.ts`
+**Nuevo hook**: `useUnseenSectionCounts(tripId)` que llama a la función SQL y devuelve `Record<section, count>`.
 
-- Añadir 4 nuevas claves de traducción en los 7 idiomas.
+**UI en TripDashboard** (grid de secciones, líneas 439-451):
+- Si una sección tiene novedades > 0, mostrar un pequeño punto indicator (`w-2 h-2 rounded-full bg-primary`) junto al nombre de la sección
+- Si el count es > 0, mostrar el número en un mini-badge discreto al lado derecho del botón
+- Mapeo de secciones: `transport` → `transport`, `accommodation` → `accommodation`, `expenses` → `expenses`, `photos` → `photos`, `chat` → `chat`, `schedule` → `schedule`
+- Las secciones `weather` y `phones` no tienen tracking (no generan contenido dinámico)
+
+### Archivos a crear/modificar
+
+| Archivo | Cambio |
+|---|---|
+| Migración SQL | Nueva función `get_unseen_section_counts` |
+| `src/hooks/use-unseen-section-counts.ts` | Nuevo hook para conteos por sección |
+| `src/components/TripCard.tsx` | Badge premium con glow y ring |
+| `src/pages/TripDashboard.tsx` | Indicadores por sección en el grid |
 
