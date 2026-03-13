@@ -169,6 +169,35 @@ export type Database = {
           },
         ]
       }
+      trip_last_seen: {
+        Row: {
+          id: string
+          last_seen_at: string
+          trip_id: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          last_seen_at?: string
+          trip_id: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          last_seen_at?: string
+          trip_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_last_seen_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trip_members: {
         Row: {
           id: string
@@ -519,6 +548,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_unseen_counts: {
+        Args: { p_user_id: string }
+        Returns: {
+          trip_id: string
+          unseen_count: number
+        }[]
+      }
       is_trip_creator: { Args: { p_trip_id: string }; Returns: boolean }
       is_trip_member: { Args: { p_trip_id: string }; Returns: boolean }
     }
