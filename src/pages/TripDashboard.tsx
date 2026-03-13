@@ -25,6 +25,7 @@ import { formatDisplayName } from "@/lib/formatDisplayName";
 import { useToast } from "@/hooks/use-toast";
 import PendingApproval from "@/components/PendingApproval";
 import MemberApprovalManager from "@/components/MemberApprovalManager";
+import { useUnseenSectionCounts } from "@/hooks/use-unseen-section-counts";
 
 interface TripData {
   title: string;
