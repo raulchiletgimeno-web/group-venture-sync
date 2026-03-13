@@ -50,6 +50,7 @@ const TripDashboard = () => {
   const { isCreator, isOriginalCreator } = useTripRole(tripId);
   const { status: memberStatus, loading: statusLoading } = useMemberStatus(tripId);
   const { t, language } = useLanguage();
+  const sectionCounts = useUnseenSectionCounts(tripId);
   const [trip, setTrip] = useState<TripData | null>(null);
   const [memberCount, setMemberCount] = useState(0);
   const [membersList, setMembersList] = useState<MemberInfo[]>([]);
