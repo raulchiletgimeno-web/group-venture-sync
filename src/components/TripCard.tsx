@@ -11,9 +11,10 @@ interface TripCardProps {
   memberCount: number;
   status: "upcoming" | "active" | "finished";
   memberStatus?: "approved" | "pending";
+  unseenCount?: number;
 }
 
-const TripCard = ({ id, title, destination, startDate, endDate, memberCount, status, memberStatus = "approved" }: TripCardProps) => {
+const TripCard = ({ id, title, destination, startDate, endDate, memberCount, status, memberStatus = "approved", unseenCount = 0 }: TripCardProps) => {
   const { t } = useLanguage();
 
   const statusConfig = {
@@ -27,8 +28,13 @@ const TripCard = ({ id, title, destination, startDate, endDate, memberCount, sta
   return (
     <Link
       to={`/trip/${id}`}
-      className={`block rounded-xl bg-card p-5 shadow-card hover:shadow-card-hover transition-all duration-300 animate-fade-in ${memberStatus === "pending" ? "opacity-75" : ""}`}
+      className={`relative block rounded-xl bg-card p-5 shadow-card hover:shadow-card-hover transition-all duration-300 animate-fade-in ${memberStatus === "pending" ? "opacity-75" : ""}`}
     >
+      {unseenCount > 0 && (
+        <span className="absolute -top-2 -right-2 z-10 flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-destructive text-destructive-foreground text-xs font-bold shadow-md">
+          {unseenCount > 99 ? "99+" : unseenCount}
+        </span>
+      )}
       <div className="flex items-start justify-between mb-3">
         <div>
           <h3 className="text-lg font-bold text-card-foreground">{title}</h3>

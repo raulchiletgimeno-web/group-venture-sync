@@ -79,6 +79,20 @@ const TripDashboard = () => {
     finished: t.finished,
   };
 
+  // Mark trip as seen
+  useEffect(() => {
+    if (!tripId) return;
+    const markSeen = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      await supabase.from("trip_last_seen").upsert(
+        { trip_id: tripId, user_id: user.id, last_seen_at: new Date().toISOString() },
+        { onConflict: "trip_id,user_id" }
+      );
+    };
+    markSeen();
+  }, [tripId]);
+
   useEffect(() => {
     if (!tripId) return;
 

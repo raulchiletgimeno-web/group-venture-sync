@@ -8,6 +8,7 @@ import JoinTripDialog from "@/components/JoinTripDialog";
 import HelpChatBot from "@/components/HelpChatBot";
 import InstallAppBanner from "@/components/InstallAppBanner";
 import { useAuth } from "@/contexts/AuthContext";
+import { useUnseenCounts } from "@/hooks/use-unseen-counts";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { getLocale } from "@/i18n/translations";
 import { supabase } from "@/integrations/supabase/client";
@@ -27,6 +28,7 @@ interface Trip {
 const Index = () => {
   const { profile, signOut } = useAuth();
   const { t, language } = useLanguage();
+  const { counts: unseenCounts } = useUnseenCounts();
   const [trips, setTrips] = useState<Trip[]>([]);
   const [translatedTitles, setTranslatedTitles] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
@@ -220,6 +222,7 @@ const Index = () => {
                 memberCount={trip.memberCount}
                 status={trip.status}
                 memberStatus={trip.memberStatus}
+                unseenCount={unseenCounts[trip.id] || 0}
               />
             ))}
           </div>
