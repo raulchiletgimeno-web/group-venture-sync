@@ -10,9 +10,10 @@ export function useInstallPrompt() {
   const [isInstalled, setIsInstalled] = useState(false);
   const [dismissed, setDismissed] = useState(() => localStorage.getItem("yormit-install-dismissed") === "true");
 
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
-  const isAndroid = /Android/.test(navigator.userAgent);
-  const isMobile = isIOS || isAndroid;
+  const ua = navigator.userAgent || "";
+  const isIOS = /iPad|iPhone|iPod/.test(ua) && !(window as any).MSStream;
+  const isAndroid = /Android/i.test(ua) || /Linux.*Mobile/i.test(ua);
+  const isMobile = isIOS || isAndroid || /Mobi|webOS|BlackBerry|Opera Mini|IEMobile/i.test(ua) || (window.innerWidth <= 768 && "ontouchstart" in window);
   const isStandalone = window.matchMedia("(display-mode: standalone)").matches || (navigator as any).standalone === true;
 
   useEffect(() => {
