@@ -448,18 +448,26 @@ const TripDashboard = () => {
 
       <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">{t.sections}</h3>
       <div className="grid grid-cols-2 gap-3">
-        {sections.map(({ path, label, icon: Icon, color }) => (
-          <Link
-            key={path}
-            to={`/trip/${tripId}/${path}`}
-            className="flex items-center gap-3 rounded-xl bg-card p-4 shadow-card hover:shadow-card-hover transition-all duration-300"
-          >
-            <div className={`rounded-lg p-2.5 ${color}`}>
-              <Icon className="h-5 w-5" />
-            </div>
-            <span className="text-sm font-semibold text-card-foreground">{label}</span>
-          </Link>
-        ))}
+        {sections.map(({ path, label, icon: Icon, color }) => {
+          const count = sectionCounts[sectionKey[path] ?? ""] ?? 0;
+          return (
+            <Link
+              key={path}
+              to={`/trip/${tripId}/${path}`}
+              className="relative flex items-center gap-3 rounded-xl bg-card p-4 shadow-card hover:shadow-card-hover transition-all duration-300"
+            >
+              <div className={`rounded-lg p-2.5 ${color}`}>
+                <Icon className="h-5 w-5" />
+              </div>
+              <span className="text-sm font-semibold text-card-foreground flex-1">{label}</span>
+              {count > 0 && (
+                <span className="flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-gradient-to-br from-red-500 to-rose-400 text-white text-[10px] font-bold shadow-[0_1px_4px_rgba(239,68,68,0.35)]">
+                  {count > 99 ? "99+" : count}
+                </span>
+              )}
+            </Link>
+          );
+        })}
       </div>
     </div>
   );
