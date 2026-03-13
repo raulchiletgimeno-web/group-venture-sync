@@ -50,7 +50,8 @@ export function useInstallPrompt() {
     localStorage.setItem("yormit-install-dismissed", "true");
   };
 
-  const shouldShow = isMobile && !isInstalled && !dismissed;
+  const shouldShow = !isInstalled && !dismissed;
+  const shouldShowMobileOnly = isMobile && !isInstalled && !dismissed;
 
-  return { isIOS, isAndroid, isMobile, isInstalled, canInstall, promptInstall, shouldShow, dismiss };
+  return { isIOS, isAndroid, isMobile, isInstalled, canInstall, promptInstall, shouldShow, shouldShowMobileOnly, dismiss };
 }
