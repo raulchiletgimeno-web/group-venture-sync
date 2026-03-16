@@ -140,7 +140,7 @@ const Landing = () => {
             playsInline
             preload="none"
             onCanPlay={handleBgVideoCanPlay}
-            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${videoReady ? "opacity-100" : "opacity-0"}`}
+            className={`absolute inset-0 w-full h-full object-cover object-center transition-opacity duration-1000 ${videoReady ? "opacity-100" : "opacity-0"}`}
           />
         )}
         <div className="absolute inset-0 bg-black/55" />
