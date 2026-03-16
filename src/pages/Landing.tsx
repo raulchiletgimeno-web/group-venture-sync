@@ -352,9 +352,10 @@ const Landing = () => {
             <span className="text-lg font-extrabold tracking-wider uppercase inline-flex items-center text-foreground">
               Y<Luggage className="h-4 w-4" strokeWidth={2.5} />RMIT
             </span>
-            <p className="text-sm text-muted-foreground">
-              © {new Date().getFullYear()} YORMIT. {t.landingFooter}
-            </p>
+            <div className="text-sm text-muted-foreground text-center md:text-right">
+              <p>© {new Date().getFullYear()} YORMIT. {t.landingFooter}</p>
+              <p className="mt-1">Contacto: info@yormit.com</p>
+            </div>
           </div>
         </div>
       </footer>
