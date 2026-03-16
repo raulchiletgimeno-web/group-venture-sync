@@ -26,6 +26,7 @@ import { useToast } from "@/hooks/use-toast";
 import PendingApproval from "@/components/PendingApproval";
 import MemberApprovalManager from "@/components/MemberApprovalManager";
 import { useUnseenSectionCounts } from "@/hooks/use-unseen-section-counts";
+import UnseenBadge from "@/components/UnseenBadge";
 
 interface TripData {
   title: string;
