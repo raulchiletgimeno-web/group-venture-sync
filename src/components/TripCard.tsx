@@ -32,8 +32,8 @@ const TripCard = ({ id, title, destination, startDate, endDate, memberCount, sta
       className={`relative block rounded-xl bg-card p-5 shadow-card hover:shadow-card-hover transition-all duration-300 animate-fade-in ${memberStatus === "pending" ? "opacity-75" : ""}`}
     >
       {unseenCount > 0 && (
-        <span className="absolute -top-2 -right-2 z-10 flex items-center justify-center min-w-[22px] h-[22px] px-1.5 rounded-full bg-gradient-to-br from-red-500 to-rose-400 text-white text-[11px] font-bold tracking-tight shadow-[0_2px_8px_rgba(239,68,68,0.4)] ring-2 ring-card">
-          {unseenCount > 99 ? "99+" : unseenCount}
+        <span className="absolute -top-2 -right-2 z-10 ring-2 ring-card rounded-full">
+          <UnseenBadge count={unseenCount} />
         </span>
       )}
       <div className="flex items-start justify-between mb-3">
