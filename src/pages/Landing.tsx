@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Luggage, Hotel, Train, CalendarDays, Wallet, MessageCircle,
@@ -17,6 +17,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { languageFlags, Language } from "@/i18n/translations";
 import { InstallGuideDrawer } from "@/components/InstallAppBanner";
 import { useInstallPrompt } from "@/hooks/use-install-prompt";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const featureIcons = [Hotel, Train, CalendarDays, Wallet, MessageCircle, Camera, CloudSun, Phone];
 
