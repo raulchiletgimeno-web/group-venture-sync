@@ -113,7 +113,7 @@ const Transport = () => {
   const handleDelete = async (id: string) => { await supabase.from("trip_transport").delete().eq("id", id); fetchItems(); };
 
   const formatDt = (d: string) =>
-    new Date(d).toLocaleString(getLocale(language), { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+    new Date(d).toLocaleString(getLocale(language), { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "UTC" });
 
   if (loading) {
     return <div className="flex justify-center py-10"><div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>;
