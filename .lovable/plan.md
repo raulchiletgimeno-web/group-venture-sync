@@ -1,26 +1,34 @@
 
 
-## Plan: Arreglar promoción a co-creador y añadir confirmación
+## Plan: Fix timezone offset in transport times
 
-### Problemas detectados
+### Root Cause
 
-1. **Sin diálogo de confirmación**: Al pulsar "Nombrar co-creador" se ejecuta directamente sin preguntar. El usuario quiere un AlertDialog de confirmación (igual que ya existe para "Eliminar miembro").
-2. **Errores silenciados**: `handlePromote` y `handleDemote` no muestran error si la operación falla en la base de datos.
-3. **Posible problema con DropdownMenu + Popover**: El click en el DropdownMenuItem cierra el dropdown y potencialmente el Popover, lo que puede interferir con la ejecución asíncrona.
+The `trip_transport` table uses `timestamp with time zone` columns. When the user enters "10:00" in a `datetime-local` input, the string "2025-03-16T10:00" is sent to Supabase, which interprets it as UTC (10:00 UTC). When displaying, `new Date(d).toLocaleString()` converts from UTC to the user's local timezone (e.g., UTC+2 in Spain), showing "12:00" instead of "10:00". This causes the +2 hour shift.
 
-### Cambios en `src/pages/TripDashboard.tsx`
+### Affected modules
 
-1. **Añadir AlertDialog de confirmación** para promover y degradar co-creador, igual que ya se hace para eliminar miembro:
-   - Envolver las opciones de promover/degradar en un `AlertDialog` con `AlertDialogTrigger` usando `onSelect={(e) => e.preventDefault()}` para evitar que el dropdown se cierre.
-   - Mostrar un mensaje de confirmación tipo "¿Estás seguro de que quieres nombrar a este usuario como co-creador?"
-   
-2. **Añadir manejo de errores visible** en `handlePromote` y `handleDemote` — mostrar toast de error si falla.
+- **Transport** (`trip_transport.departure_datetime`, `trip_transport.arrival_datetime`): Both `timestamptz` columns. **This is the problem.**
+- **Schedule** (`trip_schedule.date`, `trip_schedule.time`): Uses `date` and `time without time zone`. **No issue.**
+- **Accommodation** (`trip_accommodation.check_in`, `check_out`): Uses `date`. **No issue.**
 
-3. **Añadir traducciones** necesarias para los nuevos textos de confirmación en todos los idiomas (es, en, fr, pt, it, zh, de):
-   - `confirmMakeCoCreator` / `confirmMakeCoCreatorDesc`
-   - `confirmRemoveCoCreator` / `confirmRemoveCoCreatorDesc`
+### Fix in `src/pages/trips/Transport.tsx`
 
-### Cambios en `src/i18n/translations.ts`
+1. **Display (`formatDt`)**: Add `timeZone: 'UTC'` to `toLocaleString()` so the stored UTC value is displayed as-is (matching what the user originally typed):
 
-- Añadir 4 nuevas claves de traducción en los 7 idiomas.
+```typescript
+const formatDt = (d: string) =>
+  new Date(d).toLocaleString(getLocale(language), {
+    day: "numeric", month: "short", hour: "2-digit", minute: "2-digit",
+    timeZone: "UTC"
+  });
+```
+
+2. **Edit form pre-fill**: The existing `item.departure_datetime.slice(0, 16)` already works correctly because the ISO string from Supabase is in UTC format (e.g., "2025-03-16T10:00:00+00:00" → slices to "2025-03-16T10:00"), which matches what the user originally entered. No change needed here.
+
+3. **Save**: The current behavior (sending the raw datetime-local string) is fine because Supabase interprets it as UTC, and we now display as UTC too. Consistent round-trip.
+
+### Summary
+
+Single change: add `timeZone: "UTC"` to the `formatDt` function in Transport.tsx. This ensures the time displayed matches the time entered, with no timezone conversion applied.
 
