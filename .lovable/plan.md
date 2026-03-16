@@ -1,26 +1,44 @@
 
 
-## Plan: Arreglar promoción a co-creador y añadir confirmación
+## Plan: Restaurar vídeo de fondo en móvil
 
-### Problemas detectados
+### Cambios en `src/pages/Landing.tsx`
 
-1. **Sin diálogo de confirmación**: Al pulsar "Nombrar co-creador" se ejecuta directamente sin preguntar. El usuario quiere un AlertDialog de confirmación (igual que ya existe para "Eliminar miembro").
-2. **Errores silenciados**: `handlePromote` y `handleDemote` no muestran error si la operación falla en la base de datos.
-3. **Posible problema con DropdownMenu + Popover**: El click en el DropdownMenuItem cierra el dropdown y potencialmente el Popover, lo que puede interferir con la ejecución asíncrona.
+#### 1. Eliminar la restricción `!isMobile` del vídeo
+- Línea 135: quitar el condicional `{!isMobile && (` para que el `<video>` se renderice siempre
+- El poster WebP sigue como fallback visual instantáneo mientras el vídeo carga
 
-### Cambios en `src/pages/TripDashboard.tsx`
+#### 2. Cargar el vídeo también en móvil (con delay mayor)
+- Línea 49: eliminar `if (isMobile || ...) return;`
+- Usar delay de 500ms en móvil vs 100ms en desktop para priorizar el render inicial del hero
 
-1. **Añadir AlertDialog de confirmación** para promover y degradar co-creador, igual que ya se hace para eliminar miembro:
-   - Envolver las opciones de promover/degradar en un `AlertDialog` con `AlertDialogTrigger` usando `onSelect={(e) => e.preventDefault()}` para evitar que el dropdown se cierre.
-   - Mostrar un mensaje de confirmación tipo "¿Estás seguro de que quieres nombrar a este usuario como co-creador?"
-   
-2. **Añadir manejo de errores visible** en `handlePromote` y `handleDemote` — mostrar toast de error si falla.
+```typescript
+useEffect(() => {
+  if (!bgVideoRef.current) return;
+  const video = bgVideoRef.current;
+  const delay = isMobile ? 500 : 100;
+  const timer = setTimeout(() => {
+    video.src = "/videos/hero-background.mp4";
+    video.load();
+  }, delay);
+  return () => clearTimeout(timer);
+}, [isMobile]);
+```
 
-3. **Añadir traducciones** necesarias para los nuevos textos de confirmación en todos los idiomas (es, en, fr, pt, it, zh, de):
-   - `confirmMakeCoCreator` / `confirmMakeCoCreatorDesc`
-   - `confirmRemoveCoCreator` / `confirmRemoveCoCreatorDesc`
+#### 3. Encuadre optimizado para móvil
+- Aplicar `object-[center_25%]` en móvil y `object-center` en desktop al `<video>`, para que en pantallas verticales se vean los personajes y el Coliseo (igual que ya se hace con el poster)
 
-### Cambios en `src/i18n/translations.ts`
+```tsx
+<video
+  ref={bgVideoRef}
+  muted loop playsInline preload="none"
+  onCanPlay={handleBgVideoCanPlay}
+  className={`absolute inset-0 w-full h-full object-cover ${isMobile ? "object-[center_25%]" : "object-center"} transition-opacity duration-1000 ${videoReady ? "opacity-100" : "opacity-0"}`}
+/>
+```
 
-- Añadir 4 nuevas claves de traducción en los 7 idiomas.
+### Resultado
+- **Móvil**: poster visible al instante → vídeo carga con 500ms de delay → fade-in suave de 1s
+- **Desktop**: sin cambios (delay 100ms como antes)
+- Encuadre optimizado en ambos dispositivos
 
