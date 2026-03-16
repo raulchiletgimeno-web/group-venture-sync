@@ -132,17 +132,15 @@ const Landing = () => {
           style={{ backgroundImage: "url('/videos/hero-poster.webp')" }}
         />
         {/* Video background — desktop only, lazy loaded with fade */}
-        {!isMobile && (
-          <video
-            ref={bgVideoRef}
-            muted
-            loop
-            playsInline
-            preload="none"
-            onCanPlay={handleBgVideoCanPlay}
-            className={`absolute inset-0 w-full h-full object-cover object-center transition-opacity duration-1000 ${videoReady ? "opacity-100" : "opacity-0"}`}
-          />
-        )}
+        <video
+          ref={bgVideoRef}
+          muted
+          loop
+          playsInline
+          preload="none"
+          onCanPlay={handleBgVideoCanPlay}
+          className={`absolute inset-0 w-full h-full object-cover ${isMobile ? "object-[center_25%]" : "object-center"} transition-opacity duration-1000 ${videoReady ? "opacity-100" : "opacity-0"}`}
+        />
         <div className="absolute inset-0 bg-black/55" />
 
         {/* Hero content */}
