@@ -1,41 +1,43 @@
 
 
-## Analysis
+## Plan: Unify notification badges across YORMIT
 
-The Badging API integration is **already implemented** (lines 73-82 of `use-unseen-counts.ts`). The code correctly calls `navigator.setAppBadge(totalUnseen)` when there are unseen items and `navigator.clearAppBadge()` when the count reaches zero.
+### Problem
+Two badge styles exist with inconsistent sizing, font, shadow, and positioning:
 
-The current implementation is already the best possible approach. There is nothing additional to code — the feature is live and working on supported platforms.
+| Location | Size | Font | Shadow |
+|---|---|---|---|
+| TripCard (line 34) | `min-w-[22px] h-[22px]` | `text-[11px]` | `shadow-[0_2px_8px_rgba(239,68,68,0.4)]` + `ring-2 ring-card` |
+| TripDashboard sections (line 464) | `min-w-[20px] h-5` | `text-[10px]` | `shadow-[0_1px_4px_rgba(239,68,68,0.35)]`, no ring |
 
-## Why you may not be seeing the badge
+### Solution
 
-The issue is **not a code problem** — it's a platform support limitation:
+Create a single reusable `UnseenBadge` component with one consistent design token set, then use it in both locations.
 
-### Where the badge WILL work (already working with current code)
-- **Chrome on Android** (v81+): Badge appears on the installed PWA icon on the home screen. Requires the app to be installed (Add to Home Screen).
-- **Chrome / Edge on Windows & macOS** (v81+): Badge appears on the taskbar/dock icon of the installed PWA.
-- **Samsung Internet on Android**: Supported.
+### 1. Create `src/components/UnseenBadge.tsx`
 
-### Where the badge WILL NOT work (platform limitation, no code fix possible)
-- **Safari on iOS / iPadOS**: The Badging API is **not supported**. Apple does not allow PWAs to show badges on the home screen icon. The only way to get badges on iOS is through a native app with push notifications via APNs. **No code change can fix this.**
-- **Firefox**: Does not support the Badging API on any platform.
+A small component that renders the red gradient pill with a count. Props:
+- `count: number` — if 0, renders nothing
+- `size?: "sm" | "default"` — `default` for trip cards (absolute positioned by parent), `sm` for inline section badges
+- Caps display at "99+"
 
-### Key requirements for the badge to appear
-1. The app **must be installed** as a PWA (Add to Home Screen / Install). Badges don't appear when running in a regular browser tab.
-2. The app must be **open or recently active** — the Badging API updates the badge from the frontend context (or a service worker). Since the current implementation runs in the React hook, the badge updates while the app is open.
+Design tokens (unified):
+- **Shape**: `rounded-full`
+- **Color**: `bg-gradient-to-br from-red-500 to-rose-400 text-white`
+- **Font**: `font-bold tracking-tight`
+- **Shadow**: `shadow-[0_2px_6px_rgba(239,68,68,0.4)]`
+- **Default size**: `min-w-[22px] h-[22px] px-1.5 text-[11px]`
+- **Small size**: `min-w-[18px] h-[18px] px-1 text-[10px]`
 
-## What's already in place (no changes needed)
+### 2. Update `src/components/TripCard.tsx`
 
-- `navigator.setAppBadge(totalUnseen)` called reactively when unseen count changes
-- `navigator.clearAppBadge()` called when count reaches 0
-- Progressive enhancement: `"setAppBadge" in navigator` check ensures no errors on unsupported platforms
-- Internal badge system (red indicators on trip cards and section buttons) works as fallback everywhere
+Replace the inline badge `<span>` (lines 33-37) with `<UnseenBadge count={unseenCount} />` wrapped in an absolute-positioned container (`absolute -top-2 -right-2 z-10 ring-2 ring-card rounded-full`).
 
-## Conclusion
+### 3. Update `src/pages/TripDashboard.tsx`
 
-**No code changes are required.** The badge implementation is already correct and professional. The reason you're not seeing it is most likely one of:
-1. You're testing on **iOS Safari** (not supported by Apple)
-2. The app is **not installed** as a PWA (running in browser tab)
-3. You're testing on **Firefox** (not supported)
+Replace the inline badge `<span>` (lines 463-466) with `<UnseenBadge count={count} size="sm" />` — no absolute positioning needed, stays inline in the flex row.
 
-To verify: install the PWA on an Android device or Chrome desktop, ensure there are unseen notifications, and the badge will appear on the icon.
+### Result
+
+Every notification badge in the app uses the same component, same gradient, same font weight, same shadow. Two size variants handle the two contexts (card overlay vs inline). Adding badges anywhere else in the future just requires importing `UnseenBadge`.
 
