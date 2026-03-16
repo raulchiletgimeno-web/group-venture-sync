@@ -26,6 +26,7 @@ import { useToast } from "@/hooks/use-toast";
 import PendingApproval from "@/components/PendingApproval";
 import MemberApprovalManager from "@/components/MemberApprovalManager";
 import { useUnseenSectionCounts } from "@/hooks/use-unseen-section-counts";
+import UnseenBadge from "@/components/UnseenBadge";
 
 interface TripData {
   title: string;
@@ -460,11 +461,7 @@ const TripDashboard = () => {
                 <Icon className="h-5 w-5" />
               </div>
               <span className="text-sm font-semibold text-card-foreground flex-1">{label}</span>
-              {count > 0 && (
-                <span className="flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-gradient-to-br from-red-500 to-rose-400 text-white text-[10px] font-bold shadow-[0_1px_4px_rgba(239,68,68,0.35)]">
-                  {count > 99 ? "99+" : count}
-                </span>
-              )}
+              <UnseenBadge count={count} size="sm" />
             </Link>
           );
         })}
