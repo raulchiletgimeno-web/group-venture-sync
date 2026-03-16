@@ -34,6 +34,7 @@ const Landing = () => {
   const isMobile = useIsMobile();
   const [videoReady, setVideoReady] = useState(false);
 
+  // Modal video autoplay
   useEffect(() => {
     if (showVideo && videoRef.current) {
       videoRef.current.muted = true;
@@ -42,6 +43,23 @@ const Landing = () => {
       }).catch(() => {});
     }
   }, [showVideo]);
+
+  // Lazy-load background video on desktop only
+  useEffect(() => {
+    if (isMobile || !bgVideoRef.current) return;
+    const video = bgVideoRef.current;
+    // Delay loading to prioritize hero text/CTA render
+    const timer = setTimeout(() => {
+      video.src = "/videos/hero-background.mp4";
+      video.load();
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [isMobile]);
+
+  const handleBgVideoCanPlay = useCallback(() => {
+    setVideoReady(true);
+    bgVideoRef.current?.play().catch(() => {});
+  }, []);
 
   const features = [
     { icon: featureIcons[0], title: t.landingFeatureAccommodation, desc: t.landingFeatureAccommodationDesc },
