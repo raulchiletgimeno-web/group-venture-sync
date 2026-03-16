@@ -1,6 +1,7 @@
 import { MapPin, Calendar, Users, ChevronRight, Clock } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
+import UnseenBadge from "@/components/UnseenBadge";
 
 interface TripCardProps {
   id: string;
