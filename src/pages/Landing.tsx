@@ -128,7 +128,7 @@ const Landing = () => {
       <div className="relative overflow-hidden">
         {/* Poster image (always visible immediately) */}
         <div
-          className="absolute inset-0 bg-cover bg-center"
+          className={`absolute inset-0 bg-cover ${isMobile ? "bg-[center_25%]" : "bg-center"}`}
           style={{ backgroundImage: "url('/videos/hero-poster.webp')" }}
         />
         {/* Video background — desktop only, lazy loaded with fade */}
