@@ -46,13 +46,13 @@ const Landing = () => {
 
   // Lazy-load background video on desktop only
   useEffect(() => {
-    if (isMobile || !bgVideoRef.current) return;
+    if (!bgVideoRef.current) return;
     const video = bgVideoRef.current;
-    // Delay loading to prioritize hero text/CTA render
+    const delay = isMobile ? 500 : 100;
     const timer = setTimeout(() => {
       video.src = "/videos/hero-background.mp4";
       video.load();
-    }, 100);
+    }, delay);
     return () => clearTimeout(timer);
   }, [isMobile]);
 
