@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Luggage, Hotel, Train, CalendarDays, Wallet, MessageCircle,
@@ -17,6 +17,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { languageFlags, Language } from "@/i18n/translations";
 import { InstallGuideDrawer } from "@/components/InstallAppBanner";
 import { useInstallPrompt } from "@/hooks/use-install-prompt";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const featureIcons = [Hotel, Train, CalendarDays, Wallet, MessageCircle, Camera, CloudSun, Phone];
 
@@ -24,12 +25,16 @@ const Landing = () => {
   const navigate = useNavigate();
   const [showVideo, setShowVideo] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const bgVideoRef = useRef<HTMLVideoElement>(null);
   const videoSectionRef = useRef<HTMLDivElement>(null);
   const faqRef = useRef<HTMLDivElement>(null);
   const { language, setLanguage, t } = useLanguage();
   const { isIOS, canInstall, promptInstall, shouldShow } = useInstallPrompt();
   const [showInstallGuide, setShowInstallGuide] = useState(false);
+  const isMobile = useIsMobile();
+  const [videoReady, setVideoReady] = useState(false);
 
+  // Modal video autoplay
   useEffect(() => {
     if (showVideo && videoRef.current) {
       videoRef.current.muted = true;
@@ -38,6 +43,23 @@ const Landing = () => {
       }).catch(() => {});
     }
   }, [showVideo]);
+
+  // Lazy-load background video on desktop only
+  useEffect(() => {
+    if (isMobile || !bgVideoRef.current) return;
+    const video = bgVideoRef.current;
+    // Delay loading to prioritize hero text/CTA render
+    const timer = setTimeout(() => {
+      video.src = "/videos/hero-background.mp4";
+      video.load();
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [isMobile]);
+
+  const handleBgVideoCanPlay = useCallback(() => {
+    setVideoReady(true);
+    bgVideoRef.current?.play().catch(() => {});
+  }, []);
 
   const features = [
     { icon: featureIcons[0], title: t.landingFeatureAccommodation, desc: t.landingFeatureAccommodationDesc },
@@ -104,13 +126,24 @@ const Landing = () => {
 
       {/* ═══════════ HERO + VIDEO (shared background) ═══════════ */}
       <div className="relative overflow-hidden">
-        {/* Shared video background */}
-        <div className="absolute inset-0">
-          <video autoPlay muted loop playsInline preload="auto" className="w-full h-full object-cover">
-            <source src="/videos/hero-background.mp4" type="video/mp4" />
-          </video>
-          <div className="absolute inset-0 bg-black/55" />
-        </div>
+        {/* Poster image (always visible immediately) */}
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: "url('/videos/hero-poster.webp')" }}
+        />
+        {/* Video background — desktop only, lazy loaded with fade */}
+        {!isMobile && (
+          <video
+            ref={bgVideoRef}
+            muted
+            loop
+            playsInline
+            preload="none"
+            onCanPlay={handleBgVideoCanPlay}
+            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${videoReady ? "opacity-100" : "opacity-0"}`}
+          />
+        )}
+        <div className="absolute inset-0 bg-black/55" />
 
         {/* Hero content */}
         <section className="relative">
