@@ -126,13 +126,24 @@ const Landing = () => {
 
       {/* ═══════════ HERO + VIDEO (shared background) ═══════════ */}
       <div className="relative overflow-hidden">
-        {/* Shared video background */}
-        <div className="absolute inset-0">
-          <video autoPlay muted loop playsInline preload="auto" className="w-full h-full object-cover">
-            <source src="/videos/hero-background.mp4" type="video/mp4" />
-          </video>
-          <div className="absolute inset-0 bg-black/55" />
-        </div>
+        {/* Poster image (always visible immediately) */}
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: "url('/videos/hero-poster.webp')" }}
+        />
+        {/* Video background — desktop only, lazy loaded with fade */}
+        {!isMobile && (
+          <video
+            ref={bgVideoRef}
+            muted
+            loop
+            playsInline
+            preload="none"
+            onCanPlay={handleBgVideoCanPlay}
+            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${videoReady ? "opacity-100" : "opacity-0"}`}
+          />
+        )}
+        <div className="absolute inset-0 bg-black/55" />
 
         {/* Hero content */}
         <section className="relative">
