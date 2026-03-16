@@ -25,11 +25,14 @@ const Landing = () => {
   const navigate = useNavigate();
   const [showVideo, setShowVideo] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const bgVideoRef = useRef<HTMLVideoElement>(null);
   const videoSectionRef = useRef<HTMLDivElement>(null);
   const faqRef = useRef<HTMLDivElement>(null);
   const { language, setLanguage, t } = useLanguage();
   const { isIOS, canInstall, promptInstall, shouldShow } = useInstallPrompt();
   const [showInstallGuide, setShowInstallGuide] = useState(false);
+  const isMobile = useIsMobile();
+  const [videoReady, setVideoReady] = useState(false);
 
   useEffect(() => {
     if (showVideo && videoRef.current) {
