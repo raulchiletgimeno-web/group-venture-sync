@@ -46,13 +46,13 @@ const Landing = () => {
 
   // Lazy-load background video on desktop only
   useEffect(() => {
-    if (isMobile || !bgVideoRef.current) return;
+    if (!bgVideoRef.current) return;
     const video = bgVideoRef.current;
-    // Delay loading to prioritize hero text/CTA render
+    const delay = isMobile ? 500 : 100;
     const timer = setTimeout(() => {
       video.src = "/videos/hero-background.mp4";
       video.load();
-    }, 100);
+    }, delay);
     return () => clearTimeout(timer);
   }, [isMobile]);
 
@@ -132,17 +132,15 @@ const Landing = () => {
           style={{ backgroundImage: "url('/videos/hero-poster.webp')" }}
         />
         {/* Video background — desktop only, lazy loaded with fade */}
-        {!isMobile && (
-          <video
-            ref={bgVideoRef}
-            muted
-            loop
-            playsInline
-            preload="none"
-            onCanPlay={handleBgVideoCanPlay}
-            className={`absolute inset-0 w-full h-full object-cover object-center transition-opacity duration-1000 ${videoReady ? "opacity-100" : "opacity-0"}`}
-          />
-        )}
+        <video
+          ref={bgVideoRef}
+          muted
+          loop
+          playsInline
+          preload="none"
+          onCanPlay={handleBgVideoCanPlay}
+          className={`absolute inset-0 w-full h-full object-cover ${isMobile ? "object-[center_25%]" : "object-center"} transition-opacity duration-1000 ${videoReady ? "opacity-100" : "opacity-0"}`}
+        />
         <div className="absolute inset-0 bg-black/55" />
 
         {/* Hero content */}
