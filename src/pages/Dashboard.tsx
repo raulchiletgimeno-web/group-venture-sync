@@ -76,13 +76,18 @@ const Index = () => {
             .select("id", { count: "exact", head: true })
             .eq("trip_id", trip.id)
             .eq("status", "approved");
+          const today = new Date().toISOString().split("T")[0];
+          const computedStatus: Trip["status"] =
+            trip.end_date < today ? "finished" :
+            trip.start_date <= today ? "active" :
+            "upcoming";
           return {
             id: trip.id,
             title: trip.title,
             destination: trip.destination,
             start_date: trip.start_date,
             end_date: trip.end_date,
-            status: trip.status as Trip["status"],
+            status: computedStatus,
             memberCount: count ?? 0,
             memberStatus: (statusMap[trip.id] || "approved") as "approved" | "pending",
           };
