@@ -62,7 +62,7 @@ const Auth = () => {
           <div className="absolute inset-0 gradient-hero opacity-80" />
         </div>
         <div className="relative px-5 pt-14 pb-8 text-center">
-          <span className="text-4xl font-extrabold tracking-wider text-white uppercase inline-flex items-center">
+          <span className="text-4xl font-extrabold tracking-wider text-white uppercase inline-flex items-center" translate="no">
             Y<Luggage className="h-8 w-8" strokeWidth={2.5} />RMIT
           </span>
           <h1 className="text-2xl font-extrabold text-primary-foreground">

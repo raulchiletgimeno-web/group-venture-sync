@@ -55,6 +55,11 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
     [user]
   );
 
+  // Sync <html lang> with current language
+  useEffect(() => {
+    document.documentElement.lang = language;
+  }, [language]);
+
   const t = translations[language];
 
   if (!loaded) return null;
