@@ -348,9 +348,7 @@ const Landing = () => {
       <footer className="border-t border-border bg-card">
         <div className="max-w-6xl mx-auto px-5 py-10">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <span className="text-lg font-extrabold tracking-wider uppercase inline-flex items-center text-foreground" translate="no">
-              Y<Luggage className="h-4 w-4" strokeWidth={2.5} />RMIT
-            </span>
+            <BrandLogo size="md" className="text-foreground" />
             <div className="text-sm text-muted-foreground text-center md:text-right">
               <p>© {new Date().getFullYear()} YORMIT. {t.landingFooter}</p>
               <p className="mt-1">Contacto: info@yormit.com</p>
