@@ -16,6 +16,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { languageFlags, Language } from "@/i18n/translations";
 import { InstallGuideDrawer } from "@/components/InstallAppBanner";
+import BrandLogo from "@/components/BrandLogo";
 import { useInstallPrompt } from "@/hooks/use-install-prompt";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -148,9 +149,7 @@ const Landing = () => {
           <div className="max-w-5xl mx-auto px-5 py-16 md:py-24 lg:py-32">
             <div className="max-w-2xl mx-auto text-center">
               {/* Logo */}
-              <div className="text-4xl md:text-6xl font-extrabold tracking-wider uppercase flex items-center justify-center mb-6 text-white [text-shadow:_0_2px_8px_rgba(0,0,0,0.5)]" translate="no">
-                Y<Luggage className="mx-[-2px]" style={{ height: '0.9em', width: '0.9em' }} strokeWidth={2.5} />RMIT
-              </div>
+              <BrandLogo size="xl" className="justify-center mb-6 text-white [text-shadow:_0_2px_8px_rgba(0,0,0,0.5)]" />
               {/* Headline */}
               <h1 className="text-3xl md:text-5xl lg:text-6xl font-extrabold text-white leading-tight [text-shadow:_0_2px_8px_rgba(0,0,0,0.5)]">
                 {t.landingHeroTitle}
@@ -349,9 +348,7 @@ const Landing = () => {
       <footer className="border-t border-border bg-card">
         <div className="max-w-6xl mx-auto px-5 py-10">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <span className="text-lg font-extrabold tracking-wider uppercase inline-flex items-center text-foreground" translate="no">
-              Y<Luggage className="h-4 w-4" strokeWidth={2.5} />RMIT
-            </span>
+            <BrandLogo size="md" className="text-foreground" />
             <div className="text-sm text-muted-foreground text-center md:text-right">
               <p>© {new Date().getFullYear()} YORMIT. {t.landingFooter}</p>
               <p className="mt-1">Contacto: info@yormit.com</p>

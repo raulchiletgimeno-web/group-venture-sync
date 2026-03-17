@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Compass, Mail, Lock } from "lucide-react";
+import BrandLogo from "@/components/BrandLogo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -55,7 +56,7 @@ const ResetPassword = () => {
     <div className="min-h-screen bg-background flex flex-col items-center pt-20 px-5">
       <div className="flex items-center gap-2 mb-6">
         <Compass className="h-6 w-6 text-primary" />
-        <span className="text-sm font-semibold tracking-wider text-muted-foreground uppercase" translate="no">YORMIT</span>
+        <BrandLogo size="sm" className="text-muted-foreground" />
       </div>
 
       <div className="bg-card rounded-xl shadow-card p-6 max-w-sm w-full">
