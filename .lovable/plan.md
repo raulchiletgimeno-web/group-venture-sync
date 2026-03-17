@@ -1,33 +1,26 @@
 
 
-## Plan: Compute trip status client-side based on dates
+## Plan: Arreglar promoción a co-creador y añadir confirmación
 
-### Problem
-The trip status badge currently uses the `status` field from the database, which may not be updated when a trip's end date passes. Users see stale statuses instead of "Finalizado" for past trips.
+### Problemas detectados
 
-### Solution
-In `src/pages/Dashboard.tsx`, compute the display status client-side by comparing `end_date` and `start_date` against today's date, overriding the database `status` field.
+1. **Sin diálogo de confirmación**: Al pulsar "Nombrar co-creador" se ejecuta directamente sin preguntar. El usuario quiere un AlertDialog de confirmación (igual que ya existe para "Eliminar miembro").
+2. **Errores silenciados**: `handlePromote` y `handleDemote` no muestran error si la operación falla en la base de datos.
+3. **Posible problema con DropdownMenu + Popover**: El click en el DropdownMenuItem cierra el dropdown y potencialmente el Popover, lo que puede interferir con la ejecución asíncrona.
 
-### Change: `src/pages/Dashboard.tsx` (~line 79-85)
+### Cambios en `src/pages/TripDashboard.tsx`
 
-Replace the line that reads `status: trip.status as Trip["status"]` with logic:
+1. **Añadir AlertDialog de confirmación** para promover y degradar co-creador, igual que ya se hace para eliminar miembro:
+   - Envolver las opciones de promover/degradar en un `AlertDialog` con `AlertDialogTrigger` usando `onSelect={(e) => e.preventDefault()}` para evitar que el dropdown se cierre.
+   - Mostrar un mensaje de confirmación tipo "¿Estás seguro de que quieres nombrar a este usuario como co-creador?"
+   
+2. **Añadir manejo de errores visible** en `handlePromote` y `handleDemote` — mostrar toast de error si falla.
 
-```typescript
-const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+3. **Añadir traducciones** necesarias para los nuevos textos de confirmación en todos los idiomas (es, en, fr, pt, it, zh, de):
+   - `confirmMakeCoCreator` / `confirmMakeCoCreatorDesc`
+   - `confirmRemoveCoCreator` / `confirmRemoveCoCreatorDesc`
 
-// Inside the map:
-const computedStatus: Trip["status"] = 
-  trip.end_date < today ? "finished" :
-  trip.start_date <= today ? "active" : 
-  "upcoming";
+### Cambios en `src/i18n/translations.ts`
 
-// Use computedStatus instead of trip.status
-```
-
-This ensures:
-- **end_date < today** → "Finalizado"
-- **start_date <= today <= end_date** → "Activo" 
-- **start_date > today** → "Próximo"
-
-Single file change, no database migration needed.
+- Añadir 4 nuevas claves de traducción en los 7 idiomas.
 
