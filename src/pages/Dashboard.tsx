@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Plus, UserPlus, LogOut, MessageCircleQuestion, Luggage } from "lucide-react";
+import BrandLogo from "@/components/BrandLogo";
 import { Button } from "@/components/ui/button";
 import TripCard from "@/components/TripCard";
 import EmptyState from "@/components/EmptyState";
