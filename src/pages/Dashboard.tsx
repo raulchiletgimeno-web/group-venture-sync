@@ -138,7 +138,7 @@ const Index = () => {
         <div className="relative px-5 pt-14 pb-10">
           {/* User header */}
           <div className="flex items-center justify-between mb-4">
-            <span className="text-xl font-extrabold tracking-wider text-white uppercase inline-flex items-center">
+            <span className="text-xl font-extrabold tracking-wider text-white uppercase inline-flex items-center" translate="no">
               Y<Luggage className="h-5 w-5" strokeWidth={2.5} />RMIT
             </span>
             <div className="flex items-center gap-2">
