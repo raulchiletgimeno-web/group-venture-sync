@@ -1,26 +1,39 @@
 
 
-## Plan: Arreglar promoción a co-creador y añadir confirmación
+## Plan: Fix browser auto-translation and protect brand elements
 
-### Problemas detectados
+### Root causes identified
 
-1. **Sin diálogo de confirmación**: Al pulsar "Nombrar co-creador" se ejecuta directamente sin preguntar. El usuario quiere un AlertDialog de confirmación (igual que ya existe para "Eliminar miembro").
-2. **Errores silenciados**: `handlePromote` y `handleDemote` no muestran error si la operación falla en la base de datos.
-3. **Posible problema con DropdownMenu + Popover**: El click en el DropdownMenuItem cierra el dropdown y potencialmente el Popover, lo que puede interferir con la ejecución asíncrona.
+1. **`<html lang="en">`** in `index.html` — the page declares English but content is Spanish. Chrome sees Spanish text on an "English" page and offers to translate.
+2. **No `translate="no"` meta tag** — nothing tells the browser to skip auto-translation.
+3. **Brand text "YORMIT"** is rendered as raw text nodes mixed with Luggage icon components — browser translators can break this layout by wrapping text in `<font>` tags.
+4. **`lang` attribute never updates** when user switches language via the in-app selector.
 
-### Cambios en `src/pages/TripDashboard.tsx`
+### Changes
 
-1. **Añadir AlertDialog de confirmación** para promover y degradar co-creador, igual que ya se hace para eliminar miembro:
-   - Envolver las opciones de promover/degradar en un `AlertDialog` con `AlertDialogTrigger` usando `onSelect={(e) => e.preventDefault()}` para evitar que el dropdown se cierre.
-   - Mostrar un mensaje de confirmación tipo "¿Estás seguro de que quieres nombrar a este usuario como co-creador?"
-   
-2. **Añadir manejo de errores visible** en `handlePromote` y `handleDemote` — mostrar toast de error si falla.
+#### 1. `index.html` — Set correct lang and block auto-translate
 
-3. **Añadir traducciones** necesarias para los nuevos textos de confirmación en todos los idiomas (es, en, fr, pt, it, zh, de):
-   - `confirmMakeCoCreator` / `confirmMakeCoCreatorDesc`
-   - `confirmRemoveCoCreator` / `confirmRemoveCoCreatorDesc`
+- Change `<html lang="en">` to `<html lang="es">`
+- Add `<meta name="google" content="notranslate">` (Chrome-specific)
+- Add `class="notranslate"` to `<html>` element (Google Translate convention)
 
-### Cambios en `src/i18n/translations.ts`
+#### 2. `src/contexts/LanguageContext.tsx` — Sync `<html lang>` dynamically
 
-- Añadir 4 nuevas claves de traducción en los 7 idiomas.
+Add a `useEffect` that sets `document.documentElement.lang` to the current language code (e.g. `"es"`, `"en"`, `"fr"`) whenever the user changes language. This keeps the HTML lang attribute accurate for all 7 supported languages.
+
+#### 3. Protect all YORMIT brand logos with `translate="no"`
+
+Add `translate="no"` attribute to the 4 brand logo elements across:
+- `src/pages/Landing.tsx` — hero logo + footer logo
+- `src/pages/Dashboard.tsx` — header logo
+- `src/pages/Auth.tsx` — auth page logo
+- `src/pages/ResetPassword.tsx` — reset page logo
+
+This prevents browsers from wrapping these elements in translation `<font>` tags that break the icon+text layout.
+
+### Result
+
+- Browser won't offer "Translate to Spanish?" on a Spanish page
+- If user switches to English/French/etc, `lang` updates correctly so browser won't re-offer Spanish translation
+- YORMIT logos are protected from layout-breaking translation injection on all pages
 
