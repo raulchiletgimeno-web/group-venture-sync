@@ -193,7 +193,7 @@ const Landing = () => {
               className="relative cursor-pointer group rounded-2xl overflow-hidden shadow-card-hover mx-auto max-w-3xl aspect-video"
             >
               <video
-                src="/videos/Video_Publicidad_Yormit.mp4#t=0.5"
+                src="/videos/YORMIT_VIDEO.mov#t=0.5"
                 preload="metadata"
                 muted
                 playsInline
@@ -365,7 +365,7 @@ const Landing = () => {
         <DialogContent className="max-w-4xl p-0 overflow-hidden bg-black border-none">
           <video
             ref={videoRef}
-            src="/videos/Video_Publicidad_Yormit.mp4"
+            src="/videos/YORMIT_VIDEO.mov"
             controls
             autoPlay
             onEnded={() => {
