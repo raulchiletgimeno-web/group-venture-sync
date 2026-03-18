@@ -365,7 +365,7 @@ const Landing = () => {
         <DialogContent className="max-w-4xl p-0 overflow-hidden bg-black border-none">
           <video
             ref={videoRef}
-            src="/videos/Video_Publicidad_Yormit.mp4"
+            src="/videos/YORMIT_VIDEO.mov"
             controls
             autoPlay
             onEnded={() => {
