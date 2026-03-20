@@ -12,6 +12,7 @@ import { getLocale } from "@/i18n/translations";
 import { useToast } from "@/hooks/use-toast";
 import { formatDisplayName } from "@/lib/formatDisplayName";
 import { useMarkSectionSeen } from "@/hooks/use-mark-section-seen";
+import { notifyTripEvent } from "@/lib/notifyTripEvent";
 
 interface Message {
   id: string;
