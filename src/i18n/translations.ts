@@ -1205,6 +1205,8 @@ const translations: Record<Language, TranslationKeys> = {
     installAndroidStep2: "Select \"Add to Home screen\"",
     installAndroidStep3: "Tap \"Add\" to confirm",
     installDismiss: "Got it",
+    pushTitle: "Turn on notifications to stay updated on your trips",
+    pushButton: "Enable",
   },
 
   fr: {
