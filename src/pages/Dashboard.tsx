@@ -187,12 +187,13 @@ const Index = () => {
             </Button>
           </div>
 
+          <PushNotificationBanner />
+
         </div>
       </div>
 
       {/* Install & Push Banners */}
       <InstallAppBanner variant="dashboard" />
-      <PushNotificationBanner />
 
       {/* Trips List */}
       <div className="px-5 py-6">
