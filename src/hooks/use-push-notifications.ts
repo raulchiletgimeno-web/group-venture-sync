@@ -57,15 +57,68 @@ export function usePushNotifications() {
     }
 
     if (nextSupportState === "supported") {
-      navigator.serviceWorker.ready
-        .then(async (reg) => {
-          const sub = await reg.pushManager.getSubscription();
-          setIsSubscribed(!!sub);
-        })
-        .catch((error) => {
-          console.warn("Push support check failed:", error);
+      // Check BOTH local subscription AND database record
+      (async () => {
+        try {
+          const reg = await navigator.serviceWorker.ready;
+          const localSub = await reg.pushManager.getSubscription();
+
+          if (!localSub) {
+            setIsSubscribed(false);
+            return;
+          }
+
+          // Local subscription exists — verify it's also in the database
+          const { data: { user } } = await supabase.auth.getUser();
+          if (!user) {
+            setIsSubscribed(false);
+            return;
+          }
+
+          const { data: dbSubs } = await supabase
+            .from("push_subscriptions")
+            .select("endpoint")
+            .eq("user_id", user.id)
+            .eq("endpoint", localSub.endpoint);
+
+          if (dbSubs && dbSubs.length > 0) {
+            // Both local and DB match — truly subscribed
+            setIsSubscribed(true);
+          } else {
+            // Desync: local exists but DB doesn't → auto-repair
+            console.warn("[Push] Desync detected: local subscription exists but not in DB. Re-subscribing...");
+            await localSub.unsubscribe();
+
+            // Create fresh subscription with current VAPID key
+            const newSub = await reg.pushManager.subscribe({
+              userVisibleOnly: true,
+              applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) as BufferSource,
+            });
+
+            const json = newSub.toJSON();
+            const { error } = await supabase.from("push_subscriptions").upsert(
+              {
+                user_id: user.id,
+                endpoint: json.endpoint!,
+                p256dh: json.keys!.p256dh!,
+                auth: json.keys!.auth!,
+              },
+              { onConflict: "user_id,endpoint" }
+            );
+
+            if (error) {
+              console.error("[Push] Auto-repair DB save failed:", error);
+              setIsSubscribed(false);
+            } else {
+              console.log("[Push] Auto-repair successful — subscription synced to DB");
+              setIsSubscribed(true);
+            }
+          }
+        } catch (error) {
+          console.warn("[Push] Sync check failed:", error);
           setIsSubscribed(false);
-        });
+        }
+      })();
     } else {
       setIsSubscribed(false);
     }
@@ -79,8 +132,14 @@ export function usePushNotifications() {
 
     try {
       const reg = await navigator.serviceWorker.ready;
-      const existingSubscription = await reg.pushManager.getSubscription();
-      const subscription = existingSubscription ?? await reg.pushManager.subscribe({
+
+      // Always unsubscribe existing and create fresh to avoid VAPID mismatch
+      const existingSub = await reg.pushManager.getSubscription();
+      if (existingSub) {
+        await existingSub.unsubscribe();
+      }
+
+      const subscription = await reg.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) as BufferSource,
       });
@@ -100,7 +159,7 @@ export function usePushNotifications() {
       );
 
       if (error) {
-        console.error("Error saving push subscription:", error);
+        console.error("[Push] Error saving push subscription:", error);
         return false;
       }
 
@@ -109,7 +168,7 @@ export function usePushNotifications() {
       setPermission(Notification.permission);
       return true;
     } catch (err) {
-      console.error("Push subscription failed:", err);
+      console.error("[Push] Subscription failed:", err);
       setSupportState(detectPushSupport());
       setPermission(Notification.permission);
       return false;
@@ -128,7 +187,7 @@ export function usePushNotifications() {
       setIsSubscribed(false);
       return true;
     } catch (err) {
-      console.error("Push unsubscription failed:", err);
+      console.error("[Push] Unsubscription failed:", err);
       return false;
     }
   }, []);
