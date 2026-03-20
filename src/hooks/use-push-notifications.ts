@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
-const VAPID_PUBLIC_KEY = "BNppsHmd8hYs6RymM-l680ntyn9zdaThWKZXpK4BumA3BNIlb-VLgXhMYJcPQx7Nn5sOMZGZoxLRtYSFsAiBO0k";
+const VAPID_PUBLIC_KEY = "BF6_ks6NNrDUWd2IlI-26h--3M7oMJ7SSxlV8JXv6dARx25wBfL-CglKAn9xh9uCbjLTJb_ZFoepMzfHJKE59C4";
 const PUSH_SYNC_EVENT = "push-subscription-changed";
 
 export type PushSupportState = "supported" | "install-required" | "unavailable";
