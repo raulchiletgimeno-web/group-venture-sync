@@ -6,7 +6,7 @@ import { usePushNotifications } from "@/hooks/use-push-notifications";
 import { useInstallPrompt } from "@/hooks/use-install-prompt";
 import { useLanguage } from "@/contexts/LanguageContext";
 
-const DISMISS_KEY = "yormit-push-dismissed-v2";
+const DISMISS_KEY = "yormit-push-dismissed-v3";
 
 const PushNotificationBanner = () => {
   const { isSupported, supportState, permission, isSubscribed, subscribe } = usePushNotifications();
@@ -18,8 +18,10 @@ const PushNotificationBanner = () => {
 
   const requiresInstall = isMobile && !isInstalled && (supportState === "install-required" || (isIOS && !isSupported));
   const canRequestPermission = isSupported && permission !== "denied";
-  const showFallbackState = isMobile && !requiresInstall && !canRequestPermission && !isSubscribed && permission !== "denied";
+  const showFallbackState = !requiresInstall && !canRequestPermission && !isSubscribed && permission !== "denied";
   const shouldShow = !dismissed && !isSubscribed && (requiresInstall || canRequestPermission || showFallbackState);
+
+  console.log("[PushBanner]", { supportState, permission, isSubscribed, isMobile, isInstalled, dismissed, requiresInstall, canRequestPermission, showFallbackState, shouldShow });
 
   if (!shouldShow) return null;
 
