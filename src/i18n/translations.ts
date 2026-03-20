@@ -444,6 +444,10 @@ type TranslationKeys = {
   installAndroidStep2: string;
   installAndroidStep3: string;
   installDismiss: string;
+
+  // Push notifications
+  pushTitle: string;
+  pushButton: string;
 };
 
 const translations: Record<Language, TranslationKeys> = {
