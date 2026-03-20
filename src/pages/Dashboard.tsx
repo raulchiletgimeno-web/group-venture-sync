@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { Plus, UserPlus, LogOut, MessageCircleQuestion, Luggage } from "lucide-react";
+import { Plus, UserPlus, LogOut, MessageCircleQuestion, Bell } from "lucide-react";
 import BrandLogo from "@/components/BrandLogo";
+import { usePushNotifications } from "@/hooks/use-push-notifications";
 import { Button } from "@/components/ui/button";
 import TripCard from "@/components/TripCard";
 import EmptyState from "@/components/EmptyState";
