@@ -1,70 +1,63 @@
 
+Hallazgos confirmados
 
-## Diagnosis: VAPID key mismatch
+- Los logs reales de `test-push` no muestran una excepción de runtime; solo aparecen eventos de arranque (`booted`). Eso encaja con una salida controlada de la función, no con un crash interno.
+- La consulta real a base de datos sobre `public.push_subscriptions` devuelve ahora mismo `[]`. No hay ninguna suscripción guardada.
+- En `supabase/functions/test-push/index.ts`, la ruta exacta de error está en las líneas 52-56:
+  - si no encuentra suscripciones, devuelve `404`
+  - body: `{ "error": "no_subscriptions", "detail": ... }`
+- Por tanto, el `non-2xx status code` real es `404`, no `500`.
+- `send-push` no interviene todavía en este fallo; por eso no tiene logs.
+- El problema no está en `webpush.sendNotification()`, VAPID, CORS ni secrets en esta ejecución concreta, porque esa parte empieza después y no se llega a ejecutar cuando no hay suscripciones.
 
-### Root cause (from edge function logs)
+Causa exacta
 
-The `test-push` logs show this error:
+- El frontend considera `isSubscribed = true` solo porque existe una suscripción local en el navegador (`reg.pushManager.getSubscription()`), según `src/hooks/use-push-notifications.ts`, líneas 59-64.
+- Pero ese hook no comprueba si esa suscripción existe también en `push_subscriptions`.
+- Resultado: hay desincronización entre móvil y backend.
+  - Navegador/PWA: cree que el dispositivo sigue suscrito
+  - Backend: no tiene ninguna fila para ese usuario/dispositivo
+- Por eso el botón `🔔 Test` aparece, pero `test-push` responde `404 no_subscriptions`.
 
-```text
-Test push send error: 403 the VAPID credentials in the authorization header
-do not correspond to the credentials used to create the subscriptions.
-```
+Qué corregiré
 
-This means:
-1. **Subscriptions DO exist in the database** — the function found them (otherwise it would return `no_subscriptions` with 404).
-2. **Sending fails** because the VAPID keys stored as secrets (`VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`) don't match the public key hardcoded in the frontend (`BOzv8tvd9ZoYQIdtCIZNDabxooM0qs8_pM3_Dagw1eTIfV1rEtFUetYOAJyvxxV3hACD_wTNLy8se2-0yggt0EI`).
-3. The function catches the error silently and returns `sent: 0`, which the Dashboard shows as "0 dispositivos".
+1. `src/hooks/use-push-notifications.ts`
+   - Añadir sincronización real entre la suscripción local y la tabla `push_subscriptions`.
+   - No marcar `isSubscribed=true` solo por existir suscripción local.
+   - Verificar también que exista fila en backend para el usuario actual.
 
-The browser creates push subscriptions bound to a specific VAPID public key. When the edge function tries to send using a different VAPID key pair, the push service rejects it with 403.
+2. Re-suscripción automática cuando haya desajuste
+   - Si existe suscripción local pero no fila en backend, tratarla como suscripción desincronizada.
+   - Forzar limpieza de la suscripción local y crear una nueva con la clave VAPID actual.
+   - Guardarla de nuevo en `push_subscriptions`.
 
-### Fix
+3. `subscribe()`
+   - Dejar de reutilizar ciegamente `existingSubscription`.
+   - Si hay una suscripción previa, recrearla correctamente antes de persistirla, para evitar estados “fantasma”.
 
-#### 1. Regenerate VAPID keys and sync everywhere
+4. `src/pages/Dashboard.tsx`
+   - Mejorar el manejo del error de `test-push`.
+   - Si la respuesta es `no_subscriptions`, mostrar un mensaje claro indicando que hay que reactivar/sincronizar notificaciones, en lugar del error genérico.
 
-Generate a new VAPID key pair, then:
-- Update the `VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY` secrets with the new values
-- Update the hardcoded `VAPID_PUBLIC_KEY` in `src/hooks/use-push-notifications.ts` to match
+Qué resultado espero tras corregirlo
 
-OR — easier approach — update the secrets to match the key already in the frontend code. The user needs to provide the matching private key for the public key `BOzv8tvd9...`.
+- El botón `Test` dejará de mostrarse por falso positivo.
+- El móvil volverá a registrarse de verdad en `push_subscriptions`.
+- `test-push` dejará de devolver `404`.
+- La prueba debería pasar a `1 dispositivo`.
 
-Since we don't know which private key corresponds to the frontend public key, the safest approach is:
-1. Generate a fresh VAPID key pair using `web-push generate-vapid-keys`
-2. Update the secret `VAPID_PUBLIC_KEY` with the new public key
-3. Update the secret `VAPID_PRIVATE_KEY` with the new private key
-4. Update `src/hooks/use-push-notifications.ts` line 5 with the new public key
-5. After publishing, the user must re-subscribe on mobile (old subscriptions are invalidated by the key change)
+Cómo volver a probarlo después
 
-#### 2. Clean up stale subscriptions
+1. Abrir YORMIT en el móvil real.
+2. Dejar que el sistema detecte la desincronización.
+3. Reactivar notificaciones si reaparece el banner.
+4. Pulsar `🔔 Test`.
+5. Resultado esperado: `Notificación enviada (1 dispositivo)`.
 
-After updating keys, old subscriptions in the DB are useless. Add a step to clear them:
-- Run a DELETE on `push_subscriptions` table to remove all existing rows (they were created with the old key)
+Resumen exacto pedido
 
-#### 3. Fix `getClaims` method (secondary issue)
-
-The `test-push` function uses `supabase.auth.getClaims(token)` which may not exist in supabase-js v2. Replace with `supabase.auth.getUser()` which is the standard method:
-
-```typescript
-const { data: { user }, error: userError } = await supabase.auth.getUser();
-if (userError || !user) { return 401; }
-const userId = user.id;
-```
-
-### Files to modify
-1. `src/hooks/use-push-notifications.ts` — update `VAPID_PUBLIC_KEY` constant
-2. `supabase/functions/test-push/index.ts` — fix auth to use `getUser()` instead of `getClaims()`
-3. `supabase/functions/send-push/index.ts` — same `getUser()` fix for consistency
-4. Secrets: update `VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY` to a matching pair
-5. Database: clear existing `push_subscriptions` rows
-
-### Steps
-1. I will generate a new VAPID key pair using a script
-2. Ask you to update the two secrets with the new values
-3. Update the frontend constant
-4. Fix auth method in both edge functions
-5. Clear stale subscriptions
-6. Publish → you re-subscribe on mobile → test again
-
-### Expected result
-After re-subscribing, the Test button should return "1 dispositivo" and you should receive the push notification.
-
+- Status code exacto: `404`
+- Error exacto: `no_subscriptions`
+- Parte exacta donde falla: `supabase/functions/test-push/index.ts`, líneas `52-56`
+- Causa exacta: el backend no tiene ninguna fila en `push_subscriptions`, pero el frontend sigue creyendo que el dispositivo está suscrito porque solo mira `PushManager` local
+- Corrección necesaria: reconciliar estado local + backend y re-suscribir el dispositivo cuando haya desajuste
