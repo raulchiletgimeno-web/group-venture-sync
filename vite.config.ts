@@ -27,6 +27,9 @@ export default defineConfig(({ mode }) => ({
       injectManifest: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,jpg,webp,woff,woff2}"],
       },
+      workbox: {
+        navigateFallbackDenylist: [/^\/~oauth/, /^\/sitemap\.xml$/, /^\/robots\.txt$/],
+      },
       manifest: {
         name: "YORMIT - Organiza viajes en grupo",
         short_name: "YORMIT",
