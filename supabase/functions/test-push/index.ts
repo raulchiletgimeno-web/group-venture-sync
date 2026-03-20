@@ -69,7 +69,11 @@ Deno.serve(async (req) => {
       data: { url: "/dashboard" },
     });
 
+    console.log("[test-push] VAPID public key:", vapidPublicKey.substring(0, 20) + "...");
+    console.log("[test-push] Found", subscriptions.length, "subscriptions for user", userId);
+
     let sent = 0;
+    const staleEndpoints: string[] = [];
     for (const sub of subscriptions) {
       try {
         await webpush.sendNotification(
@@ -79,7 +83,19 @@ Deno.serve(async (req) => {
         sent++;
       } catch (err: any) {
         console.error("Test push send error:", err.statusCode, err.body);
+        if (err.statusCode === 403 || err.statusCode === 410 || err.statusCode === 404) {
+          staleEndpoints.push(sub.endpoint);
+        }
       }
+    }
+
+    // Clean up stale/mismatched subscriptions
+    if (staleEndpoints.length > 0) {
+      console.log("[test-push] Cleaning up", staleEndpoints.length, "stale subscriptions");
+      await supabaseAdmin
+        .from("push_subscriptions")
+        .delete()
+        .in("endpoint", staleEndpoints);
     }
 
     return new Response(JSON.stringify({ success: true, sent }), {
