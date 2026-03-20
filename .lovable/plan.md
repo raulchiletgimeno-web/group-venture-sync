@@ -1,77 +1,70 @@
 
 
-## Phase 2: End-to-end push notification test
+## Diagnosis: VAPID key mismatch
 
-### What we'll build
+### Root cause (from edge function logs)
 
-1. **Edge Function `send-push`** — receives a user ID and payload, fetches their push subscriptions from the database, and sends Web Push notifications using the VAPID keys already stored as secrets (`VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`).
-
-2. **Edge Function `test-push`** — a simple authenticated endpoint that sends a test notification to the calling user's own subscribed devices. This is the easiest way to validate the full pipeline without wiring up trip events yet.
-
-3. **"Test notification" button** in the Dashboard (temporary) — visible only when the user is subscribed. Calls `test-push`, which triggers `send-push` internally.
-
-### Architecture
+The `test-push` logs show this error:
 
 ```text
-[Dashboard]
-   │  Button click
-   ▼
-supabase.functions.invoke("test-push")
-   │  Auth header (JWT)
-   ▼
-Edge Function "test-push"
-   │  Validates JWT → gets user_id
-   │  Calls send-push logic internally
-   ▼
-Edge Function "send-push"
-   │  Queries push_subscriptions for user_id
-   │  Sends Web Push via web-push library
-   │  Payload: { title, body, icon, data: { url } }
-   ▼
-[Service Worker] push event → showNotification
-   │  User taps
-   ▼
-notificationclick → opens /dashboard (or any deep link URL)
+Test push send error: 403 the VAPID credentials in the authorization header
+do not correspond to the credentials used to create the subscriptions.
 ```
 
-### Technical details
+This means:
+1. **Subscriptions DO exist in the database** — the function found them (otherwise it would return `no_subscriptions` with 404).
+2. **Sending fails** because the VAPID keys stored as secrets (`VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`) don't match the public key hardcoded in the frontend (`BOzv8tvd9ZoYQIdtCIZNDabxooM0qs8_pM3_Dagw1eTIfV1rEtFUetYOAJyvxxV3hACD_wTNLy8se2-0yggt0EI`).
+3. The function catches the error silently and returns `sent: 0`, which the Dashboard shows as "0 dispositivos".
 
-#### Edge Function: `supabase/functions/send-push/index.ts`
-- Uses `npm:web-push` (available in Deno via `npm:` specifier)
-- Reads `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` from env
-- Accepts `{ user_id, title, body, url }` in the request body
-- Queries `push_subscriptions` table with service role client
-- Sends to all endpoints for that user
-- Cleans up expired/invalid subscriptions (status 410)
+The browser creates push subscriptions bound to a specific VAPID public key. When the edge function tries to send using a different VAPID key pair, the push service rejects it with 403.
 
-#### Edge Function: `supabase/functions/test-push/index.ts`
-- Authenticated endpoint (validates JWT via `getClaims`)
-- Extracts `user_id` from claims
-- Calls `send-push` internally (direct function call, not HTTP)
-- Actually, since edge functions are separate, it will query subscriptions and send push directly (same logic as send-push but self-contained for the test)
-- Payload: `{ title: "YORMIT · Test", body: "🔔 Push notifications working!", data: { url: "/dashboard" } }`
+### Fix
 
-#### Dashboard button (temporary)
-- In `src/pages/Dashboard.tsx`, add a small "🔔 Test" button near the push banner area
-- Only visible when `isSubscribed === true`
-- Calls `supabase.functions.invoke("test-push")` with auth header
-- Shows toast on success/failure
+#### 1. Regenerate VAPID keys and sync everywhere
 
-### Config
-- Add `[functions.send-push]` and `[functions.test-push]` to `supabase/config.toml` with `verify_jwt = false` (JWT validated in code)
+Generate a new VAPID key pair, then:
+- Update the `VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY` secrets with the new values
+- Update the hardcoded `VAPID_PUBLIC_KEY` in `src/hooks/use-push-notifications.ts` to match
 
-### Files to create/modify
-1. **Create** `supabase/functions/send-push/index.ts`
-2. **Create** `supabase/functions/test-push/index.ts`
-3. **Modify** `supabase/config.toml` — add function entries
-4. **Modify** `src/pages/Dashboard.tsx` — add temporary test button
+OR — easier approach — update the secrets to match the key already in the frontend code. The user needs to provide the matching private key for the public key `BOzv8tvd9...`.
 
-### Verification
-After publishing:
-1. Open YORMIT from home screen on your Samsung
-2. Log in → Dashboard
-3. Tap the "Test notification" button
-4. Minimize YORMIT or lock the screen
-5. Within seconds, you should receive a push notification
-6. Tap the notification → YORMIT opens on `/dashboard`
+Since we don't know which private key corresponds to the frontend public key, the safest approach is:
+1. Generate a fresh VAPID key pair using `web-push generate-vapid-keys`
+2. Update the secret `VAPID_PUBLIC_KEY` with the new public key
+3. Update the secret `VAPID_PRIVATE_KEY` with the new private key
+4. Update `src/hooks/use-push-notifications.ts` line 5 with the new public key
+5. After publishing, the user must re-subscribe on mobile (old subscriptions are invalidated by the key change)
+
+#### 2. Clean up stale subscriptions
+
+After updating keys, old subscriptions in the DB are useless. Add a step to clear them:
+- Run a DELETE on `push_subscriptions` table to remove all existing rows (they were created with the old key)
+
+#### 3. Fix `getClaims` method (secondary issue)
+
+The `test-push` function uses `supabase.auth.getClaims(token)` which may not exist in supabase-js v2. Replace with `supabase.auth.getUser()` which is the standard method:
+
+```typescript
+const { data: { user }, error: userError } = await supabase.auth.getUser();
+if (userError || !user) { return 401; }
+const userId = user.id;
+```
+
+### Files to modify
+1. `src/hooks/use-push-notifications.ts` — update `VAPID_PUBLIC_KEY` constant
+2. `supabase/functions/test-push/index.ts` — fix auth to use `getUser()` instead of `getClaims()`
+3. `supabase/functions/send-push/index.ts` — same `getUser()` fix for consistency
+4. Secrets: update `VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY` to a matching pair
+5. Database: clear existing `push_subscriptions` rows
+
+### Steps
+1. I will generate a new VAPID key pair using a script
+2. Ask you to update the two secrets with the new values
+3. Update the frontend constant
+4. Fix auth method in both edge functions
+5. Clear stale subscriptions
+6. Publish → you re-subscribe on mobile → test again
+
+### Expected result
+After re-subscribing, the Test button should return "1 dispositivo" and you should receive the push notification.
 
