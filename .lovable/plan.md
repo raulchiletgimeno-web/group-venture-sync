@@ -1,63 +1,61 @@
 
-Hallazgos confirmados
 
-- Los logs reales de `test-push` no muestran una excepción de runtime; solo aparecen eventos de arranque (`booted`). Eso encaja con una salida controlada de la función, no con un crash interno.
-- La consulta real a base de datos sobre `public.push_subscriptions` devuelve ahora mismo `[]`. No hay ninguna suscripción guardada.
-- En `supabase/functions/test-push/index.ts`, la ruta exacta de error está en las líneas 52-56:
-  - si no encuentra suscripciones, devuelve `404`
-  - body: `{ "error": "no_subscriptions", "detail": ... }`
-- Por tanto, el `non-2xx status code` real es `404`, no `500`.
-- `send-push` no interviene todavía en este fallo; por eso no tiene logs.
-- El problema no está en `webpush.sendNotification()`, VAPID, CORS ni secrets en esta ejecución concreta, porque esa parte empieza después y no se llega a ejecutar cuando no hay suscripciones.
+## Diagnosis confirmed with real data
 
-Causa exacta
+### What's actually happening
 
-- El frontend considera `isSubscribed = true` solo porque existe una suscripción local en el navegador (`reg.pushManager.getSubscription()`), según `src/hooks/use-push-notifications.ts`, líneas 59-64.
-- Pero ese hook no comprueba si esa suscripción existe también en `push_subscriptions`.
-- Resultado: hay desincronización entre móvil y backend.
-  - Navegador/PWA: cree que el dispositivo sigue suscrito
-  - Backend: no tiene ninguna fila para ese usuario/dispositivo
-- Por eso el botón `🔔 Test` aparece, pero `test-push` responde `404 no_subscriptions`.
+**Database has 5 subscriptions** for your user — the auto-repair IS saving to DB. But `test-push` logs show **403 VAPID mismatch** on every send attempt. This means:
 
-Qué corregiré
+1. The frontend creates subscriptions with its `VAPID_PUBLIC_KEY`
+2. The edge function signs them with the server's `VAPID_PRIVATE_KEY`  
+3. These keys **still don't match** — the push service rejects every notification
 
-1. `src/hooks/use-push-notifications.ts`
-   - Añadir sincronización real entre la suscripción local y la tabla `push_subscriptions`.
-   - No marcar `isSubscribed=true` solo por existir suscripción local.
-   - Verificar también que exista fila en backend para el usuario actual.
+### Problem 1: Banner disappears
 
-2. Re-suscripción automática cuando haya desajuste
-   - Si existe suscripción local pero no fila en backend, tratarla como suscripción desincronizada.
-   - Forzar limpieza de la suscripción local y crear una nueva con la clave VAPID actual.
-   - Guardarla de nuevo en `push_subscriptions`.
+The auto-repair (lines 87-114 in `use-push-notifications.ts`) detects desync → unsubscribes → re-subscribes → saves to DB → sets `isSubscribed=true` → banner hides. This all happens in ~1 second on mount, before you can interact.
 
-3. `subscribe()`
-   - Dejar de reutilizar ciegamente `existingSubscription`.
-   - Si hay una suscripción previa, recrearla correctamente antes de persistirla, para evitar estados “fantasma”.
+**Fix:** Remove the auto-repair re-subscription. When desync is detected, just clean up the stale local subscription and leave `isSubscribed=false`. The banner stays visible, and the user controls when to subscribe.
 
-4. `src/pages/Dashboard.tsx`
-   - Mejorar el manejo del error de `test-push`.
-   - Si la respuesta es `no_subscriptions`, mostrar un mensaje claro indicando que hay que reactivar/sincronizar notificaciones, en lugar del error genérico.
+### Problem 2: 0 devices (actually 403 on all 5)
 
-Qué resultado espero tras corregirlo
+The function finds your 5 subscriptions but every `sendNotification()` fails with 403. The catch block logs the error and increments nothing, so `sent=0`.
 
-- El botón `Test` dejará de mostrarse por falso positivo.
-- El móvil volverá a registrarse de verdad en `push_subscriptions`.
-- `test-push` dejará de devolver `404`.
-- La prueba debería pasar a `1 dispositivo`.
+**Root cause:** VAPID key pair mismatch between frontend and server secrets.
 
-Cómo volver a probarlo después
+**Fix:** 
+1. Generate a verifiable key pair using a script, log both keys
+2. Update the `VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY` secrets
+3. Update the frontend constant to match
+4. Delete all 5 stale subscriptions from DB
+5. Add 403 cleanup logic to `test-push` so stale subs get removed automatically
 
-1. Abrir YORMIT en el móvil real.
-2. Dejar que el sistema detecte la desincronización.
-3. Reactivar notificaciones si reaparece el banner.
-4. Pulsar `🔔 Test`.
-5. Resultado esperado: `Notificación enviada (1 dispositivo)`.
+### Changes
 
-Resumen exacto pedido
+#### 1. `src/hooks/use-push-notifications.ts`
+- Remove auto-repair re-subscription from `useEffect`. When local sub exists but DB record doesn't match: just `unsubscribe()` locally and set `isSubscribed=false`
+- Banner stays visible until user explicitly taps "Activar"
 
-- Status code exacto: `404`
-- Error exacto: `no_subscriptions`
-- Parte exacta donde falla: `supabase/functions/test-push/index.ts`, líneas `52-56`
-- Causa exacta: el backend no tiene ninguna fila en `push_subscriptions`, pero el frontend sigue creyendo que el dispositivo está suscrito porque solo mira `PushManager` local
-- Corrección necesaria: reconciliar estado local + backend y re-suscribir el dispositivo cuando haya desajuste
+#### 2. `supabase/functions/test-push/index.ts`
+- Add cleanup of subscriptions that return 403 (same as 410 cleanup)
+- Log the VAPID public key being used for debugging
+
+#### 3. VAPID keys
+- Generate new matching pair via edge function script
+- Update both secrets
+- Update frontend constant
+- Delete all existing rows from `push_subscriptions`
+
+### Files
+1. **Modify** `src/hooks/use-push-notifications.ts` — remove auto-repair, keep desync detection as cleanup-only
+2. **Modify** `supabase/functions/test-push/index.ts` — add 403 cleanup + VAPID debug log
+3. **Update** secrets `VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY`
+4. **Delete** all rows from `push_subscriptions`
+
+### Verification steps on Samsung
+1. Open YORMIT from home screen
+2. Banner "Activar notificaciones" should appear and **stay visible**
+3. Tap "Activar" → accept permission
+4. Tap "🔔 Test" → should show "1 dispositivo"
+5. Lock screen → notification arrives
+6. Tap notification → opens `/dashboard`
+
