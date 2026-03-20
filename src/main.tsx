@@ -3,7 +3,7 @@ import App from "./App.tsx";
 import "./index.css";
 
 // Register custom service worker for push notifications
-if ("serviceWorker" in navigator) {
+if (import.meta.env.PROD && "serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("/custom-sw.js").catch((err) => {
       console.warn("SW registration failed:", err);
