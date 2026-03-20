@@ -32,6 +32,7 @@ interface AccommodationItem {
 const Accommodation = () => {
   const { tripId } = useParams();
   useMarkSectionSeen(tripId, "accommodation");
+  const { user } = useAuth();
   const { isCreator } = useTripRole(tripId);
   const { toast } = useToast();
   const { t, language } = useLanguage();

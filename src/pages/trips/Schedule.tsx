@@ -36,6 +36,7 @@ interface ScheduleItem {
 const Schedule = () => {
   const { tripId } = useParams();
   useMarkSectionSeen(tripId, "schedule");
+  const { user } = useAuth();
   const { isCreator } = useTripRole(tripId);
   const { toast } = useToast();
   const { t, language } = useLanguage();
