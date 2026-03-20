@@ -2721,6 +2721,8 @@ const translations: Record<Language, TranslationKeys> = {
     installAndroidStep2: "选择「添加到主屏幕」",
     installAndroidStep3: "点击「添加」确认",
     installDismiss: "知道了",
+    pushTitle: "开启通知，随时了解旅行动态",
+    pushButton: "开启",
   },
 
   de: {
