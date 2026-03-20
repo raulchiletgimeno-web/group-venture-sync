@@ -2,31 +2,36 @@
 
 ## Plan: Push Notifications System for YORMIT
 
-### Architecture Overview
+### Architecture
 
 ```text
-┌─────────────┐     ┌──────────────────┐     ┌────────────────┐
-│  Browser SW  │◄────│  Push Service     │◄────│  Edge Function  │
-│  (receives)  │     │  (FCM/Apple/etc)  │     │  send-push      │
-└─────────────┘     └──────────────────┘     └────────┬───────┘
-                                                       │
-                                              ┌────────┴───────┐
-                                              │  DB Triggers    │
-                                              │  (webhook on    │
-                                              │   INSERT)       │
-                                              └────────────────┘
+User action (Chat/Photos/etc.)
+        │
+        ▼
+supabase.functions.invoke("send-push")
+  { tripId, section, excludeUserId }
+        │
+        ▼
+Edge Function "send-push"
+  1. Query trip title from trips table
+  2. Query trip_members (approved, excluding actor)
+  3. Query push_subscriptions for those users
+  4. Send Web Push via VAPID to each endpoint
+        │
+        ▼
+Browser Service Worker receives push event
+  → shows notification with title + body
+  → on click → opens /trip/{tripId}/{section}
 ```
 
-The Web Push API with VAPID keys is the standard for PWA push notifications. It works on Android (Chrome, Edge, Firefox), desktop browsers, and Safari 16.4+ on iOS. No third-party service needed.
+### Step-by-step implementation
 
-### Components to Build
+#### 1. Generate VAPID keys & store as secrets
+- Generate VAPID key pair via script
+- Store `VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY` as project secrets
+- Add `VITE_VAPID_PUBLIC_KEY` as a public constant in the frontend code (public keys are safe to embed)
 
-#### 1. Generate VAPID keys and store as secrets
-- Generate a VAPID key pair (public + private)
-- Store `VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY` as secrets
-- Expose the public key in the frontend
-
-#### 2. Database: `push_subscriptions` table
+#### 2. Database migration: `push_subscriptions` table
 ```sql
 CREATE TABLE push_subscriptions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -37,72 +42,91 @@ CREATE TABLE push_subscriptions (
   created_at timestamptz DEFAULT now(),
   UNIQUE(user_id, endpoint)
 );
--- RLS: users can manage their own subscriptions
+ALTER TABLE push_subscriptions ENABLE ROW LEVEL SECURITY;
+-- Users manage their own subscriptions
+CREATE POLICY "Users can insert own" ON push_subscriptions FOR INSERT WITH CHECK (user_id = auth.uid());
+CREATE POLICY "Users can view own" ON push_subscriptions FOR SELECT USING (user_id = auth.uid());
+CREATE POLICY "Users can delete own" ON push_subscriptions FOR DELETE USING (user_id = auth.uid());
 ```
 
-#### 3. Custom Service Worker (`public/custom-sw.js`)
-- Listen for `push` events → show notification with trip title + section
-- Listen for `notificationclick` → open the correct deep link (`/trip/{id}/{section}`)
-- vite-plugin-pwa's `injectManifest` strategy to merge with the custom SW
+#### 3. Custom Service Worker — `public/custom-sw.js`
+- Handle `push` event → extract data (title, body, icon, url) → `self.registration.showNotification()`
+- Handle `notificationclick` → `clients.openWindow(data.url)` for deep linking
+- Import Workbox precache manifest via `injectManifest` for caching continuity
 
-#### 4. Frontend: Permission prompt + subscription
-- New hook `usePushNotifications` that:
-  - Checks if push is supported
-  - Subscribes to push using VAPID public key
-  - Sends the subscription to the database
-- Smart permission UX: show a styled in-app banner on the Dashboard (after first login, not immediately) explaining the value, then trigger the browser prompt only when user clicks "Activar"
+#### 4. Switch vite-plugin-pwa to `injectManifest` mode
+- Change `vite.config.ts`: set `strategies: "injectManifest"`, `srcDir: "public"`, `filename: "custom-sw.js"`
+- Keep existing manifest and workbox config
 
-#### 5. Edge Function: `send-push`
-- Receives: `{ tripId, section, excludeUserId }`
-- Queries trip title, trip members (excluding the actor)
-- Fetches their push subscriptions from `push_subscriptions`
-- Sends web push notification using `npm:web-push` with VAPID keys
-- Notification body: `"Novedad en tu viaje a {destination}: {sectionName}"`
-- Data payload includes deep link URL
+#### 5. Create `src/hooks/use-push-notifications.ts`
+- Check `'PushManager' in window` and `'serviceWorker' in navigator`
+- `subscribe()`: get SW registration → `pushManager.subscribe()` with VAPID public key → upsert to `push_subscriptions`
+- `unsubscribe()`: remove from DB + `subscription.unsubscribe()`
+- Track permission state
 
-#### 6. Trigger notifications from existing code
-Add `supabase.functions.invoke("send-push", ...)` calls in the existing pages after successful inserts:
-- **Chat.tsx**: after sending text/image/audio message
-- **Photos.tsx**: after uploading a photo
-- **Expenses.tsx**: after creating/editing an expense
-- **Transport.tsx**: after creating/editing transport
-- **Accommodation.tsx**: after creating/editing accommodation
-- **Schedule.tsx**: after creating/editing an activity
+#### 6. Create `src/components/PushNotificationBanner.tsx`
+- Shown on Dashboard below install banner, only if push is supported and permission not yet granted/denied
+- Dismissible (persisted in localStorage as `yormit-push-dismissed`)
+- Copy: "Activa las notificaciones para no perderte nada de tus viajes" + "Activar" button
+- On click → triggers the browser permission prompt via the hook
 
-Each call passes `{ tripId, section: "chat"|"photos"|..., excludeUserId: user.id }`.
+#### 7. Update `src/pages/Dashboard.tsx`
+- Import and render `PushNotificationBanner` below `InstallAppBanner`
 
-#### 7. Service Worker config change
-Switch vite-plugin-pwa from `generateSW` to `injectManifest` mode so we can add push event handlers to the service worker while keeping the existing caching behavior.
+#### 8. Create Edge Function `supabase/functions/send-push/index.ts`
+- Receives `{ tripId, section, excludeUserId }`
+- Uses service role key to query `trips` (title), `trip_members` (approved members minus actor), `push_subscriptions` (their endpoints)
+- Section name map: `{ chat: "chat 💬", photos: "fotos 📸", accommodation: "alojamiento 🏨", transport: "transporte 🚀", schedule: "actividades 📍", expenses: "gastos 💰" }`
+- Notification payload:
+  - Title: `YORMIT · {trip.title}`
+  - Body: `Hay una novedad en el apartado de {sectionName}`
+  - Icon: `/pwa-icon-192.png`
+  - Data: `{ url: "/trip/{tripId}/{section}" }`
+- Uses `web-push` npm library with VAPID keys
+- Cleans up expired/invalid subscriptions (410 responses)
+- Update `supabase/config.toml` with `[functions.send-push] verify_jwt = false`
 
-### Notification content format
-- Title: `"YORMIT · {Trip Title}"`
-- Body: `"Novedad en el apartado de {section name}"`
-- Icon: `/pwa-icon-192.png`
-- Data: `{ url: "/trip/{tripId}/{section}" }`
+#### 9. Add notification triggers in 6 trip pages
+Fire-and-forget calls after successful mutations (no `await`, non-blocking):
 
-### Permission UX
-A subtle banner on the Dashboard (below the install banner) that appears once after login if the user hasn't been asked yet. Shows: "Activa las notificaciones para enterarte de los cambios en tus viajes" with a primary "Activar" button. Dismissible and persisted in localStorage.
+- **Chat.tsx** — after `sendText`, `sendImage`, `stopRecording` (audio)
+- **Photos.tsx** — after successful photo upload
+- **Expenses.tsx** — after `handleSubmit` (create/edit)
+- **Transport.tsx** — after `handleSubmit` (create/edit)
+- **Accommodation.tsx** — after `handleSubmit` (create/edit)
+- **Schedule.tsx** — after `handleSubmit` (create/edit)
 
-### What's included in this phase
-- Full push subscription flow
-- Notifications for all 6 content sections
-- Deep linking to the correct trip/section
-- Smart permission prompt
-- Works on Android, desktop, and iOS Safari 16.4+
+Each call: `supabase.functions.invoke("send-push", { body: { tripId, section: "chat", excludeUserId: user.id } })`
 
-### What's deferred to a future phase
-- Per-section notification preferences (architecture is ready — add a `preferences` JSONB column to `push_subscriptions` later)
-- Notification history/inbox in-app
+### Notification copy (final)
+- **Title**: `YORMIT · {Nombre del viaje}`
+- **Body by section**:
+  - chat: `Tienes un nuevo mensaje en el chat 💬`
+  - photos: `Se ha subido una nueva foto 📸`
+  - accommodation: `Se ha actualizado el alojamiento 🏨`
+  - transport: `Hay novedades en el transporte 🚀`
+  - schedule: `Se ha añadido o modificado una actividad 📍`
+  - expenses: `Hay un nuevo movimiento en los gastos 💰`
+
+### Secrets needed
+- `VAPID_PUBLIC_KEY` — public key (also embedded in frontend code)
+- `VAPID_PRIVATE_KEY` — private key (edge function only)
+
+### Limitations
+- **iOS Safari**: Push requires iOS 16.4+ and the app must be installed (Add to Home Screen). Cannot receive push in regular Safari tab.
+- **Browser tab**: Works on Chrome, Edge, Firefox on desktop and Android. 
+- **Per-section preferences**: Deferred — architecture supports adding a `preferences` JSONB column later.
+- **Notification history in-app**: Deferred to future phase.
 
 ### Files to create/modify
-1. **Create** `public/custom-sw.js` — push + notificationclick handlers
-2. **Modify** `vite.config.ts` — switch to injectManifest mode
-3. **Create** DB migration — `push_subscriptions` table with RLS
-4. **Create** `src/hooks/use-push-notifications.ts` — subscription logic
-5. **Create** `src/components/PushNotificationBanner.tsx` — permission prompt UI
-6. **Modify** `src/pages/Dashboard.tsx` — add the banner
-7. **Create** `supabase/functions/send-push/index.ts` — edge function
-8. **Modify** `supabase/config.toml` — add send-push function config
-9. **Modify** 6 trip pages (Chat, Photos, Expenses, Transport, Accommodation, Schedule) — add send-push calls after successful mutations
-10. **Add secrets**: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`
+1. **Create** `public/custom-sw.js`
+2. **Modify** `vite.config.ts` — injectManifest mode
+3. **Create** DB migration — `push_subscriptions` table
+4. **Create** `src/hooks/use-push-notifications.ts`
+5. **Create** `src/components/PushNotificationBanner.tsx`
+6. **Modify** `src/pages/Dashboard.tsx` — add banner
+7. **Create** `supabase/functions/send-push/index.ts`
+8. **Modify** `supabase/config.toml` — add function config
+9. **Modify** 6 trip pages — add send-push calls
+10. **Add 2 secrets** — VAPID keys
 
