@@ -1,41 +1,50 @@
 
+Plan de diagnóstico preciso para obtener los valores reales en móvil
 
-## Diagnosis: Why the banner doesn't appear on mobile
+Lo que ya pude comprobar en el código
+- `PushNotificationBanner` sí está montado en `Dashboard` y está fuera del contenedor con `overflow-hidden`, así que ahora mismo no parece un problema de clipping.
+- La condición real que decide si se renderiza es:
+  - `shouldShow = !dismissed && !isSubscribed && (requiresInstall || canRequestPermission || showFallbackState)`
+- Y los subestados son:
+  - `requiresInstall = isMobile && !isInstalled && (supportState === "install-required" || (isIOS && !isSupported))`
+  - `canRequestPermission = isSupported && permission !== "denied"`
+  - `showFallbackState = !requiresInstall && !canRequestPermission && !isSubscribed && permission !== "denied"`
 
-### Most likely cause
+Lo que NO puedo afirmar todavía como valor real
+- En la captura disponible no hay logs `[PushBanner]`.
+- Además, el snapshot actual está en `/auth`, no en `/dashboard`.
+- Por eso no sería honesto decirte ahora valores reales de:
+  `supportState`, `permission`, `isSubscribed`, `isMobile`, `isInstalled`, `dismissed`, `requiresInstall`, `canRequestPermission`, `showFallbackState`, `shouldShow`.
 
-**localStorage dismissal from previous testing.** The user has been testing the banner for several sessions. Even though we changed the key to `yormit-push-dismissed-v2`, the user likely dismissed the v2 banner during a prior test attempt. Once dismissed, `shouldShow` is `false` and the banner returns `null`.
+Qué significa esto técnicamente
+- Con la lógica actual, el banner solo puede desaparecer si ocurre una de estas cosas en móvil:
+  1. `dismissed = true`
+  2. `isSubscribed = true`
+  3. `permission = "denied"`
+  4. o una combinación anómala que deje `requiresInstall`, `canRequestPermission` y `showFallbackState` todos en `false`
 
-On PC incognito it works because incognito starts with empty localStorage.
+Implementación que haré en el siguiente paso para obtener los valores exactos
+1. Añadir un panel de diagnóstico temporal visible en móvil dentro del Dashboard.
+2. Hacer que ese panel se renderice incluso cuando el banner normal devolvería `null`.
+3. Mostrar ahí exactamente estos valores en runtime:
+   - `supportState`
+   - `permission`
+   - `isSubscribed`
+   - `isMobile`
+   - `isInstalled`
+   - `dismissed`
+   - `requiresInstall`
+   - `canRequestPermission`
+   - `showFallbackState`
+   - `shouldShow`
+4. Revisar con esos datos el caso real en Android y iPhone.
+5. Corregir la condición exacta que esté bloqueando el render.
+6. Retirar después el diagnóstico temporal y dejar el banner final ya estable.
 
-### Secondary risk
-
-The `shouldShow` logic has a gap: if `supportState` is `"unavailable"` AND `isMobile` is `false` (edge case detection failure), none of the three conditions (`requiresInstall`, `canRequestPermission`, `showFallbackState`) would be true, and the banner hides silently.
-
-### Fix plan (3 changes)
-
-#### 1. Bump dismiss key to `v3` in `PushNotificationBanner.tsx`
-Change `DISMISS_KEY` from `"yormit-push-dismissed-v2"` to `"yormit-push-dismissed-v3"` so all mobile devices get a fresh state.
-
-#### 2. Add temporary diagnostic console.log
-Add a single `console.log` at the top of the component that prints the exact decision values:
-```
-[PushBanner] { supportState, permission, isSubscribed, isMobile, isInstalled, dismissed, requiresInstall, canRequestPermission, showFallbackState, shouldShow }
-```
-This will be visible in mobile browser DevTools (or via remote debugging) and will tell us exactly what's happening if the fix doesn't work.
-
-#### 3. Make `shouldShow` logic unconditionally visible on mobile
-Change the `shouldShow` calculation so that on mobile, if none of the three positive conditions are met but the user hasn't dismissed, it still shows via `showFallbackState`. Currently `showFallbackState` requires `!requiresInstall && !canRequestPermission` which is correct, but also requires `isMobile` — if `isMobile` detection fails, nothing shows. Add a desktop fallback too:
-
-```typescript
-const showFallbackState = !requiresInstall && !canRequestPermission && !isSubscribed && permission !== "denied";
-```
-
-Remove the `isMobile` gate from `showFallbackState` so the banner is visible everywhere as a last resort.
-
-### Files to modify
-1. `src/components/PushNotificationBanner.tsx` — bump key, add log, fix fallback logic
-
-### Verification
-After publishing, open on mobile → Dashboard. The diagnostic log will confirm exactly what state the hook returns. The banner should appear because the v3 key ensures a clean dismissed state.
-
+Resultado esperado tras ese paso
+- Ya no trabajaremos por intuición.
+- Tendremos el estado exacto que está tomando el móvil.
+- A partir de ahí podré decirte con precisión:
+  - cuál es la causa real
+  - qué condición concreta lo bloquea
+  - y cuál es la corrección definitiva
