@@ -1,61 +1,104 @@
 
 
-## Diagnosis confirmed with real data
+## Phase 3: Connect push notifications to real trip events
 
-### What's actually happening
+### Approach
 
-**Database has 5 subscriptions** for your user — the auto-repair IS saving to DB. But `test-push` logs show **403 VAPID mismatch** on every send attempt. This means:
+Create a single reusable Edge Function `notify-trip` that accepts a `trip_id`, `section`, and `actor_user_id`, then:
+1. Fetches the trip title
+2. Fetches all approved members of that trip (excluding the actor)
+3. Calls `send-push` logic for each member
 
-1. The frontend creates subscriptions with its `VAPID_PUBLIC_KEY`
-2. The edge function signs them with the server's `VAPID_PRIVATE_KEY`  
-3. These keys **still don't match** — the push service rejects every notification
+Then add a lightweight client-side helper (`notifyTripEvent`) and call it from each section after successful inserts.
 
-### Problem 1: Banner disappears
+### Architecture
 
-The auto-repair (lines 87-114 in `use-push-notifications.ts`) detects desync → unsubscribes → re-subscribes → saves to DB → sets `isSubscribed=true` → banner hides. This all happens in ~1 second on mount, before you can interact.
-
-**Fix:** Remove the auto-repair re-subscription. When desync is detected, just clean up the stale local subscription and leave `isSubscribed=false`. The banner stays visible, and the user controls when to subscribe.
-
-### Problem 2: 0 devices (actually 403 on all 5)
-
-The function finds your 5 subscriptions but every `sendNotification()` fails with 403. The catch block logs the error and increments nothing, so `sent=0`.
-
-**Root cause:** VAPID key pair mismatch between frontend and server secrets.
-
-**Fix:** 
-1. Generate a verifiable key pair using a script, log both keys
-2. Update the `VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY` secrets
-3. Update the frontend constant to match
-4. Delete all 5 stale subscriptions from DB
-5. Add 403 cleanup logic to `test-push` so stale subs get removed automatically
+```text
+[Chat/Photos/Expenses/etc.]
+   │  After successful insert
+   ▼
+supabase.functions.invoke("notify-trip", {
+  body: { trip_id, section, actor_user_id }
+})
+   │  Edge Function (service role)
+   ▼
+1. Fetch trip title from trips table
+2. Fetch approved members excluding actor
+3. For each member: query push_subscriptions, send webpush
+4. Clean up expired subs (410/403/404)
+   ▼
+[Push arrives on each member's device]
+   │  notificationclick deep link
+   ▼
+Opens /trip/{tripId}/{section}
+```
 
 ### Changes
 
-#### 1. `src/hooks/use-push-notifications.ts`
-- Remove auto-repair re-subscription from `useEffect`. When local sub exists but DB record doesn't match: just `unsubscribe()` locally and set `isSubscribed=false`
-- Banner stays visible until user explicitly taps "Activar"
+#### 1. Create `supabase/functions/notify-trip/index.ts`
+- Accepts `{ trip_id, section, actor_user_id }` (no JWT needed, called from authenticated client)
+- Uses service role to query `trips.title`, `trip_members` (approved, excluding actor), and `push_subscriptions` for each member
+- Builds payload: title = `YORMIT · {trip_title}`, body = section-specific message, url = `/trip/{trip_id}/{section}`
+- Section messages (in Spanish, matching app tone):
+  - chat: `Tienes un nuevo mensaje en el chat 💬`
+  - photos: `Se ha subido una nueva foto 📸`
+  - expenses: `Hay un nuevo gasto compartido 💰`
+  - transport: `Se ha actualizado el transporte 🚗`
+  - accommodation: `Se ha actualizado el alojamiento 🏨`
+  - schedule: `Hay una nueva actividad en el plan 📅`
+- Sends push to all members' subscriptions, cleans up expired ones
+- Returns `{ notified: N }` count
 
-#### 2. `supabase/functions/test-push/index.ts`
-- Add cleanup of subscriptions that return 403 (same as 410 cleanup)
-- Log the VAPID public key being used for debugging
+#### 2. Create `src/lib/notifyTripEvent.ts`
+- Simple async helper: `notifyTripEvent(tripId, section, userId)` → calls `supabase.functions.invoke("notify-trip", ...)`
+- Fire-and-forget (no await needed by callers, errors logged but not blocking)
 
-#### 3. VAPID keys
-- Generate new matching pair via edge function script
-- Update both secrets
-- Update frontend constant
-- Delete all existing rows from `push_subscriptions`
+#### 3. Modify 6 section files to call `notifyTripEvent` after successful actions
+
+**`src/pages/trips/Chat.tsx`**
+- After successful text insert (line 82): `notifyTripEvent(tripId, "chat", user.id)`
+- After successful image insert (line 93): same
+- After successful audio insert (line ~120): same
+
+**`src/pages/trips/Photos.tsx`**
+- After successful photo upload insert: `notifyTripEvent(tripId, "photos", user.id)`
+
+**`src/pages/trips/Expenses.tsx`**
+- After successful expense insert in `handleSubmit`: `notifyTripEvent(tripId, "expenses", user.id)`
+
+**`src/pages/trips/Transport.tsx`**
+- After successful transport insert/update in `handleSubmit`: `notifyTripEvent(tripId, "transport", user.id)`
+
+**`src/pages/trips/Accommodation.tsx`**
+- After successful accommodation insert/update in `handleSubmit`: `notifyTripEvent(tripId, "accommodation", user.id)`
+
+**`src/pages/trips/Schedule.tsx`**
+- After successful schedule insert/update in `handleSubmit`: `notifyTripEvent(tripId, "schedule", user.id)`
+
+#### 4. Add to `supabase/config.toml`
+```toml
+[functions.notify-trip]
+verify_jwt = false
+```
+
+### Deep linking
+The notification `data.url` will be `/trip/{tripId}/{section}`, so tapping the notification opens the exact section. The existing `notificationclick` handler in `custom-sw.js` already supports this.
 
 ### Files
-1. **Modify** `src/hooks/use-push-notifications.ts` — remove auto-repair, keep desync detection as cleanup-only
-2. **Modify** `supabase/functions/test-push/index.ts` — add 403 cleanup + VAPID debug log
-3. **Update** secrets `VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY`
-4. **Delete** all rows from `push_subscriptions`
+1. **Create** `supabase/functions/notify-trip/index.ts`
+2. **Create** `src/lib/notifyTripEvent.ts`
+3. **Modify** `supabase/config.toml` — add function entry
+4. **Modify** `src/pages/trips/Chat.tsx` — add notify calls
+5. **Modify** `src/pages/trips/Photos.tsx` — add notify call
+6. **Modify** `src/pages/trips/Expenses.tsx` — add notify call
+7. **Modify** `src/pages/trips/Transport.tsx` — add notify call
+8. **Modify** `src/pages/trips/Accommodation.tsx` — add notify call
+9. **Modify** `src/pages/trips/Schedule.tsx` — add notify call
 
-### Verification steps on Samsung
-1. Open YORMIT from home screen
-2. Banner "Activar notificaciones" should appear and **stay visible**
-3. Tap "Activar" → accept permission
-4. Tap "🔔 Test" → should show "1 dispositivo"
-5. Lock screen → notification arrives
-6. Tap notification → opens `/dashboard`
+### Testing
+1. Use two different accounts on two devices (or one in browser + one on mobile)
+2. Both users join the same trip
+3. User A sends a chat message → User B receives push "Tienes un nuevo mensaje en el chat 💬"
+4. User A uploads a photo → User B receives push about new photo
+5. Tap notification → opens the correct trip and section
 
