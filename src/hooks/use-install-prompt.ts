@@ -6,14 +6,20 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 export function useInstallPrompt() {
+  const platform = navigator.platform || "";
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstalled, setIsInstalled] = useState(false);
   const [dismissed, setDismissed] = useState(() => localStorage.getItem("yormit-install-dismissed") === "true");
 
   const ua = navigator.userAgent || "";
-  const isIOS = /iPad|iPhone|iPod/.test(ua) && !(window as any).MSStream;
+  const isTouchDevice = navigator.maxTouchPoints > 0 || "ontouchstart" in window;
+  const isIOS = (/iPad|iPhone|iPod/.test(ua) || (platform === "MacIntel" && navigator.maxTouchPoints > 1)) && !(window as any).MSStream;
   const isAndroid = /Android/i.test(ua) || /Linux.*Mobile/i.test(ua);
-  const isMobile = isIOS || isAndroid || /Mobi|webOS|BlackBerry|Opera Mini|IEMobile/i.test(ua) || (window.innerWidth <= 768 && "ontouchstart" in window);
+  const isMobile =
+    isIOS ||
+    isAndroid ||
+    /Mobi|webOS|BlackBerry|Opera Mini|IEMobile/i.test(ua) ||
+    (isTouchDevice && window.matchMedia("(max-width: 1024px)").matches);
   const isStandalone = window.matchMedia("(display-mode: standalone)").matches || (navigator as any).standalone === true;
 
   useEffect(() => {

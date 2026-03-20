@@ -4,6 +4,32 @@ import { supabase } from "@/integrations/supabase/client";
 // Public VAPID key — safe to embed in frontend
 const VAPID_PUBLIC_KEY = "BOzv8tvd9ZoYQIdtCIZNDabxooM0qs8_pM3_Dagw1eTIfV1rEtFUetYOAJyvxxV3hACD_wTNLy8se2-0yggt0EI";
 
+export type PushSupportState = "supported" | "install-required" | "unavailable";
+
+function detectPushSupport(): PushSupportState {
+  const hasServiceWorker = "serviceWorker" in navigator;
+  const hasNotification = "Notification" in window;
+  const hasPushManager =
+    "PushManager" in window ||
+    ("ServiceWorkerRegistration" in window && "pushManager" in ServiceWorkerRegistration.prototype);
+  const ua = navigator.userAgent || "";
+  const platform = navigator.platform || "";
+  const isIOS = /iPad|iPhone|iPod/.test(ua) || (platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const isStandalone =
+    window.matchMedia("(display-mode: standalone)").matches ||
+    (navigator as Navigator & { standalone?: boolean }).standalone === true;
+
+  if (window.isSecureContext && hasServiceWorker && hasNotification && hasPushManager) {
+    return "supported";
+  }
+
+  if (window.isSecureContext && isIOS && hasServiceWorker && hasNotification && !isStandalone) {
+    return "install-required";
+  }
+
+  return "unavailable";
+}
+
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
   const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
@@ -16,28 +42,45 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
 }
 
 export function usePushNotifications() {
-  const [isSupported, setIsSupported] = useState(false);
-  const [permission, setPermission] = useState<NotificationPermission>("default");
+  const [supportState, setSupportState] = useState<PushSupportState>("unavailable");
+  const [permission, setPermission] = useState<NotificationPermission>(() =>
+    "Notification" in window ? Notification.permission : "default"
+  );
   const [isSubscribed, setIsSubscribed] = useState(false);
 
   useEffect(() => {
-    const supported = "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
-    setIsSupported(supported);
+    const nextSupportState = detectPushSupport();
+    setSupportState(nextSupportState);
 
-    if (supported) {
+    if ("Notification" in window) {
       setPermission(Notification.permission);
-      // Check if already subscribed
-      navigator.serviceWorker.ready.then(async (reg) => {
-        const sub = await reg.pushManager.getSubscription();
-        setIsSubscribed(!!sub);
-      });
+    }
+
+    if (nextSupportState === "supported") {
+      navigator.serviceWorker.ready
+        .then(async (reg) => {
+          const sub = await reg.pushManager.getSubscription();
+          setIsSubscribed(!!sub);
+        })
+        .catch((error) => {
+          console.warn("Push support check failed:", error);
+          setIsSubscribed(false);
+        });
+    } else {
+      setIsSubscribed(false);
     }
   }, []);
 
   const subscribe = useCallback(async (): Promise<boolean> => {
+    if (detectPushSupport() !== "supported") {
+      setSupportState(detectPushSupport());
+      return false;
+    }
+
     try {
       const reg = await navigator.serviceWorker.ready;
-      const subscription = await reg.pushManager.subscribe({
+      const existingSubscription = await reg.pushManager.getSubscription();
+      const subscription = existingSubscription ?? await reg.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) as BufferSource,
       });
@@ -62,10 +105,12 @@ export function usePushNotifications() {
       }
 
       setIsSubscribed(true);
+      setSupportState("supported");
       setPermission(Notification.permission);
       return true;
     } catch (err) {
       console.error("Push subscription failed:", err);
+      setSupportState(detectPushSupport());
       setPermission(Notification.permission);
       return false;
     }
@@ -88,5 +133,12 @@ export function usePushNotifications() {
     }
   }, []);
 
-  return { isSupported, permission, isSubscribed, subscribe, unsubscribe };
+  return {
+    isSupported: supportState === "supported",
+    supportState,
+    permission,
+    isSubscribed,
+    subscribe,
+    unsubscribe,
+  };
 }
