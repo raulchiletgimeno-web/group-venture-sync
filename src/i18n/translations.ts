@@ -3100,6 +3100,8 @@ const translations: Record<Language, TranslationKeys> = {
     installAndroidStep2: "Wähle \"Zum Home-Bildschirm\"",
     installAndroidStep3: "Tippe auf \"Hinzufügen\" zum Bestätigen",
     installDismiss: "Verstanden",
+    pushTitle: "Aktiviere Benachrichtigungen, um über deine Reisen informiert zu bleiben",
+    pushButton: "Aktivieren",
   },
 };
 
