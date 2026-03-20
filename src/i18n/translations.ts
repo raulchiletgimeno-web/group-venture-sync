@@ -444,6 +444,10 @@ type TranslationKeys = {
   installAndroidStep2: string;
   installAndroidStep3: string;
   installDismiss: string;
+
+  // Push notifications
+  pushTitle: string;
+  pushButton: string;
 };
 
 const translations: Record<Language, TranslationKeys> = {
@@ -822,6 +826,8 @@ const translations: Record<Language, TranslationKeys> = {
     installAndroidStep2: "Selecciona \"Añadir a pantalla de inicio\"",
     installAndroidStep3: "Pulsa \"Añadir\" para confirmar",
     installDismiss: "Entendido",
+    pushTitle: "Activa las notificaciones para estar al día de tus viajes",
+    pushButton: "Activar",
   },
 
   en: {
@@ -1199,6 +1205,8 @@ const translations: Record<Language, TranslationKeys> = {
     installAndroidStep2: "Select \"Add to Home screen\"",
     installAndroidStep3: "Tap \"Add\" to confirm",
     installDismiss: "Got it",
+    pushTitle: "Turn on notifications to stay updated on your trips",
+    pushButton: "Enable",
   },
 
   fr: {
@@ -1576,6 +1584,8 @@ const translations: Record<Language, TranslationKeys> = {
     installAndroidStep2: "Sélectionnez \"Ajouter à l'écran d'accueil\"",
     installAndroidStep3: "Appuyez sur \"Ajouter\" pour confirmer",
     installDismiss: "Compris",
+    pushTitle: "Activez les notifications pour suivre vos voyages",
+    pushButton: "Activer",
   },
 
   pt: {
@@ -1953,6 +1963,8 @@ const translations: Record<Language, TranslationKeys> = {
     installAndroidStep2: "Selecione \"Adicionar ao ecrã inicial\"",
     installAndroidStep3: "Toque em \"Adicionar\" para confirmar",
     installDismiss: "Entendido",
+    pushTitle: "Ative as notificações para acompanhar as suas viagens",
+    pushButton: "Ativar",
   },
 
   it: {
@@ -2330,6 +2342,8 @@ const translations: Record<Language, TranslationKeys> = {
     installAndroidStep2: "Seleziona \"Aggiungi a schermata Home\"",
     installAndroidStep3: "Tocca \"Aggiungi\" per confermare",
     installDismiss: "Capito",
+    pushTitle: "Attiva le notifiche per restare aggiornato sui tuoi viaggi",
+    pushButton: "Attiva",
   },
 
   zh: {
@@ -2707,6 +2721,8 @@ const translations: Record<Language, TranslationKeys> = {
     installAndroidStep2: "选择「添加到主屏幕」",
     installAndroidStep3: "点击「添加」确认",
     installDismiss: "知道了",
+    pushTitle: "开启通知，随时了解旅行动态",
+    pushButton: "开启",
   },
 
   de: {
@@ -3084,6 +3100,8 @@ const translations: Record<Language, TranslationKeys> = {
     installAndroidStep2: "Wähle \"Zum Home-Bildschirm\"",
     installAndroidStep3: "Tippe auf \"Hinzufügen\" zum Bestätigen",
     installDismiss: "Verstanden",
+    pushTitle: "Aktiviere Benachrichtigungen, um über deine Reisen informiert zu bleiben",
+    pushButton: "Aktivieren",
   },
 };
 
