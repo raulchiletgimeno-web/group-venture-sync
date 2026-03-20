@@ -2755,6 +2755,8 @@ const translations: Record<Language, TranslationKeys> = {
     pushDescription: "当旅行有新动态时，直接在手机上收到提醒。",
     pushInstallDescription: "在 iPhone 上，你需要先把 YORMIT 安装到主屏幕，然后才能开启通知。",
     pushUnavailableDescription: "当前浏览器暂时无法在这里开启通知；如可行，请先安装应用或改用兼容浏览器。",
+    pushDeniedTitle: "通知已被屏蔽",
+    pushDeniedDescription: "你已拒绝通知权限。要开启通知，请前往浏览器或设备设置，允许 YORMIT 发送通知。",
     pushButton: "开启",
   },
 
