@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 // Public VAPID key — safe to embed in frontend
-const VAPID_PUBLIC_KEY = "BPbwF_c9b6VDXkzRo97bGznqIFzocSffPaXRzvXmt9vwpolroZcINS_oaGtg9c0Gv6pKVqxV6kCtuZtSw5iHFEk";
+const VAPID_PUBLIC_KEY = "BLwofoZp-QoWFGVds9fEAl1tCzdXSmaADgBT_rqOGjG9YmQsytoYZQg3YFL8mydXVTLc7cdGl9jVsJIGnEwzUzw";
 
 export type PushSupportState = "supported" | "install-required" | "unavailable";
 
@@ -85,34 +85,10 @@ export function usePushNotifications() {
             // Both local and DB match — truly subscribed
             setIsSubscribed(true);
           } else {
-            // Desync: local exists but DB doesn't → auto-repair
-            console.warn("[Push] Desync detected: local subscription exists but not in DB. Re-subscribing...");
+            // Desync: local exists but DB doesn't → clean up local only, let user re-subscribe
+            console.warn("[Push] Desync detected: local subscription exists but not in DB. Cleaning up local.");
             await localSub.unsubscribe();
-
-            // Create fresh subscription with current VAPID key
-            const newSub = await reg.pushManager.subscribe({
-              userVisibleOnly: true,
-              applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) as BufferSource,
-            });
-
-            const json = newSub.toJSON();
-            const { error } = await supabase.from("push_subscriptions").upsert(
-              {
-                user_id: user.id,
-                endpoint: json.endpoint!,
-                p256dh: json.keys!.p256dh!,
-                auth: json.keys!.auth!,
-              },
-              { onConflict: "user_id,endpoint" }
-            );
-
-            if (error) {
-              console.error("[Push] Auto-repair DB save failed:", error);
-              setIsSubscribed(false);
-            } else {
-              console.log("[Push] Auto-repair successful — subscription synced to DB");
-              setIsSubscribed(true);
-            }
+            setIsSubscribed(false);
           }
         } catch (error) {
           console.warn("[Push] Sync check failed:", error);
