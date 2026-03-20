@@ -1219,6 +1219,8 @@ const translations: Record<Language, TranslationKeys> = {
     pushDescription: "Get trip updates directly on your phone when something new happens.",
     pushInstallDescription: "On iPhone, you first need to install YORMIT on your home screen before enabling notifications.",
     pushUnavailableDescription: "Your browser cannot enable them here yet. If possible, install the app or try a supported browser.",
+    pushDeniedTitle: "Notifications blocked",
+    pushDeniedDescription: "You denied notification permissions. To enable them, go to your browser or device settings and allow notifications for YORMIT.",
     pushButton: "Enable",
   },
 
