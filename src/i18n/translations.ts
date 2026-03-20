@@ -2342,6 +2342,8 @@ const translations: Record<Language, TranslationKeys> = {
     installAndroidStep2: "Seleziona \"Aggiungi a schermata Home\"",
     installAndroidStep3: "Tocca \"Aggiungi\" per confermare",
     installDismiss: "Capito",
+    pushTitle: "Attiva le notifiche per restare aggiornato sui tuoi viaggi",
+    pushButton: "Attiva",
   },
 
   zh: {
