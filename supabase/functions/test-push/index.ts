@@ -74,6 +74,7 @@ Deno.serve(async (req) => {
 
     let sent = 0;
     const staleEndpoints: string[] = [];
+    let lastDeliveryError: string | null = null;
     for (const sub of subscriptions) {
       try {
         await webpush.sendNotification(
@@ -83,6 +84,7 @@ Deno.serve(async (req) => {
         sent++;
       } catch (err: any) {
         console.error("Test push send error:", err.statusCode, err.body);
+        lastDeliveryError = `${err.statusCode ?? "unknown"} ${err.body ?? "unknown_error"}`;
         if (err.statusCode === 403 || err.statusCode === 410 || err.statusCode === 404) {
           staleEndpoints.push(sub.endpoint);
         }
@@ -96,6 +98,19 @@ Deno.serve(async (req) => {
         .from("push_subscriptions")
         .delete()
         .in("endpoint", staleEndpoints);
+    }
+
+    if (sent === 0) {
+      return new Response(
+        JSON.stringify({
+          error: "delivery_failed",
+          detail: lastDeliveryError ?? "No se pudo entregar la notificación a ningún dispositivo.",
+        }),
+        {
+          status: 502,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
     }
 
     return new Response(JSON.stringify({ success: true, sent }), {
