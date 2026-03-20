@@ -8,6 +8,7 @@ import { useTripRole } from "@/hooks/use-trip-role";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { formatDisplayName } from "@/lib/formatDisplayName";
 import EmptyState from "@/components/EmptyState";
+import { notifyTripEvent } from "@/lib/notifyTripEvent";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useMarkSectionSeen } from "@/hooks/use-mark-section-seen";
