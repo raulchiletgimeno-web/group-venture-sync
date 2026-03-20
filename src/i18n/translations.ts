@@ -826,6 +826,8 @@ const translations: Record<Language, TranslationKeys> = {
     installAndroidStep2: "Selecciona \"Añadir a pantalla de inicio\"",
     installAndroidStep3: "Pulsa \"Añadir\" para confirmar",
     installDismiss: "Entendido",
+    pushTitle: "Activa las notificaciones para estar al día de tus viajes",
+    pushButton: "Activar",
   },
 
   en: {
