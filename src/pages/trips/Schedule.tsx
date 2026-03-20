@@ -93,6 +93,7 @@ const Schedule = () => {
       : await supabase.from("trip_schedule").insert(payload);
     if (error) { toast({ title: t.error, description: error.message, variant: "destructive" }); return; }
     resetForm(); setOpen(false); fetchItems();
+    notifyTripEvent(tripId, "schedule", user?.id);
     toast({ title: editingId ? t.activityUpdated : t.activityAdded });
   };
 

@@ -121,6 +121,7 @@ const Chat = () => {
         const { error: uploadError } = await supabase.storage.from("trip-photos").upload(path, blob, { upsert: true, contentType: "audio/webm" });
         if (uploadError) { toast({ title: t.errorUploadingAudio, variant: "destructive" }); setSending(false); return; }
         await supabase.from("trip_messages").insert({ trip_id: tripId, user_id: user.id, type: "audio", file_path: path });
+        notifyTripEvent(tripId, "chat", user.id);
         setSending(false);
       };
       mediaRecorder.start(); setRecording(true);

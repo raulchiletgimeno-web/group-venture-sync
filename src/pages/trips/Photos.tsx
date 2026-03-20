@@ -84,6 +84,7 @@ const Photos = () => {
       const { error: insertError } = await supabase.from("trip_photos").insert({ trip_id: tripId, user_id: user.id, file_path: filePath });
       if (insertError) throw insertError;
       queryClient.invalidateQueries({ queryKey: ["trip-photos", tripId] });
+      notifyTripEvent(tripId, "photos", user.id);
       toast.success(t.photoUploaded);
     } catch { toast.error(t.errorUploadingPhoto); } finally {
       setUploading(false);

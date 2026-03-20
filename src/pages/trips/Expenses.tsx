@@ -243,6 +243,7 @@ const Expenses = () => {
 
       setOpen(false);
       fetchExpenses();
+      notifyTripEvent(tripId, "expenses", user?.id);
       toast({ title: t.expenseAdded });
     }
   };

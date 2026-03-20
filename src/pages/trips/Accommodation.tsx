@@ -72,6 +72,7 @@ const Accommodation = () => {
       : await supabase.from("trip_accommodation").insert({ ...payload, trip_id: tripId });
     if (error) { toast({ title: t.error, description: error.message, variant: "destructive" }); return; }
     setForm(emptyForm); setEditingId(null); setOpen(false); fetchItems();
+    notifyTripEvent(tripId, "accommodation", user?.id);
     toast({ title: editingId ? t.accommodationUpdated : t.accommodationAdded });
   };
 

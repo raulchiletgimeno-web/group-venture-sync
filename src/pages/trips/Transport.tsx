@@ -108,6 +108,7 @@ const Transport = () => {
       : await supabase.from("trip_transport").insert({ ...payload, trip_id: tripId });
     if (error) { toast({ title: t.error, description: error.message, variant: "destructive" }); return; }
     setForm(emptyForm); setEditingId(null); setOpen(false); fetchItems();
+    notifyTripEvent(tripId, "transport", user?.id);
     toast({ title: editingId ? t.transportUpdated : t.transportAdded });
   };
 
