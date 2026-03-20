@@ -1,62 +1,41 @@
 
 
-## Plan: Phase 1 — Push Notifications Infrastructure
+## Diagnosis: Why the banner doesn't appear on mobile
 
-### What we'll build
+### Most likely cause
 
-The technical foundation for push notifications: Service Worker, VAPID keys, subscription hook, and permission banner. No event triggers yet.
+**localStorage dismissal from previous testing.** The user has been testing the banner for several sessions. Even though we changed the key to `yormit-push-dismissed-v2`, the user likely dismissed the v2 banner during a prior test attempt. Once dismissed, `shouldShow` is `false` and the banner returns `null`.
 
-### Steps
+On PC incognito it works because incognito starts with empty localStorage.
 
-#### 1. Store VAPID keys as secrets
-- Use `add_secret` to store `VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY`
-- Hardcode the public key in the frontend (public keys are safe to embed)
+### Secondary risk
 
-#### 2. Create `public/custom-sw.js`
-Custom Service Worker with:
-- `push` event handler → `self.registration.showNotification()` with title, body, icon, deep link data
-- `notificationclick` handler → `clients.openWindow(data.url)` for deep linking to the correct trip/section
-- Workbox `precacheAndRoute` call for the injected precache manifest
+The `shouldShow` logic has a gap: if `supportState` is `"unavailable"` AND `isMobile` is `false` (edge case detection failure), none of the three conditions (`requiresInstall`, `canRequestPermission`, `showFallbackState`) would be true, and the banner hides silently.
 
-#### 3. Switch `vite.config.ts` to `injectManifest` mode
-- Change VitePWA config: `strategies: "injectManifest"`, `srcDir: "public"`, `filename: "custom-sw.js"`
-- Keep existing manifest, navigateFallbackDenylist, and glob patterns
+### Fix plan (3 changes)
 
-#### 4. Create `src/hooks/use-push-notifications.ts`
-- Detects if push is supported (`'PushManager' in window`)
-- `subscribe()`: gets SW registration → `pushManager.subscribe({ applicationServerKey: VAPID_PUBLIC_KEY })` → upserts to `push_subscriptions` table
-- `unsubscribe()`: removes from DB + calls `subscription.unsubscribe()`
-- Exposes `isSupported`, `permission`, `isSubscribed`, `subscribe`, `unsubscribe`
+#### 1. Bump dismiss key to `v3` in `PushNotificationBanner.tsx`
+Change `DISMISS_KEY` from `"yormit-push-dismissed-v2"` to `"yormit-push-dismissed-v3"` so all mobile devices get a fresh state.
 
-#### 5. Create `src/components/PushNotificationBanner.tsx`
-- Styled to match the existing `InstallAppBanner` (rounded card with icon, text, button, dismiss)
-- Shows on Dashboard below the install banner, only when:
-  - Push is supported
-  - Permission is `"default"` (not yet asked)
-  - Not dismissed (persisted in `localStorage` as `yormit-push-dismissed`)
-- Copy: "Activa las notificaciones para estar al día de tus viajes" + "Activar" button with Bell icon
-- On click → calls `subscribe()` from the hook, which triggers the browser permission prompt
-- Dismissible with X button
+#### 2. Add temporary diagnostic console.log
+Add a single `console.log` at the top of the component that prints the exact decision values:
+```
+[PushBanner] { supportState, permission, isSubscribed, isMobile, isInstalled, dismissed, requiresInstall, canRequestPermission, showFallbackState, shouldShow }
+```
+This will be visible in mobile browser DevTools (or via remote debugging) and will tell us exactly what's happening if the fix doesn't work.
 
-#### 6. Add banner to `src/pages/Dashboard.tsx`
-- Import and render `<PushNotificationBanner />` right after `<InstallAppBanner />`
+#### 3. Make `shouldShow` logic unconditionally visible on mobile
+Change the `shouldShow` calculation so that on mobile, if none of the three positive conditions are met but the user hasn't dismissed, it still shows via `showFallbackState`. Currently `showFallbackState` requires `!requiresInstall && !canRequestPermission` which is correct, but also requires `isMobile` — if `isMobile` detection fails, nothing shows. Add a desktop fallback too:
 
-#### 7. Add translation keys
-- Add `pushTitle` and `pushButton` keys to the `TranslationKeys` interface and all 7 language objects in `translations.ts`
+```typescript
+const showFallbackState = !requiresInstall && !canRequestPermission && !isSubscribed && permission !== "denied";
+```
 
-### Files to create/modify
-1. **Create** `public/custom-sw.js`
-2. **Modify** `vite.config.ts` — injectManifest mode
-3. **Create** `src/hooks/use-push-notifications.ts`
-4. **Create** `src/components/PushNotificationBanner.tsx`
-5. **Modify** `src/pages/Dashboard.tsx` — add banner
-6. **Modify** `src/i18n/translations.ts` — add 2 translation keys
-7. **Add 2 secrets** — VAPID keys
+Remove the `isMobile` gate from `showFallbackState` so the banner is visible everywhere as a last resort.
 
-### Testing
-After deployment, you can test by:
-1. Opening YORMIT on your phone browser
-2. Logging in → Dashboard should show the notification banner
-3. Tap "Activar" → browser permission prompt appears
-4. Accept → subscription stored in DB (verifiable in backend)
+### Files to modify
+1. `src/components/PushNotificationBanner.tsx` — bump key, add log, fix fallback logic
+
+### Verification
+After publishing, open on mobile → Dashboard. The diagnostic log will confirm exactly what state the hook returns. The banner should appear because the v3 key ensures a clean dismissed state.
 
