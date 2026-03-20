@@ -13,11 +13,13 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { Calendar } from "@/components/ui/calendar";
 import EmptyState from "@/components/EmptyState";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { useTripRole } from "@/hooks/use-trip-role";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { getLocale } from "@/i18n/translations";
 import { useMarkSectionSeen } from "@/hooks/use-mark-section-seen";
+import { notifyTripEvent } from "@/lib/notifyTripEvent";
 
 const dateFnsLocales: Record<string, typeof es> = { es, en: enUS, fr, pt, it };
 
@@ -34,6 +36,7 @@ interface ScheduleItem {
 const Schedule = () => {
   const { tripId } = useParams();
   useMarkSectionSeen(tripId, "schedule");
+  const { user } = useAuth();
   const { isCreator } = useTripRole(tripId);
   const { toast } = useToast();
   const { t, language } = useLanguage();
@@ -92,6 +95,7 @@ const Schedule = () => {
       : await supabase.from("trip_schedule").insert(payload);
     if (error) { toast({ title: t.error, description: error.message, variant: "destructive" }); return; }
     resetForm(); setOpen(false); fetchItems();
+    notifyTripEvent(tripId, "schedule", user?.id);
     toast({ title: editingId ? t.activityUpdated : t.activityAdded });
   };
 

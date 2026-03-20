@@ -17,6 +17,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { getLocale } from "@/i18n/translations";
 import { formatDisplayName } from "@/lib/formatDisplayName";
 import { useMarkSectionSeen } from "@/hooks/use-mark-section-seen";
+import { notifyTripEvent } from "@/lib/notifyTripEvent";
 
 interface Member {
   user_id: string;
@@ -242,6 +243,7 @@ const Expenses = () => {
 
       setOpen(false);
       fetchExpenses();
+      notifyTripEvent(tripId, "expenses", user?.id);
       toast({ title: t.expenseAdded });
     }
   };

@@ -11,11 +11,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import EmptyState from "@/components/EmptyState";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { useTripRole } from "@/hooks/use-trip-role";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { getLocale } from "@/i18n/translations";
 import { useMarkSectionSeen } from "@/hooks/use-mark-section-seen";
+import { notifyTripEvent } from "@/lib/notifyTripEvent";
 
 interface TransportItem {
   id: string;
@@ -42,6 +44,7 @@ const emptyForm = {
 const Transport = () => {
   const { tripId } = useParams();
   useMarkSectionSeen(tripId, "transport");
+  const { user } = useAuth();
   const { isCreator } = useTripRole(tripId);
   const { toast } = useToast();
   const { t, language } = useLanguage();
@@ -107,6 +110,7 @@ const Transport = () => {
       : await supabase.from("trip_transport").insert({ ...payload, trip_id: tripId });
     if (error) { toast({ title: t.error, description: error.message, variant: "destructive" }); return; }
     setForm(emptyForm); setEditingId(null); setOpen(false); fetchItems();
+    notifyTripEvent(tripId, "transport", user?.id);
     toast({ title: editingId ? t.transportUpdated : t.transportAdded });
   };
 

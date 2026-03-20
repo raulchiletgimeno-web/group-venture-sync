@@ -8,6 +8,7 @@ import { useTripRole } from "@/hooks/use-trip-role";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { formatDisplayName } from "@/lib/formatDisplayName";
 import EmptyState from "@/components/EmptyState";
+import { notifyTripEvent } from "@/lib/notifyTripEvent";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useMarkSectionSeen } from "@/hooks/use-mark-section-seen";
@@ -83,6 +84,7 @@ const Photos = () => {
       const { error: insertError } = await supabase.from("trip_photos").insert({ trip_id: tripId, user_id: user.id, file_path: filePath });
       if (insertError) throw insertError;
       queryClient.invalidateQueries({ queryKey: ["trip-photos", tripId] });
+      notifyTripEvent(tripId, "photos", user.id);
       toast.success(t.photoUploaded);
     } catch { toast.error(t.errorUploadingPhoto); } finally {
       setUploading(false);

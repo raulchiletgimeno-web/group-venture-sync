@@ -12,6 +12,7 @@ import { getLocale } from "@/i18n/translations";
 import { useToast } from "@/hooks/use-toast";
 import { formatDisplayName } from "@/lib/formatDisplayName";
 import { useMarkSectionSeen } from "@/hooks/use-mark-section-seen";
+import { notifyTripEvent } from "@/lib/notifyTripEvent";
 
 interface Message {
   id: string;
@@ -80,6 +81,7 @@ const Chat = () => {
     setSending(true);
     const { error } = await supabase.from("trip_messages").insert({ trip_id: tripId, user_id: user.id, content: text.trim(), type: "text" });
     if (error) toast({ title: t.errorSending, variant: "destructive" });
+    else notifyTripEvent(tripId, "chat", user.id);
     setText(""); setSending(false);
   };
 
@@ -93,6 +95,7 @@ const Chat = () => {
     await supabase.from("trip_messages").insert({ trip_id: tripId, user_id: user.id, type: "image", file_path: path });
     // Also add to trip_photos so it appears in the Photos tab
     await supabase.from("trip_photos").insert({ trip_id: tripId, user_id: user.id, file_path: path });
+    notifyTripEvent(tripId, "chat", user.id);
     setImagePreview(null); setImageFile(null); setSending(false);
   };
 
@@ -118,6 +121,7 @@ const Chat = () => {
         const { error: uploadError } = await supabase.storage.from("trip-photos").upload(path, blob, { upsert: true, contentType: "audio/webm" });
         if (uploadError) { toast({ title: t.errorUploadingAudio, variant: "destructive" }); setSending(false); return; }
         await supabase.from("trip_messages").insert({ trip_id: tripId, user_id: user.id, type: "audio", file_path: path });
+        notifyTripEvent(tripId, "chat", user.id);
         setSending(false);
       };
       mediaRecorder.start(); setRecording(true);
