@@ -3139,6 +3139,8 @@ const translations: Record<Language, TranslationKeys> = {
     pushDescription: "Erhalte Neuigkeiten zu deinen Reisen direkt auf dein Smartphone.",
     pushInstallDescription: "Auf dem iPhone musst du YORMIT zuerst zum Home-Bildschirm hinzufügen, bevor du Benachrichtigungen aktivieren kannst.",
     pushUnavailableDescription: "Dein Browser kann sie hier noch nicht aktivieren. Installiere wenn möglich die App oder nutze einen unterstützten Browser.",
+    pushDeniedTitle: "Benachrichtigungen blockiert",
+    pushDeniedDescription: "Du hast die Benachrichtigungsberechtigung abgelehnt. Um sie zu aktivieren, gehe in die Browser- oder Geräteeinstellungen und erlaube Benachrichtigungen für YORMIT.",
     pushButton: "Aktivieren",
   },
 };
