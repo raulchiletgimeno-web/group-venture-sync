@@ -186,13 +186,11 @@ const Index = () => {
               {t.joinTrip}
             </Button>
           </div>
-
-          <PushNotificationBanner />
-
         </div>
       </div>
 
-      {/* Install & Push Banners */}
+      {/* Push & Install Banners — outside hero overflow-hidden */}
+      <PushNotificationBanner />
       <InstallAppBanner variant="dashboard" />
 
       {/* Trips List */}
