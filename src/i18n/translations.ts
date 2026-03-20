@@ -447,6 +447,9 @@ type TranslationKeys = {
 
   // Push notifications
   pushTitle: string;
+  pushDescription: string;
+  pushInstallDescription: string;
+  pushUnavailableDescription: string;
   pushButton: string;
 };
 
@@ -827,6 +830,9 @@ const translations: Record<Language, TranslationKeys> = {
     installAndroidStep3: "Pulsa \"Añadir\" para confirmar",
     installDismiss: "Entendido",
     pushTitle: "Activa las notificaciones para estar al día de tus viajes",
+    pushDescription: "Recibe avisos cuando haya novedades en tus viajes directamente en tu móvil.",
+    pushInstallDescription: "En iPhone primero necesitas instalar YORMIT en la pantalla de inicio para poder activar las notificaciones.",
+    pushUnavailableDescription: "Tu navegador no permite activarlas todavía aquí. Si puedes, instala la app o prueba con un navegador compatible.",
     pushButton: "Activar",
   },
 
@@ -1206,6 +1212,9 @@ const translations: Record<Language, TranslationKeys> = {
     installAndroidStep3: "Tap \"Add\" to confirm",
     installDismiss: "Got it",
     pushTitle: "Turn on notifications to stay updated on your trips",
+    pushDescription: "Get trip updates directly on your phone when something new happens.",
+    pushInstallDescription: "On iPhone, you first need to install YORMIT on your home screen before enabling notifications.",
+    pushUnavailableDescription: "Your browser cannot enable them here yet. If possible, install the app or try a supported browser.",
     pushButton: "Enable",
   },
 
@@ -1585,6 +1594,9 @@ const translations: Record<Language, TranslationKeys> = {
     installAndroidStep3: "Appuyez sur \"Ajouter\" pour confirmer",
     installDismiss: "Compris",
     pushTitle: "Activez les notifications pour suivre vos voyages",
+    pushDescription: "Recevez les nouveautés de vos voyages directement sur votre mobile.",
+    pushInstallDescription: "Sur iPhone, vous devez d'abord installer YORMIT sur l'écran d'accueil avant d'activer les notifications.",
+    pushUnavailableDescription: "Votre navigateur ne peut pas encore les activer ici. Si possible, installez l'app ou essayez un navigateur compatible.",
     pushButton: "Activer",
   },
 
@@ -1964,6 +1976,9 @@ const translations: Record<Language, TranslationKeys> = {
     installAndroidStep3: "Toque em \"Adicionar\" para confirmar",
     installDismiss: "Entendido",
     pushTitle: "Ative as notificações para acompanhar as suas viagens",
+    pushDescription: "Receba novidades das suas viagens diretamente no telemóvel.",
+    pushInstallDescription: "No iPhone, primeiro precisa instalar o YORMIT no ecrã inicial antes de ativar as notificações.",
+    pushUnavailableDescription: "O seu navegador ainda não permite ativá-las aqui. Se puder, instale a app ou experimente um navegador compatível.",
     pushButton: "Ativar",
   },
 
@@ -2343,6 +2358,9 @@ const translations: Record<Language, TranslationKeys> = {
     installAndroidStep3: "Tocca \"Aggiungi\" per confermare",
     installDismiss: "Capito",
     pushTitle: "Attiva le notifiche per restare aggiornato sui tuoi viaggi",
+    pushDescription: "Ricevi gli aggiornamenti dei tuoi viaggi direttamente sul telefono.",
+    pushInstallDescription: "Su iPhone devi prima installare YORMIT nella schermata Home prima di attivare le notifiche.",
+    pushUnavailableDescription: "Il tuo browser non può ancora attivarle qui. Se puoi, installa l'app o prova un browser compatibile.",
     pushButton: "Attiva",
   },
 
@@ -2722,6 +2740,9 @@ const translations: Record<Language, TranslationKeys> = {
     installAndroidStep3: "点击「添加」确认",
     installDismiss: "知道了",
     pushTitle: "开启通知，随时了解旅行动态",
+    pushDescription: "当旅行有新动态时，直接在手机上收到提醒。",
+    pushInstallDescription: "在 iPhone 上，你需要先把 YORMIT 安装到主屏幕，然后才能开启通知。",
+    pushUnavailableDescription: "当前浏览器暂时无法在这里开启通知；如可行，请先安装应用或改用兼容浏览器。",
     pushButton: "开启",
   },
 
@@ -3101,6 +3122,9 @@ const translations: Record<Language, TranslationKeys> = {
     installAndroidStep3: "Tippe auf \"Hinzufügen\" zum Bestätigen",
     installDismiss: "Verstanden",
     pushTitle: "Aktiviere Benachrichtigungen, um über deine Reisen informiert zu bleiben",
+    pushDescription: "Erhalte Neuigkeiten zu deinen Reisen direkt auf dein Smartphone.",
+    pushInstallDescription: "Auf dem iPhone musst du YORMIT zuerst zum Home-Bildschirm hinzufügen, bevor du Benachrichtigungen aktivieren kannst.",
+    pushUnavailableDescription: "Dein Browser kann sie hier noch nicht aktivieren. Installiere wenn möglich die App oder nutze einen unterstützten Browser.",
     pushButton: "Aktivieren",
   },
 };
