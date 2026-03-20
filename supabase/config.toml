@@ -8,3 +8,9 @@ verify_jwt = false
 
 [functions.notify-creator-join]
 verify_jwt = false
+
+[functions.send-push]
+verify_jwt = false
+
+[functions.test-push]
+verify_jwt = false
