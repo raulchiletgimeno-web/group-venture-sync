@@ -1,35 +1,40 @@
 
 
-## Plan: Handle `permission=denied` state and add "blocked" banner
+## Plan: PWA update strategy — force refresh on new versions
 
-### Root cause confirmed
-`permission === "denied"` makes both `canRequestPermission` and `showFallbackState` evaluate to `false`, so `shouldShow` is `false` and the banner returns `null`. There is no visual state for "notifications blocked".
+### Problem
+The current service worker uses `injectManifest` with `precacheAndRoute`, which caches all assets aggressively. When a new version is published, the old SW continues serving stale cached assets until the user closes ALL tabs and reopens. On mobile (especially installed PWAs), tabs are rarely fully closed, so users get stuck on old versions indefinitely.
 
-### Changes
+The registration in `main.tsx` does a simple `register()` with no update handling — no checking for updates, no prompting the user, no `skipWaiting`.
 
-#### 1. `src/components/PushNotificationBanner.tsx`
-- Add a fourth state: `isDenied = permission === "denied" && !isSubscribed`
-- Include `isDenied` in `shouldShow`: `!dismissed && !isSubscribed && (requiresInstall || canRequestPermission || showFallbackState || isDenied)`
-- When `isDenied`, render a distinct banner (amber/warning tone) with `BellOff` icon, explaining that notifications are blocked and how to unblock them in browser/OS settings
-- No action button (since the browser won't allow re-prompting), just informative text + dismiss X
-- Remove debug panel export and usage from Dashboard (diagnosis complete)
+### Solution: Auto-update with "new version available" toast
 
-#### 2. `src/i18n/translations.ts`
-- Add 2 new keys to `TranslationKeys`: `pushDeniedTitle`, `pushDeniedDescription`
-- Add translations for all 7 languages:
-  - ES: "Notificaciones bloqueadas" / "Has denegado el permiso de notificaciones. Para activarlas, ve a la configuración de tu navegador o dispositivo y permite las notificaciones para YORMIT."
-  - EN/FR/PT/IT/ZH/DE: equivalent
+#### 1. `public/custom-sw.js` — Add `skipWaiting` + `clientsClaim`
+```javascript
+import { clientsClaim } from 'workbox-core';
+self.skipWaiting();
+clientsClaim();
+```
+This makes new service workers activate immediately instead of waiting for all tabs to close. Combined with precaching, Workbox will serve the new cached assets on next navigation.
 
-#### 3. `src/pages/Dashboard.tsx`
-- Remove `PushDebugPanel` import and `<PushDebugPanel />` render
+#### 2. `src/main.tsx` — Detect updates and reload
+Replace the simple `register()` with proper update detection:
+- After registration, call `registration.update()` periodically (every 60s)
+- Listen for the `controllerchange` event to auto-reload when a new SW takes over
+- This ensures that even installed PWAs on mobile pick up changes within ~60 seconds
 
-### Files
-1. **Modify** `src/components/PushNotificationBanner.tsx`
-2. **Modify** `src/i18n/translations.ts` — add 2 keys × 7 languages
-3. **Modify** `src/pages/Dashboard.tsx` — remove debug panel
+#### 3. `vite.config.ts` — Add `navigateFallbackDenylist`
+Add `/~oauth`, `/sitemap.xml`, `/robots.txt` to the denylist (per memory notes) to prevent caching issues with those routes.
 
-### Testing
-- In Lovable preview (where `permission=denied`): amber "blocked" banner visible
-- On mobile real device: reset notification permission in browser settings, reload → should see the green "Activar" banner
-- If denied again → amber "blocked" banner appears
+### Files to modify
+1. **`public/custom-sw.js`** — add `skipWaiting()` + `clientsClaim()` at top
+2. **`src/main.tsx`** — add update polling + `controllerchange` reload
+3. **`vite.config.ts`** — add `navigateFallbackDenylist`
+
+### Behavior after fix
+- New publish → SW detects new precache manifest within 60s
+- `skipWaiting` activates it immediately
+- `controllerchange` fires → page reloads automatically
+- User always sees the latest version without manual intervention
+- Installed PWA on home screen: same behavior, auto-updates on next open or within 60s of being open
 
