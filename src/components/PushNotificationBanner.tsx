@@ -5,11 +5,12 @@ import { InstallGuideDrawer } from "@/components/InstallAppBanner";
 import { usePushNotifications } from "@/hooks/use-push-notifications";
 import { useInstallPrompt } from "@/hooks/use-install-prompt";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { toast } from "@/components/ui/sonner";
 
 const DISMISS_KEY = "yormit-push-dismissed-v4";
 
 const PushNotificationBanner = () => {
-  const { isSupported, supportState, permission, isSubscribed, subscribe } = usePushNotifications();
+  const { isSupported, supportState, permission, isSubscribed, subscribe, lastError } = usePushNotifications();
   const { isIOS, isMobile, isInstalled, canInstall, promptInstall } = useInstallPrompt();
   const { t } = useLanguage();
   const [dismissed, setDismissed] = useState(() => localStorage.getItem(DISMISS_KEY) === "true");
@@ -34,8 +35,12 @@ const PushNotificationBanner = () => {
       return;
     }
     setLoading(true);
-    await subscribe();
+    const result = await subscribe();
     setLoading(false);
+
+    if (!result.success && result.error) {
+      toast.error(result.error);
+    }
   };
 
   const handleDismiss = () => {
@@ -72,6 +77,9 @@ const PushNotificationBanner = () => {
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-foreground text-balance">{t.pushTitle}</p>
           <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{description}</p>
+          {lastError && (
+            <p className="mt-2 text-xs leading-relaxed text-destructive">{lastError}</p>
+          )}
         </div>
         {(requiresInstall || canRequestPermission) && (
           <Button size="sm" onClick={handleActivate} disabled={loading} className="shrink-0 font-semibold">
