@@ -450,6 +450,8 @@ type TranslationKeys = {
   pushDescription: string;
   pushInstallDescription: string;
   pushUnavailableDescription: string;
+  pushDeniedTitle: string;
+  pushDeniedDescription: string;
   pushButton: string;
 };
 

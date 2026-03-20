@@ -190,7 +190,6 @@ const Index = () => {
       </div>
 
       {/* Push & Install Banners — outside hero overflow-hidden */}
-      <PushDebugPanel />
       <PushNotificationBanner />
       <InstallAppBanner variant="dashboard" />
 
