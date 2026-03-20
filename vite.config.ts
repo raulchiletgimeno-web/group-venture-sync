@@ -17,9 +17,14 @@ export default defineConfig(({ mode }) => ({
     react(),
     mode === "development" && componentTagger(),
     VitePWA({
-      registerType: "autoUpdate",
-      workbox: {
-        navigateFallbackDenylist: [/^\/~oauth/, /^\/robots\.txt$/, /^\/sitemap\.xml$/],
+      strategies: "injectManifest",
+      srcDir: "public",
+      filename: "custom-sw.js",
+      injectRegister: false,
+      devOptions: {
+        enabled: false,
+      },
+      injectManifest: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,jpg,webp,woff,woff2}"],
       },
       manifest: {
