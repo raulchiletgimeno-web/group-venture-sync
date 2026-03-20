@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Bell, X } from "lucide-react";
+import { Bell, BellOff, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { InstallGuideDrawer } from "@/components/InstallAppBanner";
 import { usePushNotifications } from "@/hooks/use-push-notifications";
@@ -7,37 +7,6 @@ import { useInstallPrompt } from "@/hooks/use-install-prompt";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 const DISMISS_KEY = "yormit-push-dismissed-v4";
-
-/** Temporary visible debug panel — will be removed after diagnosis */
-export const PushDebugPanel = () => {
-  const { isSupported, supportState, permission, isSubscribed } = usePushNotifications();
-  const { isIOS, isMobile, isInstalled, canInstall } = useInstallPrompt();
-  const dismissed = localStorage.getItem(DISMISS_KEY) === "true";
-
-  const requiresInstall = isMobile && !isInstalled && (supportState === "install-required" || (isIOS && !isSupported));
-  const canRequestPermission = isSupported && permission !== "denied";
-  const showFallbackState = !requiresInstall && !canRequestPermission && !isSubscribed && permission !== "denied";
-  const shouldShow = !dismissed && !isSubscribed && (requiresInstall || canRequestPermission || showFallbackState);
-
-  return (
-    <div className="mx-5 mt-2 rounded-lg bg-yellow-100 border border-yellow-400 p-3 text-[10px] font-mono text-yellow-900 leading-relaxed">
-      <p className="font-bold mb-1">🔍 Push Debug (temporal)</p>
-      <p>supportState: <b>{supportState}</b></p>
-      <p>permission: <b>{permission}</b></p>
-      <p>isSubscribed: <b>{String(isSubscribed)}</b></p>
-      <p>isMobile: <b>{String(isMobile)}</b></p>
-      <p>isIOS: <b>{String(isIOS)}</b></p>
-      <p>isInstalled: <b>{String(isInstalled)}</b></p>
-      <p>canInstall: <b>{String(canInstall)}</b></p>
-      <p>dismissed: <b>{String(dismissed)}</b></p>
-      <p>---</p>
-      <p>requiresInstall: <b>{String(requiresInstall)}</b></p>
-      <p>canRequestPermission: <b>{String(canRequestPermission)}</b></p>
-      <p>showFallbackState: <b>{String(showFallbackState)}</b></p>
-      <p>shouldShow: <b>{String(shouldShow)}</b></p>
-    </div>
-  );
-};
 
 const PushNotificationBanner = () => {
   const { isSupported, supportState, permission, isSubscribed, subscribe } = usePushNotifications();
@@ -49,16 +18,11 @@ const PushNotificationBanner = () => {
 
   const requiresInstall = isMobile && !isInstalled && (supportState === "install-required" || (isIOS && !isSupported));
   const canRequestPermission = isSupported && permission !== "denied";
-  const showFallbackState = !requiresInstall && !canRequestPermission && !isSubscribed && permission !== "denied";
-  const shouldShow = !dismissed && !isSubscribed && (requiresInstall || canRequestPermission || showFallbackState);
+  const isDenied = permission === "denied" && !isSubscribed;
+  const showFallbackState = !requiresInstall && !canRequestPermission && !isDenied && !isSubscribed && permission !== "denied";
+  const shouldShow = !dismissed && !isSubscribed && (requiresInstall || canRequestPermission || showFallbackState || isDenied);
 
   if (!shouldShow) return null;
-
-  const description = requiresInstall
-    ? t.pushInstallDescription
-    : canRequestPermission
-      ? t.pushDescription
-      : t.pushUnavailableDescription;
 
   const handleActivate = async () => {
     if (requiresInstall) {
@@ -78,6 +42,28 @@ const PushNotificationBanner = () => {
     localStorage.setItem(DISMISS_KEY, "true");
     setDismissed(true);
   };
+
+  // Denied state — amber warning banner
+  if (isDenied) {
+    return (
+      <div className="flex items-center gap-3 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 mx-5 mt-2">
+        <BellOff className="h-5 w-5 text-amber-600 shrink-0" />
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-amber-900 text-balance">{t.pushDeniedTitle}</p>
+          <p className="mt-1 text-xs leading-relaxed text-amber-700">{t.pushDeniedDescription}</p>
+        </div>
+        <button onClick={handleDismiss} className="shrink-0 text-amber-400 hover:text-amber-600 transition-colors" aria-label="Dismiss">
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+    );
+  }
+
+  const description = requiresInstall
+    ? t.pushInstallDescription
+    : canRequestPermission
+      ? t.pushDescription
+      : t.pushUnavailableDescription;
 
   return (
     <>

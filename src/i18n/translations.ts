@@ -450,6 +450,8 @@ type TranslationKeys = {
   pushDescription: string;
   pushInstallDescription: string;
   pushUnavailableDescription: string;
+  pushDeniedTitle: string;
+  pushDeniedDescription: string;
   pushButton: string;
 };
 
@@ -833,6 +835,8 @@ const translations: Record<Language, TranslationKeys> = {
     pushDescription: "Recibe avisos cuando haya novedades en tus viajes directamente en tu móvil.",
     pushInstallDescription: "En iPhone primero necesitas instalar YORMIT en la pantalla de inicio para poder activar las notificaciones.",
     pushUnavailableDescription: "Tu navegador no permite activarlas todavía aquí. Si puedes, instala la app o prueba con un navegador compatible.",
+    pushDeniedTitle: "Notificaciones bloqueadas",
+    pushDeniedDescription: "Has denegado el permiso de notificaciones. Para activarlas, ve a la configuración de tu navegador o dispositivo y permite las notificaciones para YORMIT.",
     pushButton: "Activar",
   },
 
@@ -1215,6 +1219,8 @@ const translations: Record<Language, TranslationKeys> = {
     pushDescription: "Get trip updates directly on your phone when something new happens.",
     pushInstallDescription: "On iPhone, you first need to install YORMIT on your home screen before enabling notifications.",
     pushUnavailableDescription: "Your browser cannot enable them here yet. If possible, install the app or try a supported browser.",
+    pushDeniedTitle: "Notifications blocked",
+    pushDeniedDescription: "You denied notification permissions. To enable them, go to your browser or device settings and allow notifications for YORMIT.",
     pushButton: "Enable",
   },
 
@@ -1597,6 +1603,8 @@ const translations: Record<Language, TranslationKeys> = {
     pushDescription: "Recevez les nouveautés de vos voyages directement sur votre mobile.",
     pushInstallDescription: "Sur iPhone, vous devez d'abord installer YORMIT sur l'écran d'accueil avant d'activer les notifications.",
     pushUnavailableDescription: "Votre navigateur ne peut pas encore les activer ici. Si possible, installez l'app ou essayez un navigateur compatible.",
+    pushDeniedTitle: "Notifications bloquées",
+    pushDeniedDescription: "Vous avez refusé les notifications. Pour les activer, allez dans les paramètres de votre navigateur ou appareil et autorisez les notifications pour YORMIT.",
     pushButton: "Activer",
   },
 
@@ -1979,6 +1987,8 @@ const translations: Record<Language, TranslationKeys> = {
     pushDescription: "Receba novidades das suas viagens diretamente no telemóvel.",
     pushInstallDescription: "No iPhone, primeiro precisa instalar o YORMIT no ecrã inicial antes de ativar as notificações.",
     pushUnavailableDescription: "O seu navegador ainda não permite ativá-las aqui. Se puder, instale a app ou experimente um navegador compatível.",
+    pushDeniedTitle: "Notificações bloqueadas",
+    pushDeniedDescription: "Recusou as permissões de notificação. Para as ativar, vá às definições do navegador ou dispositivo e permita notificações para YORMIT.",
     pushButton: "Ativar",
   },
 
@@ -2361,6 +2371,8 @@ const translations: Record<Language, TranslationKeys> = {
     pushDescription: "Ricevi gli aggiornamenti dei tuoi viaggi direttamente sul telefono.",
     pushInstallDescription: "Su iPhone devi prima installare YORMIT nella schermata Home prima di attivare le notifiche.",
     pushUnavailableDescription: "Il tuo browser non può ancora attivarle qui. Se puoi, installa l'app o prova un browser compatibile.",
+    pushDeniedTitle: "Notifiche bloccate",
+    pushDeniedDescription: "Hai negato il permesso per le notifiche. Per attivarle, vai nelle impostazioni del browser o del dispositivo e consenti le notifiche per YORMIT.",
     pushButton: "Attiva",
   },
 
@@ -2743,6 +2755,8 @@ const translations: Record<Language, TranslationKeys> = {
     pushDescription: "当旅行有新动态时，直接在手机上收到提醒。",
     pushInstallDescription: "在 iPhone 上，你需要先把 YORMIT 安装到主屏幕，然后才能开启通知。",
     pushUnavailableDescription: "当前浏览器暂时无法在这里开启通知；如可行，请先安装应用或改用兼容浏览器。",
+    pushDeniedTitle: "通知已被屏蔽",
+    pushDeniedDescription: "你已拒绝通知权限。要开启通知，请前往浏览器或设备设置，允许 YORMIT 发送通知。",
     pushButton: "开启",
   },
 
@@ -3125,6 +3139,8 @@ const translations: Record<Language, TranslationKeys> = {
     pushDescription: "Erhalte Neuigkeiten zu deinen Reisen direkt auf dein Smartphone.",
     pushInstallDescription: "Auf dem iPhone musst du YORMIT zuerst zum Home-Bildschirm hinzufügen, bevor du Benachrichtigungen aktivieren kannst.",
     pushUnavailableDescription: "Dein Browser kann sie hier noch nicht aktivieren. Installiere wenn möglich die App oder nutze einen unterstützten Browser.",
+    pushDeniedTitle: "Benachrichtigungen blockiert",
+    pushDeniedDescription: "Du hast die Benachrichtigungsberechtigung abgelehnt. Um sie zu aktivieren, gehe in die Browser- oder Geräteeinstellungen und erlaube Benachrichtigungen für YORMIT.",
     pushButton: "Aktivieren",
   },
 };
