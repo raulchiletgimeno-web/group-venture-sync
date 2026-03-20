@@ -32,12 +32,30 @@ const Index = () => {
   const { profile, signOut } = useAuth();
   const { t, language } = useLanguage();
   const { counts: unseenCounts } = useUnseenCounts();
+  const { isSubscribed } = usePushNotifications();
   const [trips, setTrips] = useState<Trip[]>([]);
   const [translatedTitles, setTranslatedTitles] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
   const [joinOpen, setJoinOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [testingPush, setTestingPush] = useState(false);
+
+  const handleTestPush = async () => {
+    setTestingPush(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("test-push");
+      if (error) {
+        console.error("test-push error:", error);
+        alert("Error: " + error.message);
+      } else {
+        alert(`✅ Notificación enviada (${data?.sent || 0} dispositivos)`);
+      }
+    } catch (e: any) {
+      alert("Error: " + e.message);
+    }
+    setTestingPush(false);
+  };
 
   const formatDate = (d: string) => {
     const date = new Date(d + "T00:00:00");
