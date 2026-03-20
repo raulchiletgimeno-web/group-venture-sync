@@ -41,13 +41,19 @@ const Index = () => {
   const [helpOpen, setHelpOpen] = useState(false);
   const [testingPush, setTestingPush] = useState(false);
 
-  const handleTestPush = async () => {
+    const handleTestPush = async () => {
     setTestingPush(true);
     try {
       const { data, error } = await supabase.functions.invoke("test-push");
       if (error) {
         console.error("test-push error:", error);
-        alert("Error: " + error.message);
+        // Check if it's a no_subscriptions error
+        const msg = error.message || "";
+        if (msg.includes("404") || msg.includes("no_subscriptions")) {
+          alert("⚠️ No hay suscripciones activas. Desactiva y reactiva las notificaciones.");
+        } else {
+          alert("Error: " + msg);
+        }
       } else {
         alert(`✅ Notificación enviada (${data?.sent || 0} dispositivos)`);
       }
