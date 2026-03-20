@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 // Public VAPID key — safe to embed in frontend
-const VAPID_PUBLIC_KEY = "BPbwF_c9b6VDXkzRo97bGznqIFzocSffPaXRzvXmt9vwpolroZcINS_oaGtg9c0Gv6pKVqxV6kCtuZtSw5iHFEk";
+const VAPID_PUBLIC_KEY = "BLwofoZp-QoWFGVds9fEAl1tCzdXSmaADgBT_rqOGjG9YmQsytoYZQg3YFL8mydXVTLc7cdGl9jVsJIGnEwzUzw";
 
 export type PushSupportState = "supported" | "install-required" | "unavailable";
 
