@@ -81,6 +81,7 @@ const Chat = () => {
     setSending(true);
     const { error } = await supabase.from("trip_messages").insert({ trip_id: tripId, user_id: user.id, content: text.trim(), type: "text" });
     if (error) toast({ title: t.errorSending, variant: "destructive" });
+    else notifyTripEvent(tripId, "chat", user.id);
     setText(""); setSending(false);
   };
 
