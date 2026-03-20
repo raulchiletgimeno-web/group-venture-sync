@@ -1603,6 +1603,8 @@ const translations: Record<Language, TranslationKeys> = {
     pushDescription: "Recevez les nouveautés de vos voyages directement sur votre mobile.",
     pushInstallDescription: "Sur iPhone, vous devez d'abord installer YORMIT sur l'écran d'accueil avant d'activer les notifications.",
     pushUnavailableDescription: "Votre navigateur ne peut pas encore les activer ici. Si possible, installez l'app ou essayez un navigateur compatible.",
+    pushDeniedTitle: "Notifications bloquées",
+    pushDeniedDescription: "Vous avez refusé les notifications. Pour les activer, allez dans les paramètres de votre navigateur ou appareil et autorisez les notifications pour YORMIT.",
     pushButton: "Activer",
   },
 
