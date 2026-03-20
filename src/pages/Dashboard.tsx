@@ -8,7 +8,7 @@ import CreateTripDialog from "@/components/CreateTripDialog";
 import JoinTripDialog from "@/components/JoinTripDialog";
 import HelpChatBot from "@/components/HelpChatBot";
 import InstallAppBanner from "@/components/InstallAppBanner";
-import PushNotificationBanner, { PushDebugPanel } from "@/components/PushNotificationBanner";
+import PushNotificationBanner from "@/components/PushNotificationBanner";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUnseenCounts } from "@/hooks/use-unseen-counts";
 import { useLanguage } from "@/contexts/LanguageContext";
