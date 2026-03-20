@@ -6,7 +6,38 @@ import { usePushNotifications } from "@/hooks/use-push-notifications";
 import { useInstallPrompt } from "@/hooks/use-install-prompt";
 import { useLanguage } from "@/contexts/LanguageContext";
 
-const DISMISS_KEY = "yormit-push-dismissed-v3";
+const DISMISS_KEY = "yormit-push-dismissed-v4";
+
+/** Temporary visible debug panel — will be removed after diagnosis */
+export const PushDebugPanel = () => {
+  const { isSupported, supportState, permission, isSubscribed } = usePushNotifications();
+  const { isIOS, isMobile, isInstalled, canInstall } = useInstallPrompt();
+  const dismissed = localStorage.getItem(DISMISS_KEY) === "true";
+
+  const requiresInstall = isMobile && !isInstalled && (supportState === "install-required" || (isIOS && !isSupported));
+  const canRequestPermission = isSupported && permission !== "denied";
+  const showFallbackState = !requiresInstall && !canRequestPermission && !isSubscribed && permission !== "denied";
+  const shouldShow = !dismissed && !isSubscribed && (requiresInstall || canRequestPermission || showFallbackState);
+
+  return (
+    <div className="mx-5 mt-2 rounded-lg bg-yellow-100 border border-yellow-400 p-3 text-[10px] font-mono text-yellow-900 leading-relaxed">
+      <p className="font-bold mb-1">🔍 Push Debug (temporal)</p>
+      <p>supportState: <b>{supportState}</b></p>
+      <p>permission: <b>{permission}</b></p>
+      <p>isSubscribed: <b>{String(isSubscribed)}</b></p>
+      <p>isMobile: <b>{String(isMobile)}</b></p>
+      <p>isIOS: <b>{String(isIOS)}</b></p>
+      <p>isInstalled: <b>{String(isInstalled)}</b></p>
+      <p>canInstall: <b>{String(canInstall)}</b></p>
+      <p>dismissed: <b>{String(dismissed)}</b></p>
+      <p>---</p>
+      <p>requiresInstall: <b>{String(requiresInstall)}</b></p>
+      <p>canRequestPermission: <b>{String(canRequestPermission)}</b></p>
+      <p>showFallbackState: <b>{String(showFallbackState)}</b></p>
+      <p>shouldShow: <b>{String(shouldShow)}</b></p>
+    </div>
+  );
+};
 
 const PushNotificationBanner = () => {
   const { isSupported, supportState, permission, isSubscribed, subscribe } = usePushNotifications();
@@ -20,8 +51,6 @@ const PushNotificationBanner = () => {
   const canRequestPermission = isSupported && permission !== "denied";
   const showFallbackState = !requiresInstall && !canRequestPermission && !isSubscribed && permission !== "denied";
   const shouldShow = !dismissed && !isSubscribed && (requiresInstall || canRequestPermission || showFallbackState);
-
-  console.log("[PushBanner]", { supportState, permission, isSubscribed, isMobile, isInstalled, dismissed, requiresInstall, canRequestPermission, showFallbackState, shouldShow });
 
   if (!shouldShow) return null;
 
@@ -37,11 +66,9 @@ const PushNotificationBanner = () => {
         await promptInstall();
         return;
       }
-
       setShowGuide(true);
       return;
     }
-
     setLoading(true);
     await subscribe();
     setLoading(false);
