@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
-import { Plus, UserPlus, LogOut, MessageCircleQuestion, Bell } from "lucide-react";
+import { Plus, UserPlus, LogOut, MessageCircleQuestion } from "lucide-react";
 import BrandLogo from "@/components/BrandLogo";
-import { usePushNotifications } from "@/hooks/use-push-notifications";
 import { Button } from "@/components/ui/button";
 import TripCard from "@/components/TripCard";
 import EmptyState from "@/components/EmptyState";
@@ -32,36 +31,12 @@ const Index = () => {
   const { profile, signOut } = useAuth();
   const { t, language } = useLanguage();
   const { counts: unseenCounts } = useUnseenCounts();
-  const { isSubscribed } = usePushNotifications();
   const [trips, setTrips] = useState<Trip[]>([]);
   const [translatedTitles, setTranslatedTitles] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
   const [joinOpen, setJoinOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
-  const [testingPush, setTestingPush] = useState(false);
-
-    const handleTestPush = async () => {
-    setTestingPush(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("test-push");
-      if (error) {
-        console.error("test-push error:", error);
-        // Check if it's a no_subscriptions error
-        const msg = error.message || "";
-        if (msg.includes("404") || msg.includes("no_subscriptions")) {
-          alert("⚠️ No hay suscripciones activas. Desactiva y reactiva las notificaciones.");
-        } else {
-          alert("Error: " + msg);
-        }
-      } else {
-        alert(`✅ Notificación enviada (${data?.sent || 0} dispositivos)`);
-      }
-    } catch (e: any) {
-      alert("Error: " + e.message);
-    }
-    setTestingPush(false);
-  };
 
   const formatDate = (d: string) => {
     const date = new Date(d + "T00:00:00");
@@ -69,7 +44,6 @@ const Index = () => {
   };
 
   const fetchTrips = async () => {
-    // Get user's memberships first (includes pending)
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setLoading(false); return; }
 
@@ -131,7 +105,6 @@ const Index = () => {
   // Translate trip titles when language changes
   useEffect(() => {
     if (trips.length === 0) return;
-    // Don't translate if language is Spanish (original language)
     if (language === "es") {
       setTranslatedTitles({});
       return;
@@ -157,8 +130,6 @@ const Index = () => {
     translateTitles();
   }, [language, trips]);
 
-  
-
   return (
     <div className="min-h-screen bg-gradient-to-b from-[hsl(175_45%_75%)] via-[hsl(190_35%_85%)] to-background">
       {/* Hero Section */}
@@ -168,7 +139,6 @@ const Index = () => {
           <div className="absolute inset-0 gradient-hero opacity-80" />
         </div>
         <div className="relative px-5 pt-14 pb-10">
-          {/* User header */}
           <div className="flex items-center justify-between mb-4">
             <BrandLogo size="lg" className="text-white" />
             <div className="flex items-center gap-2">
@@ -214,33 +184,19 @@ const Index = () => {
         </div>
       </div>
 
-      {/* Push & Install Banners — outside hero overflow-hidden */}
       <PushNotificationBanner />
       <InstallAppBanner variant="dashboard" />
 
-      {/* Trips List */}
       <div className="px-5 py-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-bold text-foreground">{t.myTrips}</h2>
-          <div className="flex items-center gap-2">
-            {isSubscribed && (
-              <button
-                onClick={handleTestPush}
-                disabled={testingPush}
-                className="h-10 px-3 rounded-full bg-primary/10 border border-primary/20 shadow-sm flex items-center gap-1.5 text-sm font-semibold text-primary transition-transform hover:scale-105 active:scale-95 disabled:opacity-50"
-              >
-                <Bell className="h-4 w-4" />
-                Test
-              </button>
-            )}
-            <button
-              onClick={() => setHelpOpen(true)}
-              className="h-10 w-10 rounded-full gradient-hero shadow-card-hover flex items-center justify-center transition-transform hover:scale-110 active:scale-95"
-              aria-label={t.helpChatTitle}
-            >
-              <MessageCircleQuestion className="h-5 w-5 text-white" />
-            </button>
-          </div>
+          <button
+            onClick={() => setHelpOpen(true)}
+            className="h-10 w-10 rounded-full gradient-hero shadow-card-hover flex items-center justify-center transition-transform hover:scale-110 active:scale-95"
+            aria-label={t.helpChatTitle}
+          >
+            <MessageCircleQuestion className="h-5 w-5 text-white" />
+          </button>
         </div>
         {loading ? (
           <div className="flex justify-center py-10">
