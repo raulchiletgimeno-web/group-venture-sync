@@ -145,8 +145,7 @@ export function usePushNotifications() {
         setIsSubscribed(false);
       }
     } catch (error) {
-      console.warn("[Push] Sync check failed:", error);
-      setIsSubscribed(false);
+      console.warn("[Push] Sync check failed — keeping optimistic state:", error);
     }
   }, []);
 
