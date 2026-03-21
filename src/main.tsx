@@ -2,29 +2,46 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 
-// Register custom service worker for push notifications + auto-update
-if (import.meta.env.PROD && "serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker
-      .register("/custom-sw.js")
-      .then((registration) => {
-        // Poll for SW updates every 60 seconds
-        setInterval(() => {
-          registration.update().catch(() => {});
-        }, 60 * 1000);
-      })
-      .catch((err) => {
-        console.warn("SW registration failed:", err);
-      });
-  });
+const isLovablePreview = window.location.hostname.includes("preview--");
 
-  // Auto-reload when a new SW takes control
-  let refreshing = false;
-  navigator.serviceWorker.addEventListener("controllerchange", () => {
-    if (refreshing) return;
-    refreshing = true;
-    window.location.reload();
-  });
+if ("serviceWorker" in navigator) {
+  if (isLovablePreview) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.getRegistrations().then((registrations) => {
+        registrations.forEach((registration) => {
+          registration.unregister().catch(() => {});
+        });
+      });
+
+      if ("caches" in window) {
+        caches.keys().then((keys) => {
+          keys.forEach((key) => {
+            caches.delete(key).catch(() => {});
+          });
+        });
+      }
+    });
+  } else if (import.meta.env.PROD) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker
+        .register("/custom-sw.js")
+        .then((registration) => {
+          setInterval(() => {
+            registration.update().catch(() => {});
+          }, 60 * 1000);
+        })
+        .catch((err) => {
+          console.warn("SW registration failed:", err);
+        });
+    });
+
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (refreshing) return;
+      refreshing = true;
+      window.location.reload();
+    });
+  }
 }
 
 createRoot(document.getElementById("root")!).render(<App />);
