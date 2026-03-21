@@ -113,6 +113,7 @@ export function usePushNotifications() {
       console.info("[Push] Existing local subscription during sync:", !!localSub);
 
       if (!localSub) {
+        // Positive confirmation: no local subscription exists
         setIsSubscribed(false);
         return;
       }
