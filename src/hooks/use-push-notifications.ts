@@ -102,7 +102,7 @@ export function usePushNotifications() {
     }
 
     if (nextSupportState !== "supported") {
-      setIsSubscribed(false);
+      // Don't clear optimistic state on unsupported — user may just be on wrong page
       return;
     }
 
