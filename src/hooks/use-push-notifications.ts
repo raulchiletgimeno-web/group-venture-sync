@@ -79,8 +79,19 @@ export function usePushNotifications() {
   const [permission, setPermission] = useState<NotificationPermission>(() =>
     "Notification" in window ? Notification.permission : "default"
   );
-  const [isSubscribed, setIsSubscribed] = useState(false);
+  const [isSubscribed, setIsSubscribedRaw] = useState(
+    () => localStorage.getItem(SUBSCRIBED_KEY) === "true"
+  );
   const [lastError, setLastError] = useState<string | null>(null);
+
+  const setIsSubscribed = useCallback((value: boolean) => {
+    setIsSubscribedRaw(value);
+    if (value) {
+      localStorage.setItem(SUBSCRIBED_KEY, "true");
+    } else {
+      localStorage.removeItem(SUBSCRIBED_KEY);
+    }
+  }, []);
 
   const syncSubscriptionState = useCallback(async () => {
     const nextSupportState = detectPushSupport();
