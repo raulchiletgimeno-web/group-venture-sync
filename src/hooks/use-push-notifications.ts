@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 const VAPID_PUBLIC_KEY = "BGRC1fRTG5-tQzhT_ANHa88FV8CdyryuBm08GkB0hIoyq9ra-Nt40c-n3g3C6HtoZrtahIsPjzr7zd2h7NMnRf4";
 const PUSH_SYNC_EVENT = "push-subscription-changed";
+const SUBSCRIBED_KEY = "yormit-push-subscribed";
 
 export type PushSupportState = "supported" | "install-required" | "unavailable";
 
@@ -78,8 +79,19 @@ export function usePushNotifications() {
   const [permission, setPermission] = useState<NotificationPermission>(() =>
     "Notification" in window ? Notification.permission : "default"
   );
-  const [isSubscribed, setIsSubscribed] = useState(false);
+  const [isSubscribed, setIsSubscribedRaw] = useState(
+    () => localStorage.getItem(SUBSCRIBED_KEY) === "true"
+  );
   const [lastError, setLastError] = useState<string | null>(null);
+
+  const setIsSubscribed = useCallback((value: boolean) => {
+    setIsSubscribedRaw(value);
+    if (value) {
+      localStorage.setItem(SUBSCRIBED_KEY, "true");
+    } else {
+      localStorage.removeItem(SUBSCRIBED_KEY);
+    }
+  }, []);
 
   const syncSubscriptionState = useCallback(async () => {
     const nextSupportState = detectPushSupport();
@@ -90,7 +102,7 @@ export function usePushNotifications() {
     }
 
     if (nextSupportState !== "supported") {
-      setIsSubscribed(false);
+      // Don't clear optimistic state on unsupported — user may just be on wrong page
       return;
     }
 
@@ -101,14 +113,14 @@ export function usePushNotifications() {
       console.info("[Push] Existing local subscription during sync:", !!localSub);
 
       if (!localSub) {
+        // Positive confirmation: no local subscription exists
         setIsSubscribed(false);
         return;
       }
 
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        console.warn("[Push] No authenticated user during sync");
-        setIsSubscribed(false);
+        console.warn("[Push] No authenticated user during sync — keeping optimistic state");
         return;
       }
 
@@ -120,8 +132,7 @@ export function usePushNotifications() {
         .limit(1);
 
       if (dbError) {
-        console.error("[Push] Error checking DB subscription sync:", dbError);
-        setIsSubscribed(false);
+        console.error("[Push] Error checking DB subscription sync — keeping optimistic state:", dbError);
         return;
       }
 
@@ -134,8 +145,7 @@ export function usePushNotifications() {
         setIsSubscribed(false);
       }
     } catch (error) {
-      console.warn("[Push] Sync check failed:", error);
-      setIsSubscribed(false);
+      console.warn("[Push] Sync check failed — keeping optimistic state:", error);
     }
   }, []);
 

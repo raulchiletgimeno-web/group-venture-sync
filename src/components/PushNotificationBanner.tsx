@@ -38,7 +38,9 @@ const PushNotificationBanner = () => {
     const result = await subscribe();
     setLoading(false);
 
-    if (!result.success && result.error) {
+    if (result.success) {
+      localStorage.removeItem(DISMISS_KEY);
+    } else if (result.error) {
       toast.error(result.error);
     }
   };
