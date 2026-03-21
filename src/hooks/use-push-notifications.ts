@@ -120,8 +120,7 @@ export function usePushNotifications() {
 
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        console.warn("[Push] No authenticated user during sync");
-        setIsSubscribed(false);
+        console.warn("[Push] No authenticated user during sync — keeping optimistic state");
         return;
       }
 
