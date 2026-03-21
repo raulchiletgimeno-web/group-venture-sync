@@ -132,8 +132,7 @@ export function usePushNotifications() {
         .limit(1);
 
       if (dbError) {
-        console.error("[Push] Error checking DB subscription sync:", dbError);
-        setIsSubscribed(false);
+        console.error("[Push] Error checking DB subscription sync — keeping optimistic state:", dbError);
         return;
       }
 
