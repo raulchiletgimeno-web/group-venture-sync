@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 const VAPID_PUBLIC_KEY = "BGRC1fRTG5-tQzhT_ANHa88FV8CdyryuBm08GkB0hIoyq9ra-Nt40c-n3g3C6HtoZrtahIsPjzr7zd2h7NMnRf4";
 const PUSH_SYNC_EVENT = "push-subscription-changed";
+const SUBSCRIBED_KEY = "yormit-push-subscribed";
 
 export type PushSupportState = "supported" | "install-required" | "unavailable";
 
