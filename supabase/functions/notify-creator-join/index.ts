@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import webpush from "npm:web-push@3.6.7";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -12,6 +13,7 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Validate JWT
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -35,7 +37,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const userId = claimsData.claims.sub;
+    const requesterId = claimsData.claims.sub;
 
     const { tripId } = await req.json();
     if (!tripId) {
@@ -45,16 +47,16 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Use service role to get creator info
+    // Service role client for cross-user queries
     const adminClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Get trip info
+    // Fetch trip title
     const { data: trip } = await adminClient
       .from("trips")
-      .select("title, created_by")
+      .select("title")
       .eq("id", tripId)
       .single();
 
@@ -65,56 +67,91 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Get creator email
-    const { data: creatorProfile } = await adminClient
-      .from("profiles")
-      .select("email, name")
-      .eq("id", trip.created_by)
-      .single();
-
-    // Get requester name
+    // Fetch requester name
     const { data: requesterProfile } = await adminClient
       .from("profiles")
       .select("name, email")
-      .eq("id", userId)
+      .eq("id", requesterId)
       .single();
 
-    if (!creatorProfile?.email) {
-      return new Response(JSON.stringify({ error: "Creator email not found" }), {
-        status: 404,
-        headers: corsHeaders,
+    const requesterName = requesterProfile?.name || requesterProfile?.email || "Alguien";
+
+    // Fetch creator + co-creator user IDs (admins only)
+    const { data: admins } = await adminClient
+      .from("trip_members")
+      .select("user_id")
+      .eq("trip_id", tripId)
+      .in("role", ["creator", "co-creator"])
+      .eq("status", "approved");
+
+    if (!admins || admins.length === 0) {
+      return new Response(JSON.stringify({ notified: 0, message: "no_admins" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Send email via Supabase Auth admin API (using built-in SMTP)
-    const requesterName = requesterProfile?.name || requesterProfile?.email || "Alguien";
-    const tripTitle = trip.title;
+    const adminIds = admins.map((a) => a.user_id);
 
-    // Use the admin client to send email via auth.admin
-    const { error: emailError } = await adminClient.auth.admin.inviteUserByEmail(
-      // We won't actually use invite - instead we'll use a simple approach
-      // Let's use the Resend or built-in approach
-      creatorProfile.email
-    );
+    // Fetch push subscriptions for admins
+    const { data: subscriptions } = await adminClient
+      .from("push_subscriptions")
+      .select("id, user_id, endpoint, p256dh, auth")
+      .in("user_id", adminIds);
 
-    // Since we can't easily send custom emails without a provider,
-    // we'll store the notification and show it in-app instead
-    // The "email" part will be handled by storing the pending request
+    if (!subscriptions || subscriptions.length === 0) {
+      console.log(`notify-creator-join: no push subscriptions for admins of trip "${trip.title}"`);
+      return new Response(JSON.stringify({ notified: 0, message: "no_subscriptions" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Configure VAPID
+    const vapidPublicKey = Deno.env.get("VAPID_PUBLIC_KEY")!;
+    const vapidPrivateKey = Deno.env.get("VAPID_PRIVATE_KEY")!;
+    webpush.setVapidDetails("mailto:noreply@yormit.app", vapidPublicKey, vapidPrivateKey);
+
+    const payload = JSON.stringify({
+      title: `YORMIT · ${trip.title}`,
+      body: `${requesterName} quiere unirse a este viaje 🔔`,
+      icon: "/pwa-icon-192.png",
+      data: { url: `/trip/${tripId}` },
+    });
+
+    let sent = 0;
+    const expired: string[] = [];
+
+    for (const sub of subscriptions) {
+      try {
+        await webpush.sendNotification(
+          { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+          payload
+        );
+        sent++;
+      } catch (err: any) {
+        console.error(`Push failed for ${sub.endpoint}:`, err.statusCode, err.body);
+        if (err.statusCode === 410 || err.statusCode === 404 || err.statusCode === 403) {
+          expired.push(sub.id);
+        }
+      }
+    }
+
+    // Clean up expired subscriptions
+    if (expired.length > 0) {
+      await adminClient.from("push_subscriptions").delete().in("id", expired);
+      console.log(`Cleaned up ${expired.length} expired subscriptions`);
+    }
 
     console.log(
-      `Join request: ${requesterName} wants to join "${tripTitle}". Creator: ${creatorProfile.email}`
+      `notify-creator-join: ${requesterName} → "${trip.title}", sent=${sent}/${subscriptions.length}`
     );
 
     return new Response(
-      JSON.stringify({
-        success: true,
-        message: `Notification sent for ${requesterName} joining ${tripTitle}`,
-      }),
+      JSON.stringify({ notified: sent, total: subscriptions.length, expired: expired.length }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
-    console.error("Error:", err);
-    return new Response(JSON.stringify({ error: "Internal error" }), {
+    console.error("notify-creator-join error:", err);
+    return new Response(JSON.stringify({ error: String(err) }), {
       status: 500,
       headers: corsHeaders,
     });
