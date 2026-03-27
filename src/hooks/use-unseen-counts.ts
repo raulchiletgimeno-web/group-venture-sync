@@ -90,17 +90,18 @@ export function useUnseenCounts(): UnseenResult & { pendingTotal: number } {
   }, [fetchCounts]);
 
   const totalUnseen = Object.values(counts).reduce((sum, c) => sum + c, 0);
+  const badgeTotal = totalUnseen + pendingTotal;
 
-  // PWA badge
+  // PWA badge (includes unseen + pending requests)
   useEffect(() => {
     if ("setAppBadge" in navigator) {
-      if (totalUnseen > 0) {
-        (navigator as any).setAppBadge(totalUnseen);
+      if (badgeTotal > 0) {
+        (navigator as any).setAppBadge(badgeTotal);
       } else {
         (navigator as any).clearAppBadge?.();
       }
     }
-  }, [totalUnseen]);
+  }, [badgeTotal]);
 
-  return { counts, totalUnseen };
+  return { counts, totalUnseen, pendingTotal };
 }
