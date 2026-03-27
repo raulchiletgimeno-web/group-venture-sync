@@ -1,4 +1,4 @@
-import { MapPin, Calendar, Users, ChevronRight, Clock } from "lucide-react";
+import { MapPin, Calendar, Users, ChevronRight, Clock, UserPlus } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
 import UnseenBadge from "@/components/UnseenBadge";
@@ -13,9 +13,10 @@ interface TripCardProps {
   status: "upcoming" | "active" | "finished";
   memberStatus?: "approved" | "pending";
   unseenCount?: number;
+  pendingCount?: number;
 }
 
-const TripCard = ({ id, title, destination, startDate, endDate, memberCount, status, memberStatus = "approved", unseenCount = 0 }: TripCardProps) => {
+const TripCard = ({ id, title, destination, startDate, endDate, memberCount, status, memberStatus = "approved", unseenCount = 0, pendingCount = 0 }: TripCardProps) => {
   const { t } = useLanguage();
 
   const statusConfig = {
@@ -34,6 +35,14 @@ const TripCard = ({ id, title, destination, startDate, endDate, memberCount, sta
       {unseenCount > 0 && (
         <span className="absolute -top-2 -right-2 z-10 ring-2 ring-card rounded-full">
           <UnseenBadge count={unseenCount} />
+        </span>
+      )}
+      {pendingCount > 0 && (
+        <span className={`absolute ${unseenCount > 0 ? "-top-2 right-6" : "-top-2 -right-2"} z-10 ring-2 ring-card rounded-full`}>
+          <span className="inline-flex items-center justify-center min-w-[22px] h-[22px] px-1.5 text-[11px] rounded-full bg-gradient-to-br from-amber-500 to-orange-400 text-white font-bold tracking-tight shadow-[0_2px_6px_rgba(245,158,11,0.4)]">
+            <UserPlus className="h-3 w-3 mr-0.5" />
+            {pendingCount > 99 ? "99+" : pendingCount}
+          </span>
         </span>
       )}
       <div className="flex items-start justify-between mb-3">

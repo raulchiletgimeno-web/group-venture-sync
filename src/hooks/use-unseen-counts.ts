@@ -6,8 +6,9 @@ interface UnseenResult {
   totalUnseen: number;
 }
 
-export function useUnseenCounts(): UnseenResult {
+export function useUnseenCounts(): UnseenResult & { pendingTotal: number } {
   const [counts, setCounts] = useState<Record<string, number>>({});
+  const [pendingTotal, setPendingTotal] = useState(0);
 
   const fetchCounts = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -27,6 +28,26 @@ export function useUnseenCounts(): UnseenResult {
       map[row.trip_id] = Number(row.unseen_count);
     });
     setCounts(map);
+
+    // Fetch pending member counts for admin trips
+    const { data: adminTrips } = await supabase
+      .from("trip_members")
+      .select("trip_id")
+      .eq("user_id", user.id)
+      .in("role", ["creator", "co-creator"])
+      .eq("status", "approved");
+
+    if (adminTrips && adminTrips.length > 0) {
+      const tripIds = adminTrips.map((t) => t.trip_id);
+      const { count } = await supabase
+        .from("trip_members")
+        .select("id", { count: "exact", head: true })
+        .in("trip_id", tripIds)
+        .eq("status", "pending");
+      setPendingTotal(count ?? 0);
+    } else {
+      setPendingTotal(0);
+    }
   }, []);
 
   useEffect(() => {
@@ -51,6 +72,7 @@ export function useUnseenCounts(): UnseenResult {
       "trip_accommodation",
       "trip_transport",
       "trip_schedule",
+      "trip_members",
     ];
 
     const channel = supabase
@@ -61,6 +83,7 @@ export function useUnseenCounts(): UnseenResult {
       .on("postgres_changes", { event: "INSERT", schema: "public", table: tables[3] }, fetchCounts)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: tables[4] }, fetchCounts)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: tables[5] }, fetchCounts)
+      .on("postgres_changes", { event: "*", schema: "public", table: tables[6] }, fetchCounts)
       .subscribe();
 
     return () => {
@@ -69,17 +92,18 @@ export function useUnseenCounts(): UnseenResult {
   }, [fetchCounts]);
 
   const totalUnseen = Object.values(counts).reduce((sum, c) => sum + c, 0);
+  const badgeTotal = totalUnseen + pendingTotal;
 
-  // PWA badge
+  // PWA badge (includes unseen + pending requests)
   useEffect(() => {
     if ("setAppBadge" in navigator) {
-      if (totalUnseen > 0) {
-        (navigator as any).setAppBadge(totalUnseen);
+      if (badgeTotal > 0) {
+        (navigator as any).setAppBadge(badgeTotal);
       } else {
         (navigator as any).clearAppBadge?.();
       }
     }
-  }, [totalUnseen]);
+  }, [badgeTotal]);
 
-  return { counts, totalUnseen };
+  return { counts, totalUnseen, pendingTotal };
 }

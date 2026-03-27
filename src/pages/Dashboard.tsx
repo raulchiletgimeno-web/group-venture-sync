@@ -37,6 +37,7 @@ const Index = () => {
   const [createOpen, setCreateOpen] = useState(false);
   const [joinOpen, setJoinOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [pendingCounts, setPendingCounts] = useState<Record<string, number>>({});
 
   const formatDate = (d: string) => {
     const date = new Date(d + "T00:00:00");
@@ -98,8 +99,54 @@ const Index = () => {
     setLoading(false);
   };
 
+  const fetchPendingCounts = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    // Get trips where user is admin
+    const { data: adminTrips } = await supabase
+      .from("trip_members")
+      .select("trip_id")
+      .eq("user_id", user.id)
+      .in("role", ["creator", "co-creator"])
+      .eq("status", "approved");
+
+    if (!adminTrips || adminTrips.length === 0) {
+      setPendingCounts({});
+      return;
+    }
+
+    const tripIds = adminTrips.map((t) => t.trip_id);
+    const { data: pendingMembers } = await supabase
+      .from("trip_members")
+      .select("trip_id")
+      .in("trip_id", tripIds)
+      .eq("status", "pending");
+
+    const map: Record<string, number> = {};
+    (pendingMembers || []).forEach((m) => {
+      map[m.trip_id] = (map[m.trip_id] || 0) + 1;
+    });
+    setPendingCounts(map);
+  };
+
   useEffect(() => {
     fetchTrips();
+    fetchPendingCounts();
+  }, []);
+
+  // Realtime subscription for pending member changes
+  useEffect(() => {
+    const channel = supabase
+      .channel("pending-members-dashboard")
+      .on("postgres_changes", { event: "*", schema: "public", table: "trip_members" }, () => {
+        fetchPendingCounts();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   // Translate trip titles when language changes
@@ -221,6 +268,7 @@ const Index = () => {
                 status={trip.status}
                 memberStatus={trip.memberStatus}
                 unseenCount={unseenCounts[trip.id] || 0}
+                pendingCount={pendingCounts[trip.id] || 0}
               />
             ))}
           </div>
