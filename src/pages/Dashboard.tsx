@@ -37,6 +37,7 @@ const Index = () => {
   const [createOpen, setCreateOpen] = useState(false);
   const [joinOpen, setJoinOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [pendingCounts, setPendingCounts] = useState<Record<string, number>>({});
 
   const formatDate = (d: string) => {
     const date = new Date(d + "T00:00:00");
