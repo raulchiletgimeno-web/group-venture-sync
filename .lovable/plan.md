@@ -1,56 +1,69 @@
 
 
-## Fix: Persistent push notification banner state
+## Push notification for join requests + pending badge on Dashboard
 
-### Root cause
+### What exists today
 
-Every time the app loads, `usePushNotifications` starts with `isSubscribed = false` and runs an async check (service worker ready → local subscription → DB query). During this async window (which can take seconds), the banner flashes because `isSubscribed` is temporarily `false`. If any step fails (auth not ready, SW slow, network issue), the banner stays visible despite the user being correctly subscribed.
+- `JoinTrip.tsx` calls `notify-creator-join` edge function when a user requests to join — but that function doesn't send a real push notification (it just logs to console)
+- `notify-trip` edge function already has the full Web Push infrastructure (VAPID, web-push library, expired subscription cleanup)
+- `MemberApprovalManager` shows pending requests inside the trip dashboard with realtime updates
+- `TripCard` already shows an `unseenCount` badge and a "pending approval" chip
+- PWA badge (Badging API) is already used in `use-unseen-counts.ts`
 
-### Solution
+### Plan
 
-Add a localStorage optimistic flag that persists subscription state across sessions:
+**1. Rewrite `notify-creator-join` edge function to send real push notifications**
 
-1. **On successful subscribe**: Set `localStorage("yormit-push-subscribed") = "true"`
-2. **On initial load**: Initialize `isSubscribed` from this flag (optimistic = no flash)
-3. **Async verification runs in background**: Only sets `isSubscribed = false` if verification **explicitly confirms** no subscription exists (not on errors/timeouts)
-4. **On unsubscribe or confirmed loss**: Clear the flag
+Replace the current placeholder logic with actual Web Push sending (reusing the same pattern as `notify-trip`):
+- Accept `{ tripId }` from the authenticated caller
+- Validate JWT to get the requester's user ID
+- Fetch trip title and creator/co-creator user IDs from `trip_members` (roles `creator` and `co-creator`)
+- Fetch requester's name from `profiles`
+- Fetch push subscriptions for those admin users only
+- Send push with:
+  - Title: `YORMIT · {trip title}`
+  - Body: `{requester name} quiere unirse a este viaje 🔔`
+  - Deep link URL: `/trip/{tripId}` (opens the trip dashboard where MemberApprovalManager is visible)
+- Clean up expired subscriptions (same 410/404/403 pattern)
+
+**2. Add pending request count to Dashboard trip cards**
+
+In `Dashboard.tsx` (`fetchTrips`):
+- For each trip where the user is creator/co-creator, query `trip_members` count where `status = 'pending'`
+- Pass a new `pendingCount` prop to `TripCard`
+
+In `TripCard.tsx`:
+- Accept `pendingCount` prop
+- When `pendingCount > 0`, show a small amber badge (similar style to UnseenBadge but amber-themed) with the count, so the creator sees at a glance which trips have pending requests
+
+**3. Include pending counts in the PWA app badge**
+
+In `use-unseen-counts.ts` or a new `use-pending-counts.ts` hook:
+- Fetch pending member count for trips where user is admin
+- Add pending count to the `totalUnseen` used for `setAppBadge()`, so the PWA icon shows pending requests too
+
+**4. Realtime refresh for pending counts on Dashboard**
+
+Subscribe to `trip_members` INSERT/DELETE events in the Dashboard to refresh pending counts in real-time (same pattern as existing unseen counts realtime channel).
 
 ### Files to modify
 
-**1. `src/hooks/use-push-notifications.ts`**
-- Add `SUBSCRIBED_KEY = "yormit-push-subscribed"` constant
-- Initialize `isSubscribed` from `localStorage.getItem(SUBSCRIBED_KEY) === "true"` instead of `false`
-- In `syncSubscriptionState`: only set `isSubscribed(false)` + clear localStorage when we have **positive confirmation** of no subscription (DB returns empty, not on errors)
-- On errors during sync: keep current optimistic state, don't flip to false
-- In `subscribe` success: set localStorage flag
-- In `unsubscribe`: clear localStorage flag
+| File | Change |
+|------|--------|
+| `supabase/functions/notify-creator-join/index.ts` | Full rewrite: real Web Push to admins only |
+| `src/pages/Dashboard.tsx` | Fetch pending counts per trip, pass to TripCard |
+| `src/components/TripCard.tsx` | New `pendingCount` prop, amber badge |
+| `src/hooks/use-unseen-counts.ts` | Include pending requests in PWA badge total |
 
-**2. `src/components/PushNotificationBanner.tsx`**
-- Remove the dismissed localStorage key reset (v4 versioning). The dismiss state stays as-is.
-- Add: after successful `subscribe()`, also clear the dismiss key so future logic is clean
+### Notification details
 
-### Banner visibility rules after fix
+- **Recipients**: Only creator + co-creators of that trip
+- **Not notified**: The requesting user, regular members
+- **Deep link**: `/trip/{tripId}` — opens trip dashboard where `MemberApprovalManager` is already rendered
+- **PWA badge**: Pending requests will add to the existing app badge number
+- **Disappears**: When admin approves/rejects, the realtime subscription updates counts and the badge clears automatically
 
-**Will NOT appear when:**
-- User has successfully subscribed (flag persisted, verified in background)
-- User dismissed the banner (dismiss key in localStorage)
-- User denied permissions and dismissed the warning
+### Edge function security
 
-**Will reappear ONLY when:**
-- Background verification **confirms** subscription is gone (DB has no matching row AND local subscription is missing)
-- User manually revoked permission (permission changed from granted to denied/default)
-- Fresh device/browser with no history
-
-### Technical detail
-
-```text
-Load flow:
-1. isSubscribed = localStorage("yormit-push-subscribed") === "true"  ← optimistic
-2. Banner hidden immediately if true
-3. Background sync runs:
-   - SW ready → local sub exists → DB confirms → keep true ✓
-   - SW ready → local sub exists → DB empty → set false, clear flag, show banner
-   - SW ready → no local sub → set false, clear flag, show banner  
-   - Any error → keep current state (don't flash banner on transient failures)
-```
+The function validates the JWT from the Authorization header using `supabase.auth.getUser()`. Uses service role client only for cross-user queries (fetching admin subscriptions, trip data).
 
