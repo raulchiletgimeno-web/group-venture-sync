@@ -72,6 +72,7 @@ export function useUnseenCounts(): UnseenResult & { pendingTotal: number } {
       "trip_accommodation",
       "trip_transport",
       "trip_schedule",
+      "trip_members",
     ];
 
     const channel = supabase
@@ -82,6 +83,7 @@ export function useUnseenCounts(): UnseenResult & { pendingTotal: number } {
       .on("postgres_changes", { event: "INSERT", schema: "public", table: tables[3] }, fetchCounts)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: tables[4] }, fetchCounts)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: tables[5] }, fetchCounts)
+      .on("postgres_changes", { event: "*", schema: "public", table: tables[6] }, fetchCounts)
       .subscribe();
 
     return () => {
