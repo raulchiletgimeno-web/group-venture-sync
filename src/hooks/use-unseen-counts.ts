@@ -6,8 +6,9 @@ interface UnseenResult {
   totalUnseen: number;
 }
 
-export function useUnseenCounts(): UnseenResult {
+export function useUnseenCounts(): UnseenResult & { pendingTotal: number } {
   const [counts, setCounts] = useState<Record<string, number>>({});
+  const [pendingTotal, setPendingTotal] = useState(0);
 
   const fetchCounts = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -27,6 +28,26 @@ export function useUnseenCounts(): UnseenResult {
       map[row.trip_id] = Number(row.unseen_count);
     });
     setCounts(map);
+
+    // Fetch pending member counts for admin trips
+    const { data: adminTrips } = await supabase
+      .from("trip_members")
+      .select("trip_id")
+      .eq("user_id", user.id)
+      .in("role", ["creator", "co-creator"])
+      .eq("status", "approved");
+
+    if (adminTrips && adminTrips.length > 0) {
+      const tripIds = adminTrips.map((t) => t.trip_id);
+      const { count } = await supabase
+        .from("trip_members")
+        .select("id", { count: "exact", head: true })
+        .in("trip_id", tripIds)
+        .eq("status", "pending");
+      setPendingTotal(count ?? 0);
+    } else {
+      setPendingTotal(0);
+    }
   }, []);
 
   useEffect(() => {
