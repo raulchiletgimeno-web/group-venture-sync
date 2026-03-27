@@ -44,6 +44,7 @@ const Chat = () => {
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
 
@@ -200,8 +201,12 @@ const Chat = () => {
 
       <div className="border-t border-border bg-card px-2 py-2 flex items-center gap-1.5">
         <input ref={fileInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleImageSelect} />
+        <input ref={galleryInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageSelect} />
         <Button variant="ghost" size="icon" className="shrink-0 h-9 w-9" onClick={() => fileInputRef.current?.click()} disabled={sending || recording}>
           <Camera className="h-5 w-5 text-muted-foreground" />
+        </Button>
+        <Button variant="ghost" size="icon" className="shrink-0 h-9 w-9" onClick={() => galleryInputRef.current?.click()} disabled={sending || recording}>
+          <ImageIcon className="h-5 w-5 text-muted-foreground" />
         </Button>
 
         {recording ? (
