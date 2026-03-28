@@ -10,7 +10,7 @@ const TripLayout = () => {
 
   // If we're inside a sub-section, go back to the trip dashboard; otherwise go home
   const isSubSection = tripId && location.pathname !== `/trip/${tripId}`;
-  const backTo = isSubSection ? `/trip/${tripId}` : "/";
+  const backTo = isSubSection ? `/trip/${tripId}` : "/dashboard";
 
   useEffect(() => {
     if (!tripId) return;
