@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Luggage, Mail, Lock, User, Eye, EyeOff } from "lucide-react";
 import BrandLogo from "@/components/BrandLogo";
@@ -22,10 +22,11 @@ const Auth = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  if (session) {
-    navigate("/dashboard", { replace: true });
-    return null;
-  }
+  useEffect(() => {
+    if (session) navigate("/dashboard", { replace: true });
+  }, [session, navigate]);
+
+  if (session) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

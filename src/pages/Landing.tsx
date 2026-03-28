@@ -35,9 +35,22 @@ const Landing = () => {
   const isMobile = useIsMobile();
   const [videoReady, setVideoReady] = useState(false);
 
+  const [modalVideoReady, setModalVideoReady] = useState(false);
+
+  // Preload the modal video as soon as landing mounts
+  useEffect(() => {
+    const link = document.createElement("link");
+    link.rel = "preload";
+    link.as = "video";
+    link.href = "/videos/YORMIT_VIDEO.mov";
+    document.head.appendChild(link);
+    return () => { document.head.removeChild(link); };
+  }, []);
+
   // Modal video autoplay
   useEffect(() => {
     if (showVideo && videoRef.current) {
+      setModalVideoReady(false);
       videoRef.current.muted = true;
       videoRef.current.play().then(() => {
         if (videoRef.current) videoRef.current.muted = false;
@@ -363,16 +376,24 @@ const Landing = () => {
         if (!open && videoRef.current) videoRef.current.pause();
       }}>
         <DialogContent className="max-w-4xl p-0 overflow-hidden bg-black border-none">
+          {/* Loading spinner while video buffers */}
+          {!modalVideoReady && (
+            <div className="flex items-center justify-center aspect-video">
+              <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            </div>
+          )}
           <video
             ref={videoRef}
             src="/videos/YORMIT_VIDEO.mov"
+            preload="auto"
             controls
             autoPlay
+            onCanPlay={() => setModalVideoReady(true)}
             onEnded={() => {
               setShowVideo(false);
               if (videoRef.current) videoRef.current.pause();
             }}
-            className="w-full h-auto max-h-[80vh]"
+            className={`w-full h-auto max-h-[80vh] ${modalVideoReady ? "block" : "hidden"}`}
           />
         </DialogContent>
       </Dialog>

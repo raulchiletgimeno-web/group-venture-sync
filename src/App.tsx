@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -7,23 +8,31 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Landing from "./pages/Landing";
-import Dashboard from "./pages/Dashboard";
-import NotFound from "./pages/NotFound";
-import Auth from "./pages/Auth";
-import ResetPassword from "./pages/ResetPassword";
-import JoinTrip from "./pages/JoinTrip";
-import TripLayout from "./components/TripLayout";
-import TripDashboard from "./pages/TripDashboard";
-import Transport from "./pages/trips/Transport";
-import Accommodation from "./pages/trips/Accommodation";
-import Expenses from "./pages/trips/Expenses";
-import Photos from "./pages/trips/Photos";
-import Chat from "./pages/trips/Chat";
-import Weather from "./pages/trips/Weather";
-import Schedule from "./pages/trips/Schedule";
-import EmergencyPhones from "./pages/trips/EmergencyPhones";
+
+// Lazy-loaded routes for code splitting
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const Auth = lazy(() => import("./pages/Auth"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const JoinTrip = lazy(() => import("./pages/JoinTrip"));
+const TripLayout = lazy(() => import("./components/TripLayout"));
+const TripDashboard = lazy(() => import("./pages/TripDashboard"));
+const Transport = lazy(() => import("./pages/trips/Transport"));
+const Accommodation = lazy(() => import("./pages/trips/Accommodation"));
+const Expenses = lazy(() => import("./pages/trips/Expenses"));
+const Photos = lazy(() => import("./pages/trips/Photos"));
+const Chat = lazy(() => import("./pages/trips/Chat"));
+const Weather = lazy(() => import("./pages/trips/Weather"));
+const Schedule = lazy(() => import("./pages/trips/Schedule"));
+const EmergencyPhones = lazy(() => import("./pages/trips/EmergencyPhones"));
 
 const queryClient = new QueryClient();
+
+const RouteSpinner = () => (
+  <div className="min-h-screen flex items-center justify-center bg-background">
+    <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+  </div>
+);
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -33,29 +42,31 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <LanguageProvider>
-            <Routes>
-              {/* Public routes */}
-              <Route path="/" element={<Landing />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/reset-password" element={<ResetPassword />} />
+            <Suspense fallback={<RouteSpinner />}>
+              <Routes>
+                {/* Public routes */}
+                <Route path="/" element={<Landing />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
 
-              {/* Protected routes */}
-              <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-              <Route path="/join/:inviteCode" element={<ProtectedRoute><JoinTrip /></ProtectedRoute>} />
-              <Route path="/trip/:tripId" element={<ProtectedRoute><TripLayout /></ProtectedRoute>}>
-                <Route index element={<TripDashboard />} />
-                <Route path="transport" element={<Transport />} />
-                <Route path="accommodation" element={<Accommodation />} />
-                <Route path="expenses" element={<Expenses />} />
-                <Route path="photos" element={<Photos />} />
-                <Route path="chat" element={<Chat />} />
-                <Route path="weather" element={<Weather />} />
-                <Route path="schedule" element={<Schedule />} />
-                <Route path="phones" element={<EmergencyPhones />} />
-              </Route>
+                {/* Protected routes */}
+                <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                <Route path="/join/:inviteCode" element={<ProtectedRoute><JoinTrip /></ProtectedRoute>} />
+                <Route path="/trip/:tripId" element={<ProtectedRoute><TripLayout /></ProtectedRoute>}>
+                  <Route index element={<TripDashboard />} />
+                  <Route path="transport" element={<Transport />} />
+                  <Route path="accommodation" element={<Accommodation />} />
+                  <Route path="expenses" element={<Expenses />} />
+                  <Route path="photos" element={<Photos />} />
+                  <Route path="chat" element={<Chat />} />
+                  <Route path="weather" element={<Weather />} />
+                  <Route path="schedule" element={<Schedule />} />
+                  <Route path="phones" element={<EmergencyPhones />} />
+                </Route>
 
-              <Route path="*" element={<NotFound />} />
-            </Routes>
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </Suspense>
           </LanguageProvider>
         </AuthProvider>
       </BrowserRouter>

@@ -70,30 +70,35 @@ const Index = () => {
       .order("start_date", { ascending: true });
 
     if (data) {
-      const tripsWithCounts = await Promise.all(
-        data.map(async (trip) => {
-          const { count } = await supabase
-            .from("trip_members")
-            .select("id", { count: "exact", head: true })
-            .eq("trip_id", trip.id)
-            .eq("status", "approved");
-          const today = new Date().toISOString().split("T")[0];
-          const computedStatus: Trip["status"] =
-            trip.end_date < today ? "finished" :
-            trip.start_date <= today ? "active" :
-            "upcoming";
-          return {
-            id: trip.id,
-            title: trip.title,
-            destination: trip.destination,
-            start_date: trip.start_date,
-            end_date: trip.end_date,
-            status: computedStatus,
-            memberCount: count ?? 0,
-            memberStatus: (statusMap[trip.id] || "approved") as "approved" | "pending",
-          };
-        })
-      );
+      // Batch member count query — single call instead of N+1
+      const { data: allApprovedMembers } = await supabase
+        .from("trip_members")
+        .select("trip_id")
+        .in("trip_id", tripIds)
+        .eq("status", "approved");
+
+      const memberCountMap: Record<string, number> = {};
+      (allApprovedMembers || []).forEach((m) => {
+        memberCountMap[m.trip_id] = (memberCountMap[m.trip_id] || 0) + 1;
+      });
+
+      const tripsWithCounts = data.map((trip) => {
+        const today = new Date().toISOString().split("T")[0];
+        const computedStatus: Trip["status"] =
+          trip.end_date < today ? "finished" :
+          trip.start_date <= today ? "active" :
+          "upcoming";
+        return {
+          id: trip.id,
+          title: trip.title,
+          destination: trip.destination,
+          start_date: trip.start_date,
+          end_date: trip.end_date,
+          status: computedStatus,
+          memberCount: memberCountMap[trip.id] ?? 0,
+          memberStatus: (statusMap[trip.id] || "approved") as "approved" | "pending",
+        };
+      });
       setTrips(tripsWithCounts);
     }
     setLoading(false);
@@ -246,8 +251,19 @@ const Index = () => {
           </button>
         </div>
         {loading ? (
-          <div className="flex justify-center py-10">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          <div className="flex flex-col gap-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="rounded-xl bg-card border border-border/50 p-4 shadow-card animate-pulse">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="h-10 w-10 rounded-full bg-muted" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 w-2/3 rounded bg-muted" />
+                    <div className="h-3 w-1/2 rounded bg-muted" />
+                  </div>
+                </div>
+                <div className="h-3 w-1/3 rounded bg-muted" />
+              </div>
+            ))}
           </div>
         ) : trips.length === 0 ? (
           <EmptyState
