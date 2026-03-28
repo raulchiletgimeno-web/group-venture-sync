@@ -4,7 +4,7 @@ import { Camera, Loader2, Trash2, Image, X } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useTripRole } from "@/hooks/use-trip-role";
+
 import { useLanguage } from "@/contexts/LanguageContext";
 import { formatDisplayName } from "@/lib/formatDisplayName";
 import EmptyState from "@/components/EmptyState";
@@ -22,7 +22,7 @@ const Photos = () => {
   const { tripId } = useParams();
   useMarkSectionSeen(tripId, "photos");
   const { user } = useAuth();
-  const { isCreator } = useTripRole(tripId);
+  
   const { t } = useLanguage();
   const queryClient = useQueryClient();
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -128,7 +128,7 @@ const Photos = () => {
               <div className="px-2 py-1.5 bg-card">
                 <p className="text-xs text-muted-foreground truncate">{getMemberName(photo.user_id)}</p>
               </div>
-              {(photo.user_id === user?.id || isCreator) && (
+              {photo.user_id === user?.id && (
                 <button onClick={() => deleteMutation.mutate({ id: photo.id, file_path: photo.file_path })} className="absolute top-2 right-2 p-1.5 rounded-full bg-background/80 text-destructive opacity-0 group-hover:opacity-100 transition-opacity">
                   <Trash2 className="h-4 w-4" />
                 </button>
