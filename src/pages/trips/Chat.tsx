@@ -77,6 +77,23 @@ const Chat = () => {
   const getInitials = (name: string) => name.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2);
   const getFileUrl = (path: string) => supabase.storage.from("trip-photos").getPublicUrl(path).data.publicUrl;
 
+  const deleteMessage = async (msg: Message) => {
+    if (!user || msg.user_id !== user.id) return;
+    // Remove from local state immediately
+    setMessages((prev) => prev.filter((m) => m.id !== msg.id));
+    // Delete file from storage if exists
+    if (msg.file_path) {
+      await supabase.storage.from("trip-photos").remove([msg.file_path]);
+      // Also remove from trip_photos if it was an image
+      if (msg.type === "image") {
+        await supabase.from("trip_photos").delete().eq("file_path", msg.file_path);
+      }
+    }
+    // Delete the message row (RLS enforces author-only)
+    const { error } = await supabase.from("trip_messages").delete().eq("id", msg.id);
+    if (error) toast({ title: t.errorSending, variant: "destructive" });
+  };
+
   const sendText = async () => {
     if (!text.trim() || !user || !tripId || sending) return;
     setSending(true);
