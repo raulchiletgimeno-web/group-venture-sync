@@ -1,29 +1,46 @@
 
 
-## Add gallery image picker to Chat
+## Restrict photo deletion to author only
 
 ### Current state
-The chat has a single hidden `<input type="file" accept="image/*" capture="environment">` tied to the Camera button. The `capture="environment"` attribute forces the camera on mobile, preventing gallery access.
 
-### Solution
-Split into two separate file inputs and two buttons:
-1. **Camera button** (existing) — keeps `capture="environment"` to open camera
-2. **Gallery button** (new) — `<input type="file" accept="image/*">` WITHOUT `capture` attribute, which opens the device gallery
+- **RLS policy** (`Author or creator can delete trip photos`): allows deletion when `auth.uid() = user_id OR is_trip_creator(trip_id)` — creators can delete anyone's photos
+- **UI** (`Photos.tsx` line): delete button visible when `photo.user_id === user?.id || isCreator` — creators see delete on all photos
 
-Both use the existing `handleImageSelect` → `sendImage` flow. No backend changes needed.
+### Changes
 
-### Changes — single file: `src/pages/trips/Chat.tsx`
+**1. Database migration — tighten RLS policy**
 
-1. Add `ImageIcon` to the lucide imports (already imported but unused — verify)
-2. Add a second `useRef` for gallery input: `galleryInputRef`
-3. Add a second hidden input WITHOUT `capture` attribute
-4. Add a gallery button next to the camera button with the `ImageIcon` icon
-5. Keep camera button as-is
+Drop existing DELETE policy and replace with author-only:
 
-### Input bar layout
-```
-[📷 Camera] [🖼 Gallery] [____input____] [Send/Mic]
+```sql
+DROP POLICY "Author or creator can delete trip photos" ON public.trip_photos;
+
+CREATE POLICY "Only author can delete own photos"
+ON public.trip_photos
+FOR DELETE
+TO public
+USING (auth.uid() = user_id);
 ```
 
-Both buttons share the same ghost style (`h-9 w-9`), consistent with current design.
+**2. UI — `src/pages/trips/Photos.tsx`**
+
+Remove `isCreator` from the delete button condition:
+
+```tsx
+// Before
+{(photo.user_id === user?.id || isCreator) && (
+
+// After
+{photo.user_id === user?.id && (
+```
+
+Also remove the unused `useTripRole` import and `isCreator` variable since they're no longer needed in this component.
+
+### Security layers
+
+| Layer | Protection |
+|-------|-----------|
+| UI | Delete button hidden for non-authors |
+| RLS (database) | `auth.uid() = user_id` — backend rejects unauthorized deletes even if button is bypassed |
 
