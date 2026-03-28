@@ -123,7 +123,7 @@ const Photos = () => {
                 className="aspect-square cursor-pointer"
                 onClick={() => setViewingPhoto({ url: getPublicUrl(photo.file_path), userName: getMemberName(photo.user_id) })}
               >
-                <img src={getPublicUrl(photo.file_path)} alt={t.tripPhoto} className="w-full h-full object-cover" loading="lazy" />
+                <img src={getPublicUrl(photo.file_path)} alt={t.tripPhoto} className="w-full h-full object-cover transition-opacity duration-300" loading="lazy" decoding="async" />
               </div>
               <div className="px-2 py-1.5 bg-card">
                 <p className="text-xs text-muted-foreground truncate">{getMemberName(photo.user_id)}</p>
