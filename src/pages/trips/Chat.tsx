@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
-import { Send, Camera, Mic, Square, Image as ImageIcon, X } from "lucide-react";
+import { Send, Camera, Mic, Square, Image as ImageIcon, X, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -76,6 +76,23 @@ const Chat = () => {
   const getMemberName = (userId: string) => formatDisplayName(members.find((m) => m.user_id === userId)?.name, t.usuario);
   const getInitials = (name: string) => name.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2);
   const getFileUrl = (path: string) => supabase.storage.from("trip-photos").getPublicUrl(path).data.publicUrl;
+
+  const deleteMessage = async (msg: Message) => {
+    if (!user || msg.user_id !== user.id) return;
+    // Remove from local state immediately
+    setMessages((prev) => prev.filter((m) => m.id !== msg.id));
+    // Delete file from storage if exists
+    if (msg.file_path) {
+      await supabase.storage.from("trip-photos").remove([msg.file_path]);
+      // Also remove from trip_photos if it was an image
+      if (msg.type === "image") {
+        await supabase.from("trip_photos").delete().eq("file_path", msg.file_path);
+      }
+    }
+    // Delete the message row (RLS enforces author-only)
+    const { error } = await supabase.from("trip_messages").delete().eq("id", msg.id);
+    if (error) toast({ title: t.errorSending, variant: "destructive" });
+  };
 
   const sendText = async () => {
     if (!text.trim() || !user || !tripId || sending) return;
@@ -167,7 +184,7 @@ const Chat = () => {
                       <AvatarFallback className="text-[10px] bg-primary/10 text-primary">{getInitials(getMemberName(msg.user_id))}</AvatarFallback>
                     </Avatar>
                   )}
-                  <div className={`max-w-[75%] rounded-2xl px-3 py-2 shadow-sm ${isOwn ? "bg-white text-foreground rounded-br-md" : "bg-white text-foreground rounded-bl-md"}`}>
+                  <div className={`max-w-[75%] rounded-2xl px-3 py-2 shadow-sm group ${isOwn ? "bg-white text-foreground rounded-br-md" : "bg-white text-foreground rounded-bl-md"}`}>
                     <p className={`text-[11px] font-semibold mb-0.5 ${isOwn ? "text-foreground/70 text-right" : "text-foreground/70"}`}>
                       {isOwn ? t.you : getMemberName(msg.user_id)}
                     </p>
@@ -178,7 +195,17 @@ const Chat = () => {
                     {msg.type === "audio" && msg.file_path && (
                       <audio controls src={getFileUrl(msg.file_path)} className="max-w-[260px] h-10" ref={(el) => { if (el) el.volume = 1.0; }} />
                     )}
-                    <p className={`text-[10px] mt-0.5 text-foreground/50 ${isOwn ? "text-right" : ""}`}>{formatTime(msg.created_at)}</p>
+                    <div className={`flex items-center gap-1.5 mt-0.5 ${isOwn ? "justify-end" : ""}`}>
+                      <p className="text-[10px] text-foreground/50">{formatTime(msg.created_at)}</p>
+                      {isOwn && (
+                        <button
+                          onClick={() => deleteMessage(msg)}
+                          className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded hover:bg-destructive/10"
+                        >
+                          <Trash2 className="h-3 w-3 text-muted-foreground hover:text-destructive transition-colors" />
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
