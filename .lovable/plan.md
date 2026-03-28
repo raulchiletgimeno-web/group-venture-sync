@@ -1,46 +1,40 @@
 
 
-## Restrict photo deletion to author only
+## Add author-only message deletion to Chat
 
 ### Current state
 
-- **RLS policy** (`Author or creator can delete trip photos`): allows deletion when `auth.uid() = user_id OR is_trip_creator(trip_id)` — creators can delete anyone's photos
-- **UI** (`Photos.tsx` line): delete button visible when `photo.user_id === user?.id || isCreator` — creators see delete on all photos
+- **Database (RLS)**: The `trip_messages` table already has the correct policy: `"Author can delete own messages"` with `USING (auth.uid() = user_id)`. Backend is already secure.
+- **UI**: The chat has **no delete functionality at all** — no button, no gesture, nothing. Users currently cannot delete any messages.
+- **Storage**: The `trip-photos` bucket stores chat media files. Storage deletion uses the Supabase client which respects the authenticated user context.
 
-### Changes
+### What needs to change
 
-**1. Database migration — tighten RLS policy**
+Only the UI needs updating — the database layer is already correctly locked down.
 
-Drop existing DELETE policy and replace with author-only:
+### Changes — single file: `src/pages/trips/Chat.tsx`
 
-```sql
-DROP POLICY "Author or creator can delete trip photos" ON public.trip_photos;
+1. **Add `Trash2` icon** to lucide imports
+2. **Add `deleteMessage` function** that:
+   - Deletes from `trip_messages` table (RLS enforces author-only)
+   - If the message has a `file_path`, also removes the file from storage
+   - If the message is an image, also removes the corresponding `trip_photos` record
+   - Removes the message from local state
+3. **Add delete button on each message bubble** — only rendered when `isOwn` is true (i.e., `msg.user_id === user?.id`)
+   - Small trash icon, shown inside the message bubble near the timestamp
+   - Clean, minimal design consistent with the premium look
 
-CREATE POLICY "Only author can delete own photos"
-ON public.trip_photos
-FOR DELETE
-TO public
-USING (auth.uid() = user_id);
-```
-
-**2. UI — `src/pages/trips/Photos.tsx`**
-
-Remove `isCreator` from the delete button condition:
-
-```tsx
-// Before
-{(photo.user_id === user?.id || isCreator) && (
-
-// After
-{photo.user_id === user?.id && (
-```
-
-Also remove the unused `useTripRole` import and `isCreator` variable since they're no longer needed in this component.
-
-### Security layers
+### Security summary
 
 | Layer | Protection |
 |-------|-----------|
-| UI | Delete button hidden for non-authors |
-| RLS (database) | `auth.uid() = user_id` — backend rejects unauthorized deletes even if button is bypassed |
+| UI | Delete icon only rendered for `msg.user_id === user?.id` |
+| App logic | `deleteMessage` only callable on own messages |
+| Database (RLS) | `auth.uid() = user_id` — already in place, rejects unauthorized deletes |
+
+### UX
+
+- Non-authors see no delete option whatsoever
+- Author sees a small trash icon on hover/tap, keeping the chat clean
+- Confirmation not needed for single messages (matches standard chat UX)
 
