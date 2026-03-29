@@ -184,11 +184,11 @@ const Chat = () => {
                       <AvatarFallback className="text-[10px] bg-primary/10 text-primary">{getInitials(getMemberName(msg.user_id))}</AvatarFallback>
                     </Avatar>
                   )}
-                  <div className={`max-w-[75%] rounded-2xl px-3 py-2 shadow-sm group ${isOwn ? "bg-white text-foreground rounded-br-md" : "bg-white text-foreground rounded-bl-md"}`}>
+                  <div className={`max-w-[75%] min-w-0 rounded-2xl px-3 py-2 shadow-sm group ${isOwn ? "bg-white text-foreground rounded-br-md" : "bg-white text-foreground rounded-bl-md"}`}>
                     <p className={`text-[11px] font-semibold mb-0.5 ${isOwn ? "text-foreground/70 text-right" : "text-foreground/70"}`}>
                       {isOwn ? t.you : getMemberName(msg.user_id)}
                     </p>
-                    {msg.type === "text" && <p className="text-sm whitespace-pre-wrap break-words text-foreground">{msg.content}</p>}
+                    {msg.type === "text" && <p className="text-sm whitespace-pre-wrap break-words overflow-hidden text-foreground" style={{ overflowWrap: "anywhere" }}>{msg.content}</p>}
                     {msg.type === "image" && msg.file_path && (
                       <img src={getFileUrl(msg.file_path)} alt={t.image} className="rounded-lg max-w-full max-h-60 object-cover cursor-pointer" loading="lazy" decoding="async" onClick={() => window.open(getFileUrl(msg.file_path!), "_blank")} />
                     )}
