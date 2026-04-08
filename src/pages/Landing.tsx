@@ -19,11 +19,13 @@ import { InstallGuideDrawer } from "@/components/InstallAppBanner";
 import BrandLogo from "@/components/BrandLogo";
 import { useInstallPrompt } from "@/hooks/use-install-prompt";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useAuth } from "@/contexts/AuthContext";
 
 const featureIcons = [Hotel, Train, CalendarDays, Wallet, MessageCircle, Camera, CloudSun, Phone];
 
 const Landing = () => {
   const navigate = useNavigate();
+  const { session, loading: authLoading } = useAuth();
   const [showVideo, setShowVideo] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const bgVideoRef = useRef<HTMLVideoElement>(null);
@@ -34,6 +36,13 @@ const Landing = () => {
   const [showInstallGuide, setShowInstallGuide] = useState(false);
   const isMobile = useIsMobile();
   const [videoReady, setVideoReady] = useState(false);
+
+  // Redirect authenticated users to dashboard
+  useEffect(() => {
+    if (!authLoading && session) {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [session, authLoading, navigate]);
 
   const [modalVideoReady, setModalVideoReady] = useState(false);
 
