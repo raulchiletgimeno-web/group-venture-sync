@@ -9,6 +9,15 @@ const markSeen = async (tripId: string, section: string) => {
     { onConflict: "trip_id,user_id,section" }
   );
   window.dispatchEvent(new CustomEvent("section-seen", { detail: { tripId, section } }));
+
+  // Close matching system notifications for this trip+section
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.ready.then((reg) => {
+      reg.getNotifications({ tag: `/trip/${tripId}/${section}` }).then((notifs) => {
+        notifs.forEach((n) => n.close());
+      });
+    }).catch(() => {});
+  }
 };
 
 export function useMarkSectionSeen(tripId: string | undefined, section: string) {

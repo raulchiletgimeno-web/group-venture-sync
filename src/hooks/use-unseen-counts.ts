@@ -63,6 +63,15 @@ export function useUnseenCounts(): UnseenResult & { pendingTotal: number } {
     return () => window.removeEventListener("section-seen", handler);
   }, [fetchCounts]);
 
+  // Refetch counts instantly when the app gains focus
+  useEffect(() => {
+    const handler = () => {
+      if (document.visibilityState === "visible") fetchCounts();
+    };
+    document.addEventListener("visibilitychange", handler);
+    return () => document.removeEventListener("visibilitychange", handler);
+  }, [fetchCounts]);
+
   // Realtime subscriptions for relevant tables
   useEffect(() => {
     const tables = [
@@ -101,6 +110,14 @@ export function useUnseenCounts(): UnseenResult & { pendingTotal: number } {
         (navigator as any).setAppBadge(badgeTotal);
       } else {
         (navigator as any).clearAppBadge?.();
+        // Clear all remaining system notifications when everything is read
+        if ("serviceWorker" in navigator) {
+          navigator.serviceWorker.ready.then((reg) => {
+            reg.getNotifications().then((notifs) => {
+              notifs.forEach((n) => n.close());
+            });
+          }).catch(() => {});
+        }
       }
     }
   }, [badgeTotal]);
