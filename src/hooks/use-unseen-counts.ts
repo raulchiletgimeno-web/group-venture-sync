@@ -110,6 +110,14 @@ export function useUnseenCounts(): UnseenResult & { pendingTotal: number } {
         (navigator as any).setAppBadge(badgeTotal);
       } else {
         (navigator as any).clearAppBadge?.();
+        // Clear all remaining system notifications when everything is read
+        if ("serviceWorker" in navigator) {
+          navigator.serviceWorker.ready.then((reg) => {
+            reg.getNotifications().then((notifs) => {
+              notifs.forEach((n) => n.close());
+            });
+          }).catch(() => {});
+        }
       }
     }
   }, [badgeTotal]);
