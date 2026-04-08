@@ -4,7 +4,7 @@ import { Send, Camera, Mic, Square, Image as ImageIcon, X, Trash2 } from "lucide
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { ScrollArea } from "@/components/ui/scroll-area";
+
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -42,7 +42,8 @@ const Chat = () => {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
 
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const isInitialLoad = useRef(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -71,7 +72,19 @@ const Chat = () => {
     return () => { supabase.removeChannel(channel); };
   }, [tripId]);
 
-  useEffect(() => { scrollRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+  useEffect(() => {
+    const vp = viewportRef.current;
+    if (!vp) return;
+    if (isInitialLoad.current) {
+      requestAnimationFrame(() => { vp.scrollTop = vp.scrollHeight; });
+      isInitialLoad.current = false;
+    } else {
+      const isNearBottom = vp.scrollHeight - vp.scrollTop - vp.clientHeight < 150;
+      if (isNearBottom) {
+        requestAnimationFrame(() => { vp.scrollTop = vp.scrollHeight; });
+      }
+    }
+  }, [messages]);
 
   const getMemberName = (userId: string) => formatDisplayName(members.find((m) => m.user_id === userId)?.name, t.usuario);
   const getInitials = (name: string) => name.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2);
@@ -167,7 +180,7 @@ const Chat = () => {
 
   return (
     <div className="animate-fade-in flex flex-col" style={{ height: "calc(100vh - 7rem)" }}>
-      <ScrollArea className="flex-1 px-2">
+      <div ref={viewportRef} className="flex-1 overflow-y-auto px-2">
         <div className="flex flex-col gap-1 py-2">
           {messages.map((msg, idx) => {
             const isOwn = msg.user_id === user?.id;
@@ -211,9 +224,8 @@ const Chat = () => {
               </div>
             );
           })}
-          <div ref={scrollRef} />
         </div>
-      </ScrollArea>
+      </div>
 
       {imagePreview && (
         <div className="px-3 py-2 border-t border-border bg-card">
