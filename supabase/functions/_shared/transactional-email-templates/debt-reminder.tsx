@@ -14,11 +14,15 @@ interface DebtReminderProps {
   message?: string
 }
 
+function cleanAmount(raw: string | undefined): string {
+  return (raw || '?').replace(/\s*€/g, '').trim()
+}
+
 const EMAIL_SUBJECTS = [
   (data: Record<string, any>) => `💸 ${data.debtorName || 'Amigo/a'}, tienes una cuenta pendiente`,
-  (data: Record<string, any>) => `🔔 ${SITE_NAME} te recuerda: deuda pendiente de ${data.amount || '?'} €`,
+  (data: Record<string, any>) => `🔔 ${SITE_NAME} te recuerda: deuda pendiente de ${cleanAmount(data.amount)} €`,
   (data: Record<string, any>) => `😉 ${data.debtorName || 'Hey'}, ¿nos ponemos al día con las cuentas?`,
-  (data: Record<string, any>) => `🤖 Recordatorio de ${SITE_NAME}: ${data.amount || '?'} € pendientes`,
+  (data: Record<string, any>) => `🤖 Recordatorio de ${SITE_NAME}: ${cleanAmount(data.amount)} € pendientes`,
   (data: Record<string, any>) => `☕ ${data.debtorName || 'Oye'}, queda una cosita por cuadrar...`,
 ]
 
