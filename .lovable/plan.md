@@ -1,50 +1,36 @@
 
 
-## Complete legal pages with definitive text
+## Ajustes finos en la Política de Privacidad
 
-Replace placeholder content in the 4 existing legal page components with professionally drafted Spanish legal text using the provided business data. No changes to layout, styling, routing, or any other part of the app.
+Solo se modifica `src/pages/legal/PrivacyPolicy.tsx`. Ningún otro archivo se toca.
 
-### Files modified (content only, same structure/styling)
+### Cambio 1 — Sección 4: Base jurídica (líneas 66-70)
 
-**1. `src/pages/legal/LegalNotice.tsx`** — 7 sections:
-1. Titular del sitio web — Raul Chilet Gimeno, NIF 52633612K, address, email, phone
-2. Objeto — YORMIT as a free group travel webapp
-3. Condiciones generales de uso — responsible use, prohibited activities, user-generated content responsibility
-4. Propiedad intelectual e industrial — all IP belongs to the titular, users cannot reproduce without authorization
-5. Limitación de responsabilidad — no guarantees on availability, user-generated content disclaimer
-6. Legislación aplicable y jurisdicción — Spanish law, courts of Valencia
-7. Contacto — info@yormit.com
+Reescribir los tres puntos para que:
+- **Ejecución del servicio** sea la base principal (registro, gestión de viajes, chat, fotos, gastos, etc.)
+- **Consentimiento** quede vinculado específicamente a funcionalidades opcionales como notificaciones push
+- **Interés legítimo** se mantenga para mejora y seguridad
 
-**2. `src/pages/legal/PrivacyPolicy.tsx`** — 10 sections:
-1. Responsable del tratamiento — full identification with all provided data
-2. Datos que recogemos — registration data, profile, chat messages, photos, trip info, expenses, push notification tokens, usage data
-3. Finalidades del tratamiento — account management, trip organization features, notifications, service improvement
-4. Base jurídica — consent (registration), contract execution (service), legitimate interest (improvement)
-5. Destinatarios — hosting/infrastructure providers, no data sold, international transfers with guarantees
-6. Plazo de conservación — while account active + legal retention period, deletion on request
-7. Derechos del usuario — access, rectification, deletion, opposition, limitation, portability, complaint to AEPD
-8. Ejercicio de derechos — email info@yormit.com with ID copy
-9. Contenido subido por usuarios — users must not upload illegal content, photos of third parties require their authorization, platform may remove infringing content
-10. Seguridad — technical and organizational measures
+Nuevo texto de los `<li>`:
+- **Ejecución de la relación contractual:** el tratamiento de tus datos es necesario para prestarte el servicio ofrecido por YORMIT, incluyendo la gestión de tu cuenta, la organización de viajes, la comunicación entre miembros, la subida de fotografías y el registro de gastos compartidos.
+- **Consentimiento:** para determinadas funcionalidades opcionales, como el envío de notificaciones push, el tratamiento se basa en tu consentimiento expreso, que puedes revocar en cualquier momento.
+- **Interés legítimo:** para mejorar el funcionamiento de la plataforma y garantizar su seguridad.
 
-**3. `src/pages/legal/CookiesPolicy.tsx`** — 5 sections:
-1. What are cookies — brief explanation
-2. Cookies used — only technical/session cookies, no analytics/advertising/marketing cookies currently
-3. Future changes — if analytics or marketing cookies are added, this policy and consent mechanism will be updated
-4. Cookie management — browser settings instructions, impact warning
-5. Contact — info@yormit.com
+### Cambio 2 — Sección 9: Contenido subido por usuarios (líneas 121-126)
 
-**4. `src/pages/legal/Contact.tsx`** — Add phone number card alongside email, keep response time note:
-- Email: info@yormit.com
-- Phone: 616 448 475
-- Response time: 48 business hours
+Reforzar la redacción y añadir referencia a menores. Reemplazar los dos párrafos actuales por tres:
 
-### What does NOT change
-- No design, layout, or CSS changes
-- No routing changes
-- No changes to Landing, Dashboard, App.tsx, or any other file
-- Same component structure, same imports, same wrapper classes
+1. Los usuarios son los únicos responsables del contenido que suban o compartan a través de YORMIT. Queda prohibido subir contenido ilícito, difamatorio, ofensivo o que vulnere derechos de terceros.
+2. Al subir fotografías o cualquier dato personal de terceras personas, **el usuario declara y garantiza** que cuenta con la autorización, legitimación o consentimiento suficiente de dichas personas para compartir dicho contenido a través de la plataforma.
+3. En el caso de imágenes o datos de **menores de edad**, el usuario debe contar con la autorización expresa de sus progenitores o representantes legales, cuando así lo exija la normativa aplicable.
+4. (Párrafo final existente sobre responsabilidad de la plataforma y retirada de contenido, sin cambios.)
 
-### Banner de cookies
-After implementation I will advise on whether a cookie consent banner is needed given the current cookie usage (spoiler: since only technical cookies are used, it is not legally required right now, but recommended to add one proactively).
+### Resumen de cambios
+| Sección | Qué cambia |
+|---------|-----------|
+| 4. Base jurídica | Reordena: ejecución del servicio como base principal, consentimiento para push y opcionales |
+| 9. Contenido subido | Refuerza "declara y garantiza", añade párrafo sobre menores |
+
+### Nada más se toca
+No se modifican diseño, rutas, estructura, ni ningún otro archivo de la aplicación.
 
