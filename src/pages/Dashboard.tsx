@@ -294,6 +294,19 @@ const Index = () => {
         )}
       </div>
 
+      {/* Legal footer */}
+      <div className="px-5 pb-6 pt-2">
+        <div className="flex items-center justify-center gap-3 text-[10px] text-muted-foreground">
+          <a href="/aviso-legal" className="hover:text-foreground transition-colors">Aviso legal</a>
+          <span>·</span>
+          <a href="/privacidad" className="hover:text-foreground transition-colors">Privacidad</a>
+          <span>·</span>
+          <a href="/cookies" className="hover:text-foreground transition-colors">Cookies</a>
+          <span>·</span>
+          <a href="/contacto" className="hover:text-foreground transition-colors">Contacto</a>
+        </div>
+      </div>
+
       <CreateTripDialog open={createOpen} onOpenChange={setCreateOpen} />
       <JoinTripDialog open={joinOpen} onOpenChange={setJoinOpen} />
       <HelpChatBot open={helpOpen} onOpenChange={setHelpOpen} />
