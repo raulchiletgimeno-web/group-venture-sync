@@ -79,8 +79,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     await supabase.auth.signOut();
   };
 
+  const resendVerificationEmail = async (email: string) => {
+    const { error } = await supabase.auth.resend({ type: 'signup', email });
+    return { error: error as Error | null };
+  };
+
   return (
-    <AuthContext.Provider value={{ user, session, loading, profile, signUp, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, profile, signUp, signIn, signOut, resendVerificationEmail }}>
       {children}
     </AuthContext.Provider>
   );
