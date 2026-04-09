@@ -1,6 +1,6 @@
 
 
-## Mejorar legibilidad del chat
+## Aumentar un poco más el tamaño del texto del chat
 
 Solo se modifica `src/pages/trips/Chat.tsx`. Ningún otro archivo se toca.
 
@@ -8,16 +8,16 @@ Solo se modifica `src/pages/trips/Chat.tsx`. Ningún otro archivo se toca.
 
 | Elemento | Actual | Nuevo |
 |----------|--------|-------|
-| Nombre del remitente | `text-[11px]` | `text-xs` (~12px) |
-| Texto del mensaje | `text-sm` (~14px) | `text-base` (~16px) |
-| Hora del mensaje | `text-[10px]` | `text-xs` (~12px) |
-| Avatar | `h-7 w-7` | `h-8 w-8` |
-| Iniciales en avatar | `text-[10px]` | `text-xs` |
-| Icono papelera | `h-3 w-3` | `h-3.5 w-3.5` |
-| Separador de fecha | `text-xs` | `text-xs` (sin cambio, ya legible) |
-| Separador "Mensajes nuevos" | `text-xs` | `text-xs` (sin cambio) |
-| Burbuja padding | `px-3 py-2` | `px-3.5 py-2.5` |
-| Audio player | `h-10` | `h-11` |
+| Texto del mensaje | `text-base` (~16px) | `text-[17px]` (~17px) |
+| Nombre del remitente | `text-xs` (~12px) | `text-sm` (~14px) |
+| Hora del mensaje | `text-xs` (~12px) | `text-[13px]` (~13px) |
+| Avatar | `h-8 w-8` | `h-9 w-9` |
+| Iniciales en avatar | `text-xs` | `text-sm` |
+| Burbuja padding | `px-3.5 py-2.5` | `px-4 py-3` |
+| Icono papelera | `h-3.5 w-3.5` | `h-4 w-4` |
+| Audio player | `h-11` | `h-12` |
+| Separador de fecha | `text-xs` | `text-sm` |
+| Separador "Mensajes nuevos" | `text-xs` | `text-sm` |
 
 ### Qué NO cambia
 - Diseño general, colores, alineación, estructura
