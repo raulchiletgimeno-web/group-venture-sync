@@ -1,51 +1,58 @@
 
 
-## Mejora de recordatorios automáticos de deuda
+## Configurar emails de recordatorio de deuda en YORMIT
 
 ### Estado actual
 
-Los mensajes del chat ya estan implementados con 12 variaciones diferentes, todas con el tono que pides (simpático, cercano, divertido) y todas recuerdan pagar por Bizum/transferencia y entrar en Gastos para ajustarlo. La rotación aleatoria (`pickRandom`) ya funciona.
+No hay ningún dominio de email configurado en tu proyecto. Para que YORMIT pueda enviar emails reales a los deudores, primero necesitamos configurar un dominio de envío.
 
-### Sobre el email
+### Qué sistema se usará
 
-Tu proyecto tiene el dominio **www.yormit.com** configurado, pero todavía no tiene un dominio de email activo para enviar correos. Para poder enviar los recordatorios por email al deudor, primero hay que configurar el dominio de email.
+YORMIT usará el sistema de emails integrado en Lovable Cloud. No necesitas crear cuentas en servicios externos ni obtener claves de API. Todo se gestiona desde tu proyecto.
 
-### Lo que propongo
+### Lo que necesito de ti
 
-**1. Ampliar los mensajes del chat de 12 a 20**
+**Paso 1: Configurar tu dominio de email**
 
-Añadir 8 mensajes nuevos manteniendo el mismo tono. Ejemplos:
+Necesitas tener un dominio propio (ya tienes `yormit.com`). El sistema configurará un subdominio de envío (por ejemplo `notify.yormit.com`) para que los emails salgan desde una dirección como `noreply@yormit.com`.
 
-- "🐌 {deudor}, que voy lento pero seguro: {importe} € con {creditor}. Págale y entra en Gastos para ajustarlo. Si no, mañana me vuelves a ver por aquí. 🐢"
-- "🎬 {deudor}, episodio 47 de 'Las deudas de {deudor}': {importe} € con {creditor}. Spoiler: el final feliz es un Bizum y un ajuste en Gastos. 🍿"
-- "🌮 {deudor}, por {importe} € te invito a saldar tu deuda con {creditor}. Bueno, no te invito yo, pero hazlo tú. Bizum, transferencia, lo que sea. Y luego Gastos → ajustar. 🙏"
-- "📱 {deudor}, notificación importante: {importe} € con {creditor}. No es spam, es YORMIT recordándote con amor. Págale y ajústalo en Gastos. ❤️"
-- "🧳 {deudor}, el viaje terminó pero los {importe} € con {creditor} siguen de vacaciones en tu cuenta. Mándalos a la suya con un Bizum y ajústalo en Gastos. ✈️"
-- "🎁 {deudor}, tengo un regalo para ti: dejar de escribirte. Solo tienes que pagar {importe} € a {creditor} y ajustarlo en Gastos. ¡Trato hecho! 🤝"
-- "🦜 {deudor}, soy el loro de YORMIT: ¡{importe} euros! ¡{creditor}! ¡Bizum! ¡Gastos! ¡Ajustar! Ya, en serio, págale y entra en Gastos para dejarlo cuadrado. 😄"
-- "⏰ {deudor}, tic tac: {importe} € con {creditor}. No es urgente, pero tampoco es opcional. Un Bizum rápido, luego Gastos y ajústalo. ¡Y a otra cosa, mariposa! 🦋"
+Tendrás que añadir unos registros DNS en tu proveedor de dominio (donde gestionas `yormit.com`). El propio asistente de configuración te indicará exactamente qué registros añadir.
 
-**2. Evitar repetición consecutiva**
+**Paso 2: Una vez configurado el dominio, yo haré lo siguiente**
 
-Añadir lógica para consultar el último mensaje enviado en `debt_reminders` y excluir esa variante, garantizando que dos mensajes seguidos nunca sean iguales.
+1. Configurar la infraestructura de email (colas, tablas de seguimiento, envío automático)
+2. Crear la plantilla de email de recordatorio de deuda con el tono simpático y premium que ya tenemos
+3. Integrar el envío de email en la Edge Function `check-trip-debts` que ya funciona para los mensajes del chat
+4. Desplegar todo automáticamente
 
-**3. Configurar email (requiere tu acción)**
+### Tono del email
 
-Para activar los recordatorios por email necesitamos configurar tu dominio de email. Esto es un paso previo obligatorio. Una vez hecho, crearé las plantillas de email con el mismo tono y variedad que los mensajes del chat.
+Mantendré el mismo espíritu de los mensajes del chat: cercano, divertido, entre amigos. El email incluirá:
+- Nombre del deudor
+- Importe pendiente
+- Nombre del acreedor
+- Recordatorio de entrar en Gastos para ajustarlo
+- Variedad de asuntos y cuerpos (rotación aleatoria)
 
----
+### Remitente
 
-### Ficheros modificados
+Los emails saldrán desde una dirección tipo `noreply@yormit.com` con el nombre visible "YORMIT".
+
+### Ficheros que se modificarán (después de configurar el dominio)
 
 | Fichero | Cambio |
 |---|---|
-| `supabase/functions/check-trip-debts/index.ts` | Añadir 8 mensajes nuevos (total 20) + lógica anti-repetición consecutiva |
+| `supabase/functions/check-trip-debts/index.ts` | Añadir lógica de envío de email al deudor |
+| Plantilla de email (nueva) | Template React Email con el tono definido |
+| Registry de plantillas | Registrar la nueva plantilla |
 
-No se toca ningún otro fichero.
+**No se toca ningún otro fichero de la app.**
 
----
+### Siguiente paso
 
-### Siguiente paso para email
+Haz clic en el botón de abajo para configurar tu dominio de email. El asistente te guiará paso a paso.
 
-Para activar los recordatorios por email, el primer paso es configurar tu dominio de envío.
+<lov-actions>
+<lov-open-email-setup>Configurar dominio de email</lov-open-email-setup>
+</lov-actions>
 
