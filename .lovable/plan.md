@@ -1,33 +1,38 @@
 
 
-## Ajustes en la plantilla de email de recordatorio de deuda
+## Correcciones en el email de recordatorio de deuda
 
-### 1. Duplicación del símbolo € — Corrección en la plantilla
+### 1. Asunto: sanitizar el símbolo € (igual que en el cuerpo)
 
-**Causa raíz:** La plantilla muestra `{amount} €`, y el valor por defecto del prop es `'0.00'` (sin €). En producción, `check-trip-debts` pasa `debt.amount.toFixed(2)` que da `"45.00"` (sin €), así que en producción debería salir bien. Sin embargo, en la prueba manual se pasó `"45.00 €"` como valor, causando `"45.00 € €"`.
+Las líneas 19 y 21 de `debt-reminder.tsx` usan `data.amount` directamente en el asunto y le añaden ` €`. Si el valor ya incluye `€`, se duplica.
 
-**Solución:** Hacer la plantilla defensiva para que funcione correctamente en ambos casos. En `debt-reminder.tsx`, limpiar el valor del prop `amount` eliminando cualquier `€` antes de mostrarlo, de forma que nunca se duplique:
+**Solución:** Añadir una función helper `cleanAmount` que elimine cualquier `€` del valor, y usarla tanto en los asuntos como en `pickSubject`.
 
 ```
-Antes:  <Text style={debtAmount}>{amount} €</Text>
-Después: <Text style={debtAmount}>{amount.replace(/\s*€/g, '')} €</Text>
-```
+// Helper
+function cleanAmount(raw: string | undefined): string {
+  return (raw || '?').replace(/\s*€/g, '').trim()
+}
 
-Y lo mismo en el `<Preview>` y en el `debtDetail` donde aparezca el importe.
+// Líneas afectadas:
+`🔔 ... deuda pendiente de ${cleanAmount(data.amount)} €`
+`🤖 ... ${cleanAmount(data.amount)} € pendientes`
+```
 
 **Fichero:** `supabase/functions/_shared/transactional-email-templates/debt-reminder.tsx`
-Solo se toca este fichero.
 
-### 2. Texto de baja / pie del email en inglés
+### 2. Pie del email en inglés — NO modificable
 
-Este texto ("You received this email because of an action on YORMIT" / "Unsubscribe from these emails") es un pie de página que el sistema añade automáticamente a todos los emails. No forma parte de la plantilla y no se puede modificar desde el código del proyecto — es gestionado por la infraestructura de envío.
+El texto "You received this email because of an action on YORMIT" y "Unsubscribe from these emails" es un footer inyectado automáticamente por la infraestructura de envío de emails. No forma parte de la plantilla ni del código del proyecto — se añade externamente al HTML renderizado.
 
-**No es posible cambiarlo desde aquí.** Es una limitación del sistema de envío actual.
+**No es posible cambiarlo ni traducirlo desde aquí.** Es una limitación del sistema de envío actual que no depende de nuestro código.
 
-### Resumen de cambios
+### Resumen
 
-- **Se toca:** `debt-reminder.tsx` (sanitizar el símbolo € para evitar duplicación)
-- **Se redespliegan:** `send-transactional-email` y `preview-transactional-email`
-- **NO se toca:** ninguna otra parte de la app
-- **Limitación:** el footer de baja en inglés no se puede modificar desde el proyecto
+| Cambio | Fichero | Resultado |
+|--------|---------|-----------|
+| Sanitizar `€` en asuntos | `debt-reminder.tsx` | Nunca se duplica el símbolo |
+| Footer en inglés | — | No modificable (infraestructura externa) |
+
+Se redesplegarán `send-transactional-email` y `preview-transactional-email`. No se toca ninguna otra parte de la app.
 
