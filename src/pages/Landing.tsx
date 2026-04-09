@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import {
   Luggage, Hotel, Train, CalendarDays, Wallet, MessageCircle,
   Camera, CloudSun, Phone, ArrowRight, Play,
