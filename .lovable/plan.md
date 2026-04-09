@@ -1,36 +1,27 @@
 
 
-## Ajustes finos en la Política de Privacidad
+## Mejorar legibilidad del chat
 
-Solo se modifica `src/pages/legal/PrivacyPolicy.tsx`. Ningún otro archivo se toca.
+Solo se modifica `src/pages/trips/Chat.tsx`. Ningún otro archivo se toca.
 
-### Cambio 1 — Sección 4: Base jurídica (líneas 66-70)
+### Cambios concretos
 
-Reescribir los tres puntos para que:
-- **Ejecución del servicio** sea la base principal (registro, gestión de viajes, chat, fotos, gastos, etc.)
-- **Consentimiento** quede vinculado específicamente a funcionalidades opcionales como notificaciones push
-- **Interés legítimo** se mantenga para mejora y seguridad
+| Elemento | Actual | Nuevo |
+|----------|--------|-------|
+| Nombre del remitente | `text-[11px]` | `text-xs` (~12px) |
+| Texto del mensaje | `text-sm` (~14px) | `text-base` (~16px) |
+| Hora del mensaje | `text-[10px]` | `text-xs` (~12px) |
+| Avatar | `h-7 w-7` | `h-8 w-8` |
+| Iniciales en avatar | `text-[10px]` | `text-xs` |
+| Icono papelera | `h-3 w-3` | `h-3.5 w-3.5` |
+| Separador de fecha | `text-xs` | `text-xs` (sin cambio, ya legible) |
+| Separador "Mensajes nuevos" | `text-xs` | `text-xs` (sin cambio) |
+| Burbuja padding | `px-3 py-2` | `px-3.5 py-2.5` |
+| Audio player | `h-10` | `h-11` |
 
-Nuevo texto de los `<li>`:
-- **Ejecución de la relación contractual:** el tratamiento de tus datos es necesario para prestarte el servicio ofrecido por YORMIT, incluyendo la gestión de tu cuenta, la organización de viajes, la comunicación entre miembros, la subida de fotografías y el registro de gastos compartidos.
-- **Consentimiento:** para determinadas funcionalidades opcionales, como el envío de notificaciones push, el tratamiento se basa en tu consentimiento expreso, que puedes revocar en cualquier momento.
-- **Interés legítimo:** para mejorar el funcionamiento de la plataforma y garantizar su seguridad.
-
-### Cambio 2 — Sección 9: Contenido subido por usuarios (líneas 121-126)
-
-Reforzar la redacción y añadir referencia a menores. Reemplazar los dos párrafos actuales por tres:
-
-1. Los usuarios son los únicos responsables del contenido que suban o compartan a través de YORMIT. Queda prohibido subir contenido ilícito, difamatorio, ofensivo o que vulnere derechos de terceros.
-2. Al subir fotografías o cualquier dato personal de terceras personas, **el usuario declara y garantiza** que cuenta con la autorización, legitimación o consentimiento suficiente de dichas personas para compartir dicho contenido a través de la plataforma.
-3. En el caso de imágenes o datos de **menores de edad**, el usuario debe contar con la autorización expresa de sus progenitores o representantes legales, cuando así lo exija la normativa aplicable.
-4. (Párrafo final existente sobre responsabilidad de la plataforma y retirada de contenido, sin cambios.)
-
-### Resumen de cambios
-| Sección | Qué cambia |
-|---------|-----------|
-| 4. Base jurídica | Reordena: ejecución del servicio como base principal, consentimiento para push y opcionales |
-| 9. Contenido subido | Refuerza "declara y garantiza", añade párrafo sobre menores |
-
-### Nada más se toca
-No se modifican diseño, rutas, estructura, ni ningún otro archivo de la aplicación.
+### Qué NO cambia
+- Diseño general, colores, alineación, estructura
+- Input de texto, botones de cámara/galería/micro/envío
+- Lógica de scroll, realtime, envío, borrado
+- Ningún otro archivo de la app
 
