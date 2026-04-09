@@ -64,6 +64,12 @@ const App = () => (
                   <Route path="phones" element={<EmergencyPhones />} />
                 </Route>
 
+                {/* Legal routes */}
+                <Route path="/aviso-legal" element={<LegalNotice />} />
+                <Route path="/privacidad" element={<PrivacyPolicy />} />
+                <Route path="/cookies" element={<CookiesPolicy />} />
+                <Route path="/contacto" element={<ContactPage />} />
+
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </Suspense>

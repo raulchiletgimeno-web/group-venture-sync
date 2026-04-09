@@ -374,6 +374,15 @@ const Landing = () => {
             <div className="text-sm text-muted-foreground text-center md:text-right">
               <p>© {new Date().getFullYear()} YORMIT. {t.landingFooter}</p>
               <p className="mt-1">Contacto: info@yormit.com</p>
+              <div className="flex items-center justify-center md:justify-end gap-3 mt-2 text-xs">
+                <Link to="/aviso-legal" className="hover:text-foreground transition-colors">Aviso legal</Link>
+                <span>·</span>
+                <Link to="/privacidad" className="hover:text-foreground transition-colors">Privacidad</Link>
+                <span>·</span>
+                <Link to="/cookies" className="hover:text-foreground transition-colors">Cookies</Link>
+                <span>·</span>
+                <Link to="/contacto" className="hover:text-foreground transition-colors">Contacto</Link>
+              </div>
             </div>
           </div>
         </div>
