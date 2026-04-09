@@ -52,6 +52,12 @@ type TranslationKeys = {
   registerSuccess: string;
   registerSuccessDesc: string;
   registerError: string;
+  verifyEmailTitle: string;
+  verifyEmailDesc: string;
+  resendVerification: string;
+  resendVerificationSuccess: string;
+  resendVerificationDesc: string;
+  emailNotVerified: string;
 
   // Reset password
   resetPassword: string;
