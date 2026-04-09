@@ -199,8 +199,24 @@ Deno.serve(async (req) => {
         const creditorName = creditorProfile?.name || "alguien";
         const amountStr = debt.amount.toFixed(2);
 
-        // Post chat message
-        const chatMsg = pickRandom(CHAT_MESSAGES)(debtorName, creditorName, amountStr);
+        // Pick a message avoiding the last one sent for this debt pair
+        // Get the last reminder's message to avoid repeating it
+        const { data: lastReminder } = await supabase
+          .from("trip_messages")
+          .select("content")
+          .eq("trip_id", trip.id)
+          .ilike("content", `%${debtorName}%`)
+          .ilike("content", `%${creditorName}%`)
+          .ilike("content", `%${amountStr}%`)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        const lastContent = lastReminder?.content || "";
+        // Generate all candidates and exclude the last one
+        const candidates = CHAT_MESSAGES.map((fn) => fn(debtorName, creditorName, amountStr));
+        const filtered = candidates.filter((msg) => msg !== lastContent);
+        const chatMsg = pickRandom(filtered.length > 0 ? filtered : candidates);
 
         // Insert as a message from the debtor's perspective but with bot-style content
         // We use the trip creator as sender to avoid issues, with bot-style message
