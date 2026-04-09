@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ArrowLeft, Mail } from "lucide-react";
+import { ArrowLeft, Mail, Phone } from "lucide-react";
 import BrandLogo from "@/components/BrandLogo";
 
 const Contact = () => (
@@ -17,7 +17,7 @@ const Contact = () => (
 
         <section className="space-y-3">
           <p className="text-sm text-muted-foreground leading-relaxed">
-            Si tienes cualquier duda, sugerencia o consulta sobre YORMIT, no dudes en escribirnos.
+            Si tienes cualquier duda, sugerencia o consulta sobre YORMIT, no dudes en ponerte en contacto con nosotros a través de los siguientes canales:
           </p>
 
           <div className="flex items-center gap-3 p-4 rounded-lg bg-muted/50 border border-border">
@@ -29,11 +29,21 @@ const Contact = () => (
               </a>
             </div>
           </div>
+
+          <div className="flex items-center gap-3 p-4 rounded-lg bg-muted/50 border border-border">
+            <Phone className="h-5 w-5 text-primary shrink-0" />
+            <div>
+              <p className="text-sm font-medium text-foreground">Teléfono</p>
+              <a href="tel:+34616448475" className="text-sm text-primary hover:underline">
+                616 448 475
+              </a>
+            </div>
+          </div>
         </section>
 
         <section className="space-y-2">
           <p className="text-sm text-muted-foreground leading-relaxed">
-            Intentamos responder a todas las consultas en un plazo máximo de 48 horas laborables.
+            Intentamos responder a todas las consultas en un plazo máximo de 48 horas laborables. Agradecemos tu paciencia y confianza.
           </p>
         </section>
       </div>
