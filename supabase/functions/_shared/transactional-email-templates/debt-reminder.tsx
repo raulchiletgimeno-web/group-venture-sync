@@ -92,7 +92,8 @@ const DebtReminderEmail = ({
       </Container>
     </Body>
   </Html>
-)
+  )
+}
 
 export const template = {
   component: DebtReminderEmail,
