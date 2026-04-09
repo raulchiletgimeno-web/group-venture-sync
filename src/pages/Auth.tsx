@@ -35,7 +35,7 @@ const Auth = () => {
     setResending(true);
     const { error } = await resendVerificationEmail(email);
     if (error) {
-      toast({ title: t.registerError, description: error.message, variant: "destructive" });
+      toast({ title: t.emailNotVerified, description: error.message, variant: "destructive" });
     } else {
       toast({ title: t.resendVerificationSuccess, description: t.resendVerificationDesc });
     }
