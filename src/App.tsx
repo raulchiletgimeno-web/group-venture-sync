@@ -29,6 +29,7 @@ const LegalNotice = lazy(() => import("./pages/legal/LegalNotice"));
 const PrivacyPolicy = lazy(() => import("./pages/legal/PrivacyPolicy"));
 const CookiesPolicy = lazy(() => import("./pages/legal/CookiesPolicy"));
 const ContactPage = lazy(() => import("./pages/legal/Contact"));
+const Unsubscribe = lazy(() => import("./pages/Unsubscribe"));
 
 const queryClient = new QueryClient();
 
@@ -73,6 +74,7 @@ const App = () => (
                 <Route path="/privacidad" element={<PrivacyPolicy />} />
                 <Route path="/cookies" element={<CookiesPolicy />} />
                 <Route path="/contacto" element={<ContactPage />} />
+                <Route path="/unsubscribe" element={<Unsubscribe />} />
 
                 <Route path="*" element={<NotFound />} />
               </Routes>
