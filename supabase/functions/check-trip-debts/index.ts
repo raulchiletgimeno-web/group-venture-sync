@@ -31,6 +31,22 @@ const CHAT_MESSAGES = [
     `💛 ${debtor}, te escribo con todo el cariño del mundo: ${amount} € con ${creditor} siguen pendientes. Págale cuando puedas y luego entra en Gastos para dejarlo todo cuadrado. ¡Que luego las cuentas claras conservan las amistades! 🤝`,
   (debtor: string, creditor: string, amount: string) =>
     `🤖 Soy YORMIT y no tengo sentimientos, pero si los tuviera me daría penita seguir recordándote esto, ${debtor}. ${amount} € con ${creditor}. Págale, entra en Gastos, ajústalo y seré libre. ¡Hazlo por mí! 🥹`,
+  (debtor: string, creditor: string, amount: string) =>
+    `🐌 ${debtor}, que voy lento pero seguro: ${amount} € con ${creditor}. Págale y entra en Gastos para ajustarlo. Si no, mañana me vuelves a ver por aquí. 🐢`,
+  (debtor: string, creditor: string, amount: string) =>
+    `🎬 ${debtor}, episodio 47 de "Las deudas de ${debtor}": ${amount} € con ${creditor}. Spoiler: el final feliz es un Bizum y un ajuste en Gastos. 🍿`,
+  (debtor: string, creditor: string, amount: string) =>
+    `🌮 ${debtor}, por ${amount} € te invito a saldar tu deuda con ${creditor}. Bueno, no te invito yo, pero hazlo tú. Bizum, transferencia, lo que sea. Y luego Gastos → ajustar. 🙏`,
+  (debtor: string, creditor: string, amount: string) =>
+    `📱 ${debtor}, notificación importante: ${amount} € con ${creditor}. No es spam, es YORMIT recordándote con amor. Págale y ajústalo en Gastos. ❤️`,
+  (debtor: string, creditor: string, amount: string) =>
+    `🧳 ${debtor}, el viaje terminó pero los ${amount} € con ${creditor} siguen de vacaciones en tu cuenta. Mándalos a la suya con un Bizum y ajústalo en Gastos. ✈️`,
+  (debtor: string, creditor: string, amount: string) =>
+    `🎁 ${debtor}, tengo un regalo para ti: dejar de escribirte. Solo tienes que pagar ${amount} € a ${creditor} y ajustarlo en Gastos. ¡Trato hecho! 🤝`,
+  (debtor: string, creditor: string, amount: string) =>
+    `🦜 ${debtor}, soy el loro de YORMIT: ¡${amount} euros! ¡${creditor}! ¡Bizum! ¡Gastos! ¡Ajustar! Ya, en serio, págale y entra en Gastos para dejarlo cuadrado. 😄`,
+  (debtor: string, creditor: string, amount: string) =>
+    `⏰ ${debtor}, tic tac: ${amount} € con ${creditor}. No es urgente, pero tampoco es opcional. Un Bizum rápido, luego Gastos y ajústalo. ¡Y a otra cosa, mariposa! 🦋`,
 ];
 
 function pickRandom<T>(arr: T[]): T {
@@ -183,8 +199,24 @@ Deno.serve(async (req) => {
         const creditorName = creditorProfile?.name || "alguien";
         const amountStr = debt.amount.toFixed(2);
 
-        // Post chat message
-        const chatMsg = pickRandom(CHAT_MESSAGES)(debtorName, creditorName, amountStr);
+        // Pick a message avoiding the last one sent for this debt pair
+        // Get the last reminder's message to avoid repeating it
+        const { data: lastReminder } = await supabase
+          .from("trip_messages")
+          .select("content")
+          .eq("trip_id", trip.id)
+          .ilike("content", `%${debtorName}%`)
+          .ilike("content", `%${creditorName}%`)
+          .ilike("content", `%${amountStr}%`)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        const lastContent = lastReminder?.content || "";
+        // Generate all candidates and exclude the last one
+        const candidates = CHAT_MESSAGES.map((fn) => fn(debtorName, creditorName, amountStr));
+        const filtered = candidates.filter((msg) => msg !== lastContent);
+        const chatMsg = pickRandom(filtered.length > 0 ? filtered : candidates);
 
         // Insert as a message from the debtor's perspective but with bot-style content
         // We use the trip creator as sender to avoid issues, with bot-style message
