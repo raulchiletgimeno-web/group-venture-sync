@@ -30,10 +30,12 @@ function pickSubject(data: Record<string, any>): string {
 const DebtReminderEmail = ({
   debtorName = 'Amigo/a',
   creditorName = 'tu compañero/a',
-  amount = '0.00',
+  amount: rawAmount = '0.00',
   tripName = 'el viaje',
   message,
-}: DebtReminderProps) => (
+}: DebtReminderProps) => {
+  const amount = rawAmount.replace(/\s*€/g, '').trim()
+  return (
   <Html lang="es" dir="ltr">
     <Head />
     <Preview>Tienes {amount} € pendientes con {creditorName} del viaje "{tripName}"</Preview>
