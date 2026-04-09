@@ -246,6 +246,29 @@ Deno.serve(async (req) => {
           channel: "chat",
         });
 
+        // Send email reminder to the debtor
+        const debtorEmail = debtorProfile?.email;
+        if (debtorEmail) {
+          try {
+            await supabase.functions.invoke("send-transactional-email", {
+              body: {
+                templateName: "debt-reminder",
+                recipientEmail: debtorEmail,
+                idempotencyKey: `debt-reminder-${trip.id}-${debt.from}-${debt.to}-${new Date().toISOString().split("T")[0]}`,
+                templateData: {
+                  debtorName,
+                  creditorName,
+                  amount: amountStr,
+                  tripName: trip.title,
+                  message: chatMsg,
+                },
+              },
+            });
+          } catch (emailErr) {
+            console.error("Failed to send debt reminder email:", emailErr);
+          }
+        }
+
         totalReminders++;
       }
     }
