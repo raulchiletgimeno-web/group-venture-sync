@@ -14,6 +14,44 @@ export type Database = {
   }
   public: {
     Tables: {
+      debt_reminders: {
+        Row: {
+          amount: number
+          channel: string
+          creditor_id: string
+          debtor_id: string
+          id: string
+          sent_at: string
+          trip_id: string
+        }
+        Insert: {
+          amount: number
+          channel?: string
+          creditor_id: string
+          debtor_id: string
+          id?: string
+          sent_at?: string
+          trip_id: string
+        }
+        Update: {
+          amount?: number
+          channel?: string
+          creditor_id?: string
+          debtor_id?: string
+          id?: string
+          sent_at?: string
+          trip_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "debt_reminders_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
