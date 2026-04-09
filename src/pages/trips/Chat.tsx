@@ -228,41 +228,41 @@ const Chat = () => {
               <div key={msg.id} data-msg-idx={idx}>
                 {shouldShowDateSep(idx) && (
                   <div className="flex justify-center my-3">
-                    <span className="text-xs bg-muted text-muted-foreground px-3 py-1 rounded-full">{formatDateSeparator(msg.created_at)}</span>
+                    <span className="text-sm bg-muted text-muted-foreground px-3 py-1 rounded-full">{formatDateSeparator(msg.created_at)}</span>
                   </div>
                 )}
                 {firstUnreadIdx === idx && (
                   <div className="flex items-center gap-2 my-3">
                     <div className="flex-1 border-t border-primary/30" />
-                    <span className="text-xs text-primary font-medium px-2">{t.newMessages}</span>
+                    <span className="text-sm text-primary font-medium px-2">{t.newMessages}</span>
                     <div className="flex-1 border-t border-primary/30" />
                   </div>
                 )}
                 <div className={`flex gap-2 ${isOwn ? "justify-end" : "justify-start"}`}>
                   {!isOwn && (
-                    <Avatar className="h-8 w-8 mt-1 shrink-0">
-                      <AvatarFallback className="text-xs bg-primary/10 text-primary">{getInitials(getMemberName(msg.user_id))}</AvatarFallback>
+                    <Avatar className="h-9 w-9 mt-1 shrink-0">
+                      <AvatarFallback className="text-sm bg-primary/10 text-primary">{getInitials(getMemberName(msg.user_id))}</AvatarFallback>
                     </Avatar>
                   )}
-                  <div className={`max-w-[75%] min-w-0 rounded-2xl px-3.5 py-2.5 shadow-sm group ${isOwn ? "bg-white text-foreground rounded-br-md" : "bg-white text-foreground rounded-bl-md"}`}>
-                    <p className={`text-xs font-semibold mb-0.5 ${isOwn ? "text-foreground/70 text-right" : "text-foreground/70"}`}>
+                  <div className={`max-w-[75%] min-w-0 rounded-2xl px-4 py-3 shadow-sm group ${isOwn ? "bg-white text-foreground rounded-br-md" : "bg-white text-foreground rounded-bl-md"}`}>
+                    <p className={`text-sm font-semibold mb-0.5 ${isOwn ? "text-foreground/70 text-right" : "text-foreground/70"}`}>
                       {isOwn ? t.you : getMemberName(msg.user_id)}
                     </p>
-                    {msg.type === "text" && <p className="text-base whitespace-pre-wrap break-words overflow-hidden text-foreground" style={{ overflowWrap: "anywhere" }}>{msg.content}</p>}
+                    {msg.type === "text" && <p className="text-[17px] whitespace-pre-wrap break-words overflow-hidden text-foreground" style={{ overflowWrap: "anywhere" }}>{msg.content}</p>}
                     {msg.type === "image" && msg.file_path && (
                       <img src={getFileUrl(msg.file_path)} alt={t.image} className="rounded-lg max-w-full max-h-60 object-cover cursor-pointer" loading="lazy" decoding="async" onClick={() => window.open(getFileUrl(msg.file_path!), "_blank")} />
                     )}
                     {msg.type === "audio" && msg.file_path && (
-                      <audio controls src={getFileUrl(msg.file_path)} className="max-w-[260px] h-11" ref={(el) => { if (el) el.volume = 1.0; }} />
+                      <audio controls src={getFileUrl(msg.file_path)} className="max-w-[260px] h-12" ref={(el) => { if (el) el.volume = 1.0; }} />
                     )}
                     <div className={`flex items-center gap-1.5 mt-0.5 ${isOwn ? "justify-end" : ""}`}>
-                      <p className="text-xs text-foreground/50">{formatTime(msg.created_at)}</p>
+                      <p className="text-[13px] text-foreground/50">{formatTime(msg.created_at)}</p>
                       {isOwn && (
                         <button
                           onClick={() => deleteMessage(msg)}
                           className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded hover:bg-destructive/10"
                         >
-                          <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive transition-colors" />
+                          <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive transition-colors" />
                         </button>
                       )}
                     </div>
