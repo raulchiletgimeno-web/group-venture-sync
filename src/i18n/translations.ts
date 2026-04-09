@@ -312,6 +312,7 @@ type TranslationKeys = {
   selectLanguage: string;
 
   // Help Chat
+  helpMeLabel: string;
   helpChatTitle: string;
   helpChatWelcome: string;
   helpChatPlaceholder: string;
@@ -712,6 +713,7 @@ const translations: Record<Language, TranslationKeys> = {
     pageNotFound: "Oops! Página no encontrada",
     returnHome: "Volver al inicio",
     selectLanguage: "Idioma",
+    helpMeLabel: "¿Te ayudo?",
     helpChatTitle: "Diego",
     helpChatWelcome: "¡Hola! 👋 Soy Diego, tu asistente de YORMIT. Pregúntame cómo crear viajes, añadir transportes, gestionar gastos o cualquier duda sobre la app.",
     helpChatPlaceholder: "Escribe tu pregunta...",
@@ -1097,6 +1099,7 @@ const translations: Record<Language, TranslationKeys> = {
     pageNotFound: "Oops! Page not found",
     returnHome: "Return to Home",
     selectLanguage: "Language",
+    helpMeLabel: "Need help?",
     helpChatTitle: "Diego",
     helpChatWelcome: "Hi! 👋 I'm Diego, your YORMIT assistant. Ask me how to create trips, add transport, manage expenses, or anything about the app.",
     helpChatPlaceholder: "Type your question...",
@@ -1482,6 +1485,7 @@ const translations: Record<Language, TranslationKeys> = {
     pageNotFound: "Oops ! Page non trouvée",
     returnHome: "Retour à l'accueil",
     selectLanguage: "Langue",
+    helpMeLabel: "Besoin d'aide ?",
     helpChatTitle: "Diego",
     helpChatWelcome: "Bonjour ! 👋 Je suis Diego, votre assistant YORMIT. Demandez-moi comment créer des voyages, ajouter des transports, gérer les dépenses ou toute question sur l'app.",
     helpChatPlaceholder: "Écrivez votre question...",
@@ -1867,6 +1871,7 @@ const translations: Record<Language, TranslationKeys> = {
     pageNotFound: "Oops! Página não encontrada",
     returnHome: "Voltar ao início",
     selectLanguage: "Idioma",
+    helpMeLabel: "Precisa de ajuda?",
     helpChatTitle: "Diego",
     helpChatWelcome: "Olá! 👋 Sou o Diego, o seu assistente YORMIT. Pergunte-me como criar viagens, adicionar transportes, gerir despesas ou qualquer dúvida sobre a app.",
     helpChatPlaceholder: "Escreva a sua pergunta...",
@@ -2252,6 +2257,7 @@ const translations: Record<Language, TranslationKeys> = {
     pageNotFound: "Oops! Pagina non trovata",
     returnHome: "Torna alla home",
     selectLanguage: "Lingua",
+    helpMeLabel: "Serve aiuto?",
     helpChatTitle: "Diego",
     helpChatWelcome: "Ciao! 👋 Sono Diego, il tuo assistente YORMIT. Chiedimi come creare viaggi, aggiungere trasporti, gestire le spese o qualsiasi domanda sull'app.",
     helpChatPlaceholder: "Scrivi la tua domanda...",
@@ -2637,6 +2643,7 @@ const translations: Record<Language, TranslationKeys> = {
     pageNotFound: "糟糕！页面未找到",
     returnHome: "返回首页",
     selectLanguage: "语言",
+    helpMeLabel: "需要帮助？",
     helpChatTitle: "Diego",
     helpChatWelcome: "你好！👋 我是 Diego，你的 YORMIT 助手。可以问我如何创建旅行、添加交通、管理费用或关于应用的任何问题。",
     helpChatPlaceholder: "输入您的问题...",
@@ -3022,6 +3029,7 @@ const translations: Record<Language, TranslationKeys> = {
     pageNotFound: "Hoppla! Seite nicht gefunden",
     returnHome: "Zur Startseite zurückkehren",
     selectLanguage: "Sprache",
+    helpMeLabel: "Brauchen Sie Hilfe?",
     helpChatTitle: "Diego",
     helpChatWelcome: "Hallo! 👋 Ich bin Diego, dein YORMIT-Assistent. Frag mich, wie man Reisen erstellt, Transport hinzufügt, Ausgaben verwaltet oder alles andere zur App.",
     helpChatPlaceholder: "Schreibe deine Frage...",

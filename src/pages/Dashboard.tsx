@@ -242,13 +242,16 @@ const Index = () => {
       <div className="px-5 py-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-bold text-foreground">{t.myTrips}</h2>
-          <button
-            onClick={() => setHelpOpen(true)}
-            className="h-10 w-10 rounded-full gradient-hero shadow-card-hover flex items-center justify-center transition-transform hover:scale-110 active:scale-95"
-            aria-label={t.helpChatTitle}
-          >
-            <MessageCircleQuestion className="h-5 w-5 text-white" />
-          </button>
+          <div className="flex flex-col items-center gap-1">
+            <span className="text-xs font-bold text-black">{t.helpMeLabel}</span>
+            <button
+              onClick={() => setHelpOpen(true)}
+              className="h-10 w-10 rounded-full gradient-hero shadow-card-hover flex items-center justify-center transition-transform hover:scale-110 active:scale-95"
+              aria-label={t.helpChatTitle}
+            >
+              <MessageCircleQuestion className="h-5 w-5 text-white" />
+            </button>
+          </div>
         </div>
         {loading ? (
           <div className="flex flex-col gap-3">
