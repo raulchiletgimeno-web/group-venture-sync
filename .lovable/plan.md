@@ -1,89 +1,117 @@
 
 
-## Fix: Chat scroll not jumping to latest/unread messages on entry
+## Fix: Chat scroll should land on first unread message, not always at bottom
 
 ### Problem
-Line 74 uses `scrollIntoView({ behavior: "smooth" })` on every `messages` state change. This fires during the initial load, but because `ScrollArea` uses a virtualized/custom scrollable container, `scrollIntoView` on a plain `div` ref inside it often doesn't reach the bottom — especially on mobile or when images/audio are still loading. The smooth animation can also lose the race against rendering.
+Currently, on initial load the chat always jumps to the very bottom (`vp.scrollTop = vp.scrollHeight`). The user has no way to see where they left off — they land at the end and must scroll up manually to find what's new. This is unlike modern messaging apps (WhatsApp, Telegram) where the view starts at the first unread message.
 
-### Root cause
-`scrollRef.current?.scrollIntoView()` targets a div inside `ScrollArea`, but `ScrollArea` (Radix) uses an internal viewport element. The `scrollIntoView` call may not propagate correctly to the Radix scroll viewport. Additionally, the initial scroll fires before images/media have loaded, so the container height is wrong.
+### How it works today
+- `trip_last_seen` table stores per-user, per-section `last_seen_at` timestamp
+- `useMarkSectionSeen` upserts this timestamp when entering/leaving the chat
+- The initial scroll effect (line 75-87) always scrolls to the very bottom on first load
+- There's no query for the user's `last_seen_at` value inside the Chat component
 
 ### Fix — single file: `src/pages/trips/Chat.tsx`
 
-**Change 1: Target the ScrollArea viewport directly for reliable scrolling**
+**Change 1: Fetch the user's `last_seen_at` for this chat on mount**
 
-Replace the current scroll approach. Instead of using `scrollIntoView` on a dummy div, get the actual scrollable viewport from the `ScrollArea` and set its `scrollTop` directly.
+Before messages load, query `trip_last_seen` for the current user + trip + section="chat" to get the timestamp of when they last viewed the chat.
 
-Replace:
 ```ts
-const scrollRef = useRef<HTMLDivElement>(null);
-```
-With a ref that targets the ScrollArea's viewport:
-```ts
-const viewportRef = useRef<HTMLDivElement>(null);
-```
-
-**Change 2: Scroll to bottom reliably after initial load and new messages**
-
-Replace line 74:
-```ts
-useEffect(() => { scrollRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
-```
-With:
-```ts
-const isInitialLoad = useRef(true);
+const [lastSeenAt, setLastSeenAt] = useState<string | null>(null);
 
 useEffect(() => {
-  const vp = viewportRef.current;
-  if (!vp) return;
-
-  if (isInitialLoad.current) {
-    // On first load, jump instantly to bottom (no smooth — avoids race)
-    requestAnimationFrame(() => {
-      vp.scrollTop = vp.scrollHeight;
+  if (!tripId || !user) return;
+  supabase.from("trip_last_seen")
+    .select("last_seen_at")
+    .eq("trip_id", tripId)
+    .eq("user_id", user.id)
+    .eq("section", "chat")
+    .maybeSingle()
+    .then(({ data }) => {
+      setLastSeenAt(data?.last_seen_at ?? null);
     });
-    isInitialLoad.current = false;
-  } else {
-    // For new messages, smooth scroll only if user is already near the bottom
-    const isNearBottom = vp.scrollHeight - vp.scrollTop - vp.clientHeight < 150;
-    if (isNearBottom) {
-      requestAnimationFrame(() => {
-        vp.scrollTop = vp.scrollHeight;
-      });
-    }
-  }
-}, [messages]);
+}, [tripId, user]);
 ```
 
-**Change 3: Attach the ref to the ScrollArea viewport**
+**Change 2: Replace the initial scroll logic to target the first unread message**
 
-Update the `ScrollArea` JSX to pass the viewport ref. The Radix `ScrollArea` renders a `[data-radix-scroll-area-viewport]` element. Use a callback ref or wrap with a `ScrollArea` that forwards the viewport ref.
+On initial load, instead of scrolling to the bottom, find the first message whose `created_at` is after `lastSeenAt`. If found, scroll that message's DOM element into view. If no unread messages exist (or `lastSeenAt` is null — first visit), scroll to bottom as before.
 
-Simplest approach — replace `ScrollArea` with a plain `div` with `overflow-y: auto` (avoids the Radix viewport indirection entirely, and the chat doesn't need fancy scrollbar styling):
+Each message `div` gets a `data-msg-id` attribute. On initial load:
+
+```ts
+useEffect(() => {
+  const vp = viewportRef.current;
+  if (!vp || !isInitialLoad.current) {
+    // For subsequent new messages, auto-scroll only if near bottom
+    if (vp) {
+      const isNearBottom = vp.scrollHeight - vp.scrollTop - vp.clientHeight < 150;
+      if (isNearBottom) requestAnimationFrame(() => { vp.scrollTop = vp.scrollHeight; });
+    }
+    return;
+  }
+  // Wait until lastSeenAt has been fetched (null means loading, undefined would mean no record)
+  if (lastSeenAt === null && user) return; // still loading
+
+  // Find the first unread message
+  const firstUnreadIdx = lastSeenAt
+    ? messages.findIndex(m => m.user_id !== user?.id && m.created_at > lastSeenAt)
+    : -1;
+
+  requestAnimationFrame(() => {
+    if (firstUnreadIdx > 0) {
+      // Scroll to the unread message element
+      const el = vp.querySelector(`[data-msg-idx="${firstUnreadIdx}"]`);
+      if (el) {
+        (el as HTMLElement).scrollIntoView({ block: "start" });
+        isInitialLoad.current = false;
+        return;
+      }
+    }
+    // Fallback: scroll to bottom
+    vp.scrollTop = vp.scrollHeight;
+    isInitialLoad.current = false;
+  });
+}, [messages, lastSeenAt]);
+```
+
+**Change 3: Add a visual "unread messages" separator**
+
+Between the last read message and the first unread message, render a small banner like modern messaging apps:
 
 ```tsx
-<div ref={viewportRef} className="flex-1 overflow-y-auto px-2">
-  <div className="flex flex-col gap-1 py-2">
-    {messages.map(...)}
+{firstUnreadIdx === idx && (
+  <div className="flex items-center gap-2 my-3">
+    <div className="flex-1 border-t border-primary/30" />
+    <span className="text-xs text-primary font-medium px-2">{t.newMessages ?? "Mensajes nuevos"}</span>
+    <div className="flex-1 border-t border-primary/30" />
   </div>
-</div>
+)}
 ```
 
-Remove the `<div ref={scrollRef} />` sentinel at line 214 — no longer needed.
+**Change 4: Add `data-msg-idx` to each message wrapper**
 
-**Change 4: Remove the old scrollRef**
+```tsx
+<div key={msg.id} data-msg-idx={idx}>
+```
 
-Delete `const scrollRef = useRef<HTMLDivElement>(null);` and the `<div ref={scrollRef} />`.
+**Change 5: Use a distinct sentinel for "lastSeenAt not yet fetched" vs "no record"**
 
-### Summary of changes
+Use `undefined` for "not yet fetched" and `null` for "no record found":
+- Initialize as `undefined`
+- Set to `data?.last_seen_at ?? null` after query
+
+### Translation key
+Add `newMessages` to the translations object (Spanish: "Mensajes nuevos", English: "New messages", etc.).
+
+### Summary
 - **1 file changed**: `src/pages/trips/Chat.tsx`
-- Replace `ScrollArea` with a plain scrollable div to get a reliable scroll target
-- On initial load: instant jump to bottom via `requestAnimationFrame` + `scrollTop`
-- On new messages: auto-scroll only if user is already near the bottom (within 150px)
-- Removes the unreliable `scrollIntoView` approach
-
-### What stays the same
-- All message rendering, sending, deleting, recording — unchanged
-- All other pages and components — untouched
-- Chat styling and layout — identical
+- **1 file touched**: `src/i18n/translations.ts` (add `newMessages` key)
+- Fetches `last_seen_at` from `trip_last_seen` on mount
+- Scrolls to the first unread message instead of the bottom
+- Shows a visual "New messages" separator line
+- Falls back to bottom scroll if no unread messages or first visit
+- Auto-scroll on new messages only if user is near the bottom (unchanged)
+- No other files or features touched
 
