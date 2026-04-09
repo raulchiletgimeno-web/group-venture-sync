@@ -1,53 +1,68 @@
 
 
-## Validación de email obligatoria en el registro de YORMIT
+## Personalizar el email de verificación de registro de YORMIT
 
 ### Situación actual
 
-- El registro ya usa `supabase.auth.signUp` con `emailRedirectTo`, y el mensaje post-registro dice "Revisa tu email para confirmar tu cuenta"
-- **Pero** la app no verifica si el email está confirmado: `ProtectedRoute` solo comprueba si hay sesión, no si `email_confirmed_at` existe
-- Si auto-confirm está activo en el backend, los usuarios entran directamente sin verificar nada
+- El dominio de email `notify.mail.yormit.com` está verificado y activo
+- No existen plantillas de auth email personalizadas — se usan las plantillas por defecto de Lovable
+- La infraestructura de email (colas, cron, etc.) ya está configurada
 
-### Cambios necesarios
+### Qué voy a hacer
 
-#### 1. Desactivar auto-confirmación de email (backend)
-Usar `cloud--configure_auth` para asegurar que `enable_signup = true` y `double_confirm_changes = true` y que auto-confirm esté **desactivado**. Esto hace que el usuario reciba un email de confirmación real y no pueda hacer login hasta confirmarlo.
+#### 1. Crear las plantillas de auth email personalizadas
 
-#### 2. Pantalla de verificación pendiente (`Auth.tsx`)
-Tras un registro exitoso, en lugar de solo mostrar un toast, cambiar a un estado `"check-email"` que muestre:
-- Icono de email (Mail)
-- Título: "Verifica tu correo electrónico"
-- Texto: "Hemos enviado un email de verificación a **{email}**. Revisa tu bandeja de entrada y haz clic en el enlace para activar tu cuenta en YORMIT."
-- Botón "Reenviar email de verificación" que llama a `supabase.auth.resend({ type: 'signup', email })`
-- Enlace "Volver al inicio de sesión" para cambiar a modo login
+Usaré la herramienta de scaffolding para generar las 6 plantillas de auth email (signup, recovery, magic-link, invite, email-change, reauthentication) y el edge function `auth-email-hook`.
 
-#### 3. Bloqueo en `ProtectedRoute.tsx`
-Añadir comprobación: si el usuario tiene sesión pero `user.email_confirmed_at` es `null`, redirigir a `/auth` (o mostrar la pantalla de verificación pendiente). Esto impide acceso a la app sin email verificado.
+#### 2. Personalizar la plantilla de signup (verificación de registro)
 
-#### 4. Control en login (`Auth.tsx`)
-Tras un login exitoso, si `session.user.email_confirmed_at` es falsy, mostrar la pantalla de verificación pendiente en vez de navegar al dashboard.
+Aplicaré el branding de YORMIT con estos elementos:
 
-#### 5. Traducciones (`translations.ts`)
-Añadir las siguientes claves en los 7 idiomas:
-- `verifyEmailTitle` — "Verifica tu correo electrónico"
-- `verifyEmailDesc` — "Hemos enviado un email de verificación a {email}..."
-- `resendVerification` — "Reenviar email de verificación"
-- `resendVerificationSuccess` — "Email reenviado correctamente"
-- `resendVerificationDesc` — "Revisa tu bandeja de entrada"
-- `backToLogin` — "Volver al inicio de sesión"
-- `emailNotVerified` — "Tu email aún no ha sido verificado"
+**Colores extraídos del proyecto:**
+- Primary: `hsl(200, 80%, 50%)` — azul YORMIT
+- Foreground: `hsl(215, 30%, 12%)` — texto oscuro
+- Muted foreground: `hsl(215, 12%, 50%)` — texto secundario
+- Border radius: `0.75rem`
+- Font: Plus Jakarta Sans (con fallback Arial)
+- Fondo del email: `#ffffff`
 
-#### 6. `AuthContext.tsx` — Añadir `resendVerificationEmail`
-Exponer una función `resendVerificationEmail(email: string)` que llame a `supabase.auth.resend({ type: 'signup', email })`.
+**Asunto:**
+> Verifica tu correo y activa tu cuenta en YORMIT
 
-### Ficheros afectados
+**Contenido del email:**
+- Marca YORMIT visible en la cabecera (texto con estilo, sin imagen externa)
+- Saludo: "Hola,"
+- Bienvenida: "Te damos la bienvenida a YORMIT."
+- Texto: "Ya casi está todo listo. Solo falta verificar tu correo electrónico para activar tu cuenta y empezar a usar la app con normalidad."
+- Botón azul YORMIT: "Verificar mi cuenta"
+- Texto alternativo con enlace por si el botón no funciona
+- Nota discreta: "Si no has solicitado esta cuenta, puedes ignorar este mensaje."
+- Cierre: "Gracias por confiar en YORMIT. Nos vemos dentro."
 
-| Fichero | Cambio |
+#### 3. Aplicar branding a las demás plantillas de auth
+
+Las otras 5 plantillas (recovery, magic-link, etc.) también recibirán el branding de YORMIT para consistencia visual, aunque el foco principal es signup.
+
+#### 4. Desplegar el edge function
+
+Desplegar `auth-email-hook` para que los emails personalizados se activen.
+
+### Ficheros que se crearán/modificarán
+
+| Fichero | Acción |
 |---------|--------|
-| `src/pages/Auth.tsx` | Nuevo estado `check-email`, pantalla de verificación, botón reenviar |
-| `src/components/ProtectedRoute.tsx` | Comprobar `email_confirmed_at` |
-| `src/contexts/AuthContext.tsx` | Añadir `resendVerificationEmail` |
-| `src/i18n/translations.ts` | Nuevas claves en 7 idiomas |
+| `supabase/functions/auth-email-hook/index.ts` | Crear (scaffold) |
+| `supabase/functions/auth-email-hook/deno.json` | Crear (scaffold) |
+| `supabase/functions/_shared/email-templates/signup.tsx` | Crear y personalizar |
+| `supabase/functions/_shared/email-templates/recovery.tsx` | Crear y personalizar |
+| `supabase/functions/_shared/email-templates/magic-link.tsx` | Crear y personalizar |
+| `supabase/functions/_shared/email-templates/invite.tsx` | Crear y personalizar |
+| `supabase/functions/_shared/email-templates/email-change.tsx` | Crear y personalizar |
+| `supabase/functions/_shared/email-templates/reauthentication.tsx` | Crear y personalizar |
 
-No se toca ninguna otra parte de la app.
+### Lo que NO se toca
+
+- Ningún fichero de la app (Auth.tsx, ProtectedRoute.tsx, AuthContext.tsx, etc.)
+- Ninguna lógica de registro ni verificación
+- Ninguna otra pantalla ni funcionalidad
 
