@@ -8,13 +8,29 @@ const corsHeaders = {
 // Friendly chat messages (random rotation)
 const CHAT_MESSAGES = [
   (debtor: string, creditor: string, amount: string) =>
-    `🤖 ¡Psst! ${debtor}, recuerda que todavía debes ${amount} € a ${creditor}. ¡Seguro que se te había pasado! 😄`,
+    `🤖 Venga, ${debtor}, a ver si le pagas esos ${amount} € a ${creditor} y así mañana no tengo que volver a mandarte otro mensajito. Hazlo por Bizum, transferencia o invítale una cerveza, pero luego entra en Gastos y ajústalo para que deje de salir como pendiente. 😄`,
   (debtor: string, creditor: string, amount: string) =>
-    `💸 ¡Ey ${debtor}! Tu cuenta con ${creditor} sigue pendiente: ${amount} €. ¡Un Bizum y listo! 🚀`,
+    `💸 ${debtor}, que me han dicho que todavía le debes ${amount} € a ${creditor}. No pasa nada, estas cosas se olvidan… pero yo no las olvido 😏. Págale como prefieras y luego entra en Gastos para ajustarlo. ¡Así dejo de darte la tabarra!`,
   (debtor: string, creditor: string, amount: string) =>
-    `🫣 ${debtor}, una cosita... quedan ${amount} € por ajustar con ${creditor}. ¡Nada que un cafecito no arregle! ☕`,
+    `🫣 Oye ${debtor}, soy YORMIT y vengo en son de paz. Quedan ${amount} € pendientes con ${creditor}. Un Bizum rápido, una transferencia o un café y estáis en paz. Eso sí, luego entra en Gastos y ajústalo, que si no yo sigo contando. 📊`,
   (debtor: string, creditor: string, amount: string) =>
-    `🔔 Recordatorio amistoso: ${debtor} → ${creditor}: ${amount} €. ¡Que no se te escape! 😉`,
+    `☕ ${debtor}, te lo digo con cariño: ${amount} € con ${creditor} siguen ahí. Págale cuando puedas y luego pásate por Gastos para ajustarlo. Así me ahorro el mensajito de mañana y tú te ahorras leerme. Win-win. 😉`,
+  (debtor: string, creditor: string, amount: string) =>
+    `🔔 ¡Buenos días, ${debtor}! Soy tu recordatorio favorito. Todavía quedan ${amount} € pendientes con ${creditor}. Hazle un Bizum, una transferencia o lo que os mole, y luego entra en Gastos para dejarlo ajustado. ¡Prometido que dejo de escribirte! 🤞`,
+  (debtor: string, creditor: string, amount: string) =>
+    `🎯 ${debtor}, mira, no quiero ser pesado, pero es mi trabajo: ${amount} € con ${creditor}. Págale como más os convenga y después entra en Gastos y ajústalo. Cuando lo hagas, me callo. Palabra de bot. 🤖`,
+  (debtor: string, creditor: string, amount: string) =>
+    `😅 ${debtor}, que ${creditor} no te lo va a decir porque es muy majo/a, pero le debes ${amount} €. Un Bizum, una transferencia, un sobre con billetes… lo que sea. Y luego entra en Gastos y ajústalo para que yo pueda descansar. 💤`,
+  (debtor: string, creditor: string, amount: string) =>
+    `🚀 ${debtor}, recordatorio exprés: ${amount} € → ${creditor}. Bizum, transferencia o paloma mensajera con monedas. Tú decides. Pero luego entra en Gastos y ajústalo, que si no mañana vuelvo. Y vuelvo. 😄`,
+  (debtor: string, creditor: string, amount: string) =>
+    `🎵 ${debtor}, ♫ tienes ${amount} euritos pendientes con ${creditor} ♫. No es broma, pero lo digo cantando para que suene mejor. Págale y entra en Gastos para ajustarlo. ¡Así la música para! 🎶`,
+  (debtor: string, creditor: string, amount: string) =>
+    `🧮 ${debtor}, las matemáticas no mienten: ${amount} € con ${creditor}. Hazle un Bizum o lo que queráis y luego entra en Gastos para ajustarlo. Cuando lo hagas, este bot se va de vacaciones. 🏖️`,
+  (debtor: string, creditor: string, amount: string) =>
+    `💛 ${debtor}, te escribo con todo el cariño del mundo: ${amount} € con ${creditor} siguen pendientes. Págale cuando puedas y luego entra en Gastos para dejarlo todo cuadrado. ¡Que luego las cuentas claras conservan las amistades! 🤝`,
+  (debtor: string, creditor: string, amount: string) =>
+    `🤖 Soy YORMIT y no tengo sentimientos, pero si los tuviera me daría penita seguir recordándote esto, ${debtor}. ${amount} € con ${creditor}. Págale, entra en Gastos, ajústalo y seré libre. ¡Hazlo por mí! 🥹`,
 ];
 
 function pickRandom<T>(arr: T[]): T {
