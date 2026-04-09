@@ -1,44 +1,54 @@
 
 
-## Add "¿Te ayudo?" label above the help chatbot icon
+## Add legal pages structure to YORMIT
 
-### What changes
+### New files to create
 
-**1. Add translation key `helpMeLabel`** in `src/i18n/translations.ts`
+**4 legal page components** in `src/pages/legal/`:
 
-| Language | Value |
-|----------|-------|
-| es | ¿Te ayudo? |
-| en | Need help? |
-| fr | Besoin d'aide ? |
-| pt | Precisa de ajuda? |
-| it | Serve aiuto? |
-| zh | 需要帮助？ |
-| de | Brauchen Sie Hilfe? |
+- `LegalNotice.tsx` — `/aviso-legal` — Aviso Legal placeholder
+- `PrivacyPolicy.tsx` — `/privacidad` — Política de Privacidad placeholder
+- `CookiesPolicy.tsx` — `/cookies` — Política de Cookies placeholder
+- `Contact.tsx` — `/contacto` — Página de contacto (info@yormit.com + placeholder)
 
-Add to the `TranslationKeys` type and all 7 language blocks.
+Each page will be a simple, clean layout: YORMIT logo at top, structured placeholder text with section headings, and a back-to-home link. Styled consistently with the app's existing design (card backgrounds, typography, colors). All text will be in Spanish since these are legal pages tied to the business entity.
 
-**2. Wrap the help button in a flex-col layout** in `src/pages/Dashboard.tsx` (lines 245–251)
+### Route registration — `src/App.tsx`
 
-Replace the standalone `<button>` with a small wrapper that stacks the label text above the icon:
+Add 4 new public routes before the catch-all:
 
-```tsx
-<div className="flex flex-col items-center gap-1">
-  <span className="text-xs font-bold text-black">{t.helpMeLabel}</span>
-  <button
-    onClick={() => setHelpOpen(true)}
-    className="h-10 w-10 rounded-full gradient-hero shadow-card-hover flex items-center justify-center transition-transform hover:scale-110 active:scale-95"
-    aria-label={t.helpChatTitle}
-  >
-    <MessageCircleQuestion className="h-5 w-5 text-white" />
-  </button>
-</div>
+```
+/aviso-legal → LegalNotice
+/privacidad → PrivacyPolicy
+/cookies → CookiesPolicy
+/contacto → Contact
 ```
 
-### Files touched
-- `src/i18n/translations.ts` — new key + type
-- `src/pages/Dashboard.tsx` — button wrapper with label
+Lazy-loaded like the other pages.
 
-### Nothing else changes
-No other components, pages, or logic are modified.
+### Landing page footer — `src/pages/Landing.tsx`
+
+Update the footer (lines 369-380) to add a row of legal links below the existing copyright text:
+
+```
+Aviso legal · Privacidad · Cookies · Contacto
+```
+
+Small text, muted color, centered on mobile, right-aligned on desktop. Uses `<Link>` from react-router.
+
+### Dashboard footer — `src/pages/Dashboard.tsx`
+
+Add a minimal footer at the bottom of the dashboard page with the same 4 legal links, small and discreet so they don't interfere with the UI.
+
+### Files changed
+- `src/App.tsx` — 4 new lazy routes
+- `src/pages/Landing.tsx` — footer links
+- `src/pages/Dashboard.tsx` — small footer with legal links
+- `src/pages/legal/LegalNotice.tsx` — new
+- `src/pages/legal/PrivacyPolicy.tsx` — new
+- `src/pages/legal/CookiesPolicy.tsx` — new
+- `src/pages/legal/Contact.tsx` — new
+
+### Nothing else touched
+No changes to any existing functionality, styling, logic, or components.
 
