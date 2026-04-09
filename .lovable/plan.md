@@ -1,54 +1,50 @@
 
 
-## Add legal pages structure to YORMIT
+## Complete legal pages with definitive text
 
-### New files to create
+Replace placeholder content in the 4 existing legal page components with professionally drafted Spanish legal text using the provided business data. No changes to layout, styling, routing, or any other part of the app.
 
-**4 legal page components** in `src/pages/legal/`:
+### Files modified (content only, same structure/styling)
 
-- `LegalNotice.tsx` — `/aviso-legal` — Aviso Legal placeholder
-- `PrivacyPolicy.tsx` — `/privacidad` — Política de Privacidad placeholder
-- `CookiesPolicy.tsx` — `/cookies` — Política de Cookies placeholder
-- `Contact.tsx` — `/contacto` — Página de contacto (info@yormit.com + placeholder)
+**1. `src/pages/legal/LegalNotice.tsx`** — 7 sections:
+1. Titular del sitio web — Raul Chilet Gimeno, NIF 52633612K, address, email, phone
+2. Objeto — YORMIT as a free group travel webapp
+3. Condiciones generales de uso — responsible use, prohibited activities, user-generated content responsibility
+4. Propiedad intelectual e industrial — all IP belongs to the titular, users cannot reproduce without authorization
+5. Limitación de responsabilidad — no guarantees on availability, user-generated content disclaimer
+6. Legislación aplicable y jurisdicción — Spanish law, courts of Valencia
+7. Contacto — info@yormit.com
 
-Each page will be a simple, clean layout: YORMIT logo at top, structured placeholder text with section headings, and a back-to-home link. Styled consistently with the app's existing design (card backgrounds, typography, colors). All text will be in Spanish since these are legal pages tied to the business entity.
+**2. `src/pages/legal/PrivacyPolicy.tsx`** — 10 sections:
+1. Responsable del tratamiento — full identification with all provided data
+2. Datos que recogemos — registration data, profile, chat messages, photos, trip info, expenses, push notification tokens, usage data
+3. Finalidades del tratamiento — account management, trip organization features, notifications, service improvement
+4. Base jurídica — consent (registration), contract execution (service), legitimate interest (improvement)
+5. Destinatarios — hosting/infrastructure providers, no data sold, international transfers with guarantees
+6. Plazo de conservación — while account active + legal retention period, deletion on request
+7. Derechos del usuario — access, rectification, deletion, opposition, limitation, portability, complaint to AEPD
+8. Ejercicio de derechos — email info@yormit.com with ID copy
+9. Contenido subido por usuarios — users must not upload illegal content, photos of third parties require their authorization, platform may remove infringing content
+10. Seguridad — technical and organizational measures
 
-### Route registration — `src/App.tsx`
+**3. `src/pages/legal/CookiesPolicy.tsx`** — 5 sections:
+1. What are cookies — brief explanation
+2. Cookies used — only technical/session cookies, no analytics/advertising/marketing cookies currently
+3. Future changes — if analytics or marketing cookies are added, this policy and consent mechanism will be updated
+4. Cookie management — browser settings instructions, impact warning
+5. Contact — info@yormit.com
 
-Add 4 new public routes before the catch-all:
+**4. `src/pages/legal/Contact.tsx`** — Add phone number card alongside email, keep response time note:
+- Email: info@yormit.com
+- Phone: 616 448 475
+- Response time: 48 business hours
 
-```
-/aviso-legal → LegalNotice
-/privacidad → PrivacyPolicy
-/cookies → CookiesPolicy
-/contacto → Contact
-```
+### What does NOT change
+- No design, layout, or CSS changes
+- No routing changes
+- No changes to Landing, Dashboard, App.tsx, or any other file
+- Same component structure, same imports, same wrapper classes
 
-Lazy-loaded like the other pages.
-
-### Landing page footer — `src/pages/Landing.tsx`
-
-Update the footer (lines 369-380) to add a row of legal links below the existing copyright text:
-
-```
-Aviso legal · Privacidad · Cookies · Contacto
-```
-
-Small text, muted color, centered on mobile, right-aligned on desktop. Uses `<Link>` from react-router.
-
-### Dashboard footer — `src/pages/Dashboard.tsx`
-
-Add a minimal footer at the bottom of the dashboard page with the same 4 legal links, small and discreet so they don't interfere with the UI.
-
-### Files changed
-- `src/App.tsx` — 4 new lazy routes
-- `src/pages/Landing.tsx` — footer links
-- `src/pages/Dashboard.tsx` — small footer with legal links
-- `src/pages/legal/LegalNotice.tsx` — new
-- `src/pages/legal/PrivacyPolicy.tsx` — new
-- `src/pages/legal/CookiesPolicy.tsx` — new
-- `src/pages/legal/Contact.tsx` — new
-
-### Nothing else touched
-No changes to any existing functionality, styling, logic, or components.
+### Banner de cookies
+After implementation I will advise on whether a cookie consent banner is needed given the current cookie usage (spoiler: since only technical cookies are used, it is not legally required right now, but recommended to add one proactively).
 
