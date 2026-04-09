@@ -64,9 +64,9 @@ const PrivacyPolicy = () => (
             El tratamiento de tus datos se fundamenta en las siguientes bases legales:
           </p>
           <ul className="text-sm text-muted-foreground leading-relaxed list-disc pl-5 space-y-1">
-            <li><strong className="text-foreground">Consentimiento:</strong> al registrarte y utilizar la plataforma, consientes el tratamiento de tus datos para las finalidades descritas.</li>
-            <li><strong className="text-foreground">Ejecución de un contrato:</strong> el tratamiento es necesario para prestarte el servicio de organización de viajes.</li>
-            <li><strong className="text-foreground">Interés legítimo:</strong> para mejorar la plataforma y garantizar su seguridad.</li>
+            <li><strong className="text-foreground">Ejecución de la relación contractual:</strong> el tratamiento de tus datos es necesario para prestarte el servicio ofrecido por YORMIT, incluyendo la gestión de tu cuenta, la organización de viajes, la comunicación entre miembros, la subida de fotografías y el registro de gastos compartidos.</li>
+            <li><strong className="text-foreground">Consentimiento:</strong> para determinadas funcionalidades opcionales, como el envío de notificaciones push, el tratamiento se basa en tu consentimiento expreso, que puedes revocar en cualquier momento.</li>
+            <li><strong className="text-foreground">Interés legítimo:</strong> para mejorar el funcionamiento de la plataforma y garantizar su seguridad.</li>
           </ul>
         </section>
 
@@ -122,7 +122,13 @@ const PrivacyPolicy = () => (
             Los usuarios son los únicos responsables del contenido que suban o compartan a través de YORMIT. Queda prohibido subir contenido ilícito, difamatorio, ofensivo o que vulnere derechos de terceros.
           </p>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            En particular, quien suba fotografías o datos personales de terceras personas debe contar con la autorización o legitimación suficiente para ello. El titular de la plataforma no asume responsabilidad por el contenido generado por los usuarios, y se reserva el derecho de retirar cualquier contenido que infrinja estas condiciones o la normativa vigente.
+            Al subir fotografías o cualquier dato personal de terceras personas, el usuario declara y garantiza que cuenta con la autorización, legitimación o consentimiento suficiente de dichas personas para compartir dicho contenido a través de la plataforma.
+          </p>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            En el caso de imágenes o datos de menores de edad, el usuario debe contar con la autorización expresa de sus progenitores o representantes legales, cuando así lo exija la normativa aplicable.
+          </p>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            El titular de la plataforma no asume responsabilidad por el contenido generado por los usuarios, y se reserva el derecho de retirar cualquier contenido que infrinja estas condiciones o la normativa vigente.
           </p>
         </section>
 
