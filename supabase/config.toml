@@ -14,3 +14,6 @@ verify_jwt = false
 
 [functions.notify-trip]
 verify_jwt = false
+
+[functions.check-trip-debts]
+verify_jwt = false
