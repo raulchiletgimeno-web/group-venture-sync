@@ -230,6 +230,7 @@ type TranslationKeys = {
   usuario: string;
   writeMessage: string;
   recordingAudio: string;
+  newMessages: string;
   today: string;
   yesterday: string;
   errorSending: string;
@@ -641,6 +642,7 @@ const translations: Record<Language, TranslationKeys> = {
     usuario: "Usuario",
     writeMessage: "Escribe un mensaje...",
     recordingAudio: "Grabando audio...",
+    newMessages: "Mensajes nuevos",
     today: "Hoy",
     yesterday: "Ayer",
     errorSending: "Error al enviar",
@@ -1025,6 +1027,7 @@ const translations: Record<Language, TranslationKeys> = {
     usuario: "User",
     writeMessage: "Write a message...",
     recordingAudio: "Recording audio...",
+    newMessages: "New messages",
     today: "Today",
     yesterday: "Yesterday",
     errorSending: "Error sending",
@@ -1409,6 +1412,7 @@ const translations: Record<Language, TranslationKeys> = {
     usuario: "Utilisateur",
     writeMessage: "Écrivez un message...",
     recordingAudio: "Enregistrement audio...",
+    newMessages: "Nouveaux messages",
     today: "Aujourd'hui",
     yesterday: "Hier",
     errorSending: "Erreur d'envoi",
@@ -1793,6 +1797,7 @@ const translations: Record<Language, TranslationKeys> = {
     usuario: "Utilizador",
     writeMessage: "Escreva uma mensagem...",
     recordingAudio: "A gravar áudio...",
+    newMessages: "Novas mensagens",
     today: "Hoje",
     yesterday: "Ontem",
     errorSending: "Erro ao enviar",
@@ -2177,6 +2182,7 @@ const translations: Record<Language, TranslationKeys> = {
     usuario: "Utente",
     writeMessage: "Scrivi un messaggio...",
     recordingAudio: "Registrazione audio...",
+    newMessages: "Nuovi messaggi",
     today: "Oggi",
     yesterday: "Ieri",
     errorSending: "Errore nell'invio",
@@ -2561,6 +2567,7 @@ const translations: Record<Language, TranslationKeys> = {
     usuario: "用户",
     writeMessage: "输入消息...",
     recordingAudio: "正在录音...",
+    newMessages: "新消息",
     today: "今天",
     yesterday: "昨天",
     errorSending: "发送出错",
@@ -2945,6 +2952,7 @@ const translations: Record<Language, TranslationKeys> = {
     usuario: "Benutzer",
     writeMessage: "Nachricht schreiben...",
     recordingAudio: "Audio wird aufgenommen...",
+    newMessages: "Neue Nachrichten",
     today: "Heute",
     yesterday: "Gestern",
     errorSending: "Fehler beim Senden",
