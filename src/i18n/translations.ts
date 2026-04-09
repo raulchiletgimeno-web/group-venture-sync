@@ -52,6 +52,12 @@ type TranslationKeys = {
   registerSuccess: string;
   registerSuccessDesc: string;
   registerError: string;
+  verifyEmailTitle: string;
+  verifyEmailDesc: string;
+  resendVerification: string;
+  resendVerificationSuccess: string;
+  resendVerificationDesc: string;
+  emailNotVerified: string;
 
   // Reset password
   resetPassword: string;
@@ -487,6 +493,12 @@ const translations: Record<Language, TranslationKeys> = {
     registerSuccess: "Registro exitoso",
     registerSuccessDesc: "Revisa tu email para confirmar tu cuenta.",
     registerError: "Error al registrarse",
+    verifyEmailTitle: "Verifica tu correo electrónico",
+    verifyEmailDesc: "Hemos enviado un email de verificación a {email}. Revisa tu bandeja de entrada y haz clic en el enlace para activar tu cuenta en YORMIT.",
+    resendVerification: "Reenviar email de verificación",
+    resendVerificationSuccess: "Email reenviado correctamente",
+    resendVerificationDesc: "Revisa tu bandeja de entrada y la carpeta de spam.",
+    emailNotVerified: "Tu email aún no ha sido verificado",
     resetPassword: "Restablecer contraseña",
     newPassword: "Nueva contraseña",
     saving: "Guardando...",
@@ -873,6 +885,12 @@ const translations: Record<Language, TranslationKeys> = {
     registerSuccess: "Registration successful",
     registerSuccessDesc: "Check your email to confirm your account.",
     registerError: "Registration error",
+    verifyEmailTitle: "Verify your email",
+    verifyEmailDesc: "We've sent a verification email to {email}. Check your inbox and click the link to activate your YORMIT account.",
+    resendVerification: "Resend verification email",
+    resendVerificationSuccess: "Email resent successfully",
+    resendVerificationDesc: "Check your inbox and spam folder.",
+    emailNotVerified: "Your email has not been verified yet",
     resetPassword: "Reset password",
     newPassword: "New password",
     saving: "Saving...",
@@ -1259,6 +1277,12 @@ const translations: Record<Language, TranslationKeys> = {
     registerSuccess: "Inscription réussie",
     registerSuccessDesc: "Vérifiez votre email pour confirmer votre compte.",
     registerError: "Erreur d'inscription",
+    verifyEmailTitle: "Vérifiez votre adresse e-mail",
+    verifyEmailDesc: "Nous avons envoyé un e-mail de vérification à {email}. Consultez votre boîte de réception et cliquez sur le lien pour activer votre compte YORMIT.",
+    resendVerification: "Renvoyer l'e-mail de vérification",
+    resendVerificationSuccess: "E-mail renvoyé avec succès",
+    resendVerificationDesc: "Vérifiez votre boîte de réception et le dossier spam.",
+    emailNotVerified: "Votre e-mail n'a pas encore été vérifié",
     resetPassword: "Réinitialiser le mot de passe",
     newPassword: "Nouveau mot de passe",
     saving: "Enregistrement...",
@@ -1645,6 +1669,12 @@ const translations: Record<Language, TranslationKeys> = {
     registerSuccess: "Registo bem-sucedido",
     registerSuccessDesc: "Verifique o seu email para confirmar a sua conta.",
     registerError: "Erro ao registar",
+    verifyEmailTitle: "Verifique o seu e-mail",
+    verifyEmailDesc: "Enviámos um e-mail de verificação para {email}. Verifique a sua caixa de entrada e clique no link para ativar a sua conta YORMIT.",
+    resendVerification: "Reenviar e-mail de verificação",
+    resendVerificationSuccess: "E-mail reenviado com sucesso",
+    resendVerificationDesc: "Verifique a sua caixa de entrada e a pasta de spam.",
+    emailNotVerified: "O seu e-mail ainda não foi verificado",
     resetPassword: "Redefinir palavra-passe",
     newPassword: "Nova palavra-passe",
     saving: "A guardar...",
@@ -2031,6 +2061,12 @@ const translations: Record<Language, TranslationKeys> = {
     registerSuccess: "Registrazione riuscita",
     registerSuccessDesc: "Controlla la tua email per confermare il tuo account.",
     registerError: "Errore di registrazione",
+    verifyEmailTitle: "Verifica la tua email",
+    verifyEmailDesc: "Abbiamo inviato un'email di verifica a {email}. Controlla la tua casella di posta e clicca sul link per attivare il tuo account YORMIT.",
+    resendVerification: "Reinvia email di verifica",
+    resendVerificationSuccess: "Email reinviata con successo",
+    resendVerificationDesc: "Controlla la tua casella di posta e la cartella spam.",
+    emailNotVerified: "La tua email non è stata ancora verificata",
     resetPassword: "Reimposta password",
     newPassword: "Nuova password",
     saving: "Salvataggio...",
@@ -2417,6 +2453,12 @@ const translations: Record<Language, TranslationKeys> = {
     registerSuccess: "注册成功",
     registerSuccessDesc: "请检查您的邮箱以确认账户。",
     registerError: "注册错误",
+    verifyEmailTitle: "验证您的邮箱",
+    verifyEmailDesc: "我们已向 {email} 发送了验证邮件。请检查您的收件箱并点击链接以激活您的 YORMIT 账户。",
+    resendVerification: "重新发送验证邮件",
+    resendVerificationSuccess: "邮件已成功重新发送",
+    resendVerificationDesc: "请检查您的收件箱和垃圾邮件文件夹。",
+    emailNotVerified: "您的邮箱尚未验证",
     resetPassword: "重置密码",
     newPassword: "新密码",
     saving: "保存中...",
@@ -2803,6 +2845,12 @@ const translations: Record<Language, TranslationKeys> = {
     registerSuccess: "Registrierung erfolgreich",
     registerSuccessDesc: "Überprüfe deine E-Mail, um dein Konto zu bestätigen.",
     registerError: "Registrierungsfehler",
+    verifyEmailTitle: "Bestätige deine E-Mail",
+    verifyEmailDesc: "Wir haben eine Bestätigungs-E-Mail an {email} gesendet. Überprüfe deinen Posteingang und klicke auf den Link, um dein YORMIT-Konto zu aktivieren.",
+    resendVerification: "Bestätigungs-E-Mail erneut senden",
+    resendVerificationSuccess: "E-Mail erfolgreich erneut gesendet",
+    resendVerificationDesc: "Überprüfe deinen Posteingang und den Spam-Ordner.",
+    emailNotVerified: "Deine E-Mail wurde noch nicht verifiziert",
     resetPassword: "Passwort zurücksetzen",
     newPassword: "Neues Passwort",
     saving: "Speichern...",

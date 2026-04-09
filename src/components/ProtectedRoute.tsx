@@ -17,6 +17,11 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     return <Navigate to="/auth" replace />;
   }
 
+  // Block access if email is not verified
+  if (!session.user?.email_confirmed_at) {
+    return <Navigate to="/auth" replace />;
+  }
+
   return <>{children}</>;
 };
 
