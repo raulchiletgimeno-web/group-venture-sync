@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { Send, Camera, Mic, Square, Image as ImageIcon, X, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -42,12 +42,29 @@ const Chat = () => {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
 
+  // undefined = not yet fetched, null = no record (first visit)
+  const [lastSeenAt, setLastSeenAt] = useState<string | null | undefined>(undefined);
+
   const viewportRef = useRef<HTMLDivElement>(null);
   const isInitialLoad = useRef(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
+
+  // Fetch last_seen_at for this chat on mount (before marking seen)
+  useEffect(() => {
+    if (!tripId || !user) return;
+    supabase.from("trip_last_seen")
+      .select("last_seen_at")
+      .eq("trip_id", tripId)
+      .eq("user_id", user.id)
+      .eq("section", "chat")
+      .maybeSingle()
+      .then(({ data }) => {
+        setLastSeenAt(data?.last_seen_at ?? null);
+      });
+  }, [tripId, user]);
 
   useEffect(() => {
     if (!tripId) return;
@@ -72,19 +89,47 @@ const Chat = () => {
     return () => { supabase.removeChannel(channel); };
   }, [tripId]);
 
+  // Compute first unread message index
+  const firstUnreadIdx = useMemo(() => {
+    if (lastSeenAt === undefined) return -1; // still loading
+    if (lastSeenAt === null) return -1; // first visit → no separator
+    const idx = messages.findIndex(m => m.user_id !== user?.id && m.created_at > lastSeenAt);
+    return idx;
+  }, [messages, lastSeenAt, user?.id]);
+
+  // Scroll logic
   useEffect(() => {
     const vp = viewportRef.current;
     if (!vp) return;
-    if (isInitialLoad.current) {
-      requestAnimationFrame(() => { vp.scrollTop = vp.scrollHeight; });
-      isInitialLoad.current = false;
-    } else {
+
+    if (!isInitialLoad.current) {
+      // For subsequent new messages, auto-scroll only if near bottom
       const isNearBottom = vp.scrollHeight - vp.scrollTop - vp.clientHeight < 150;
       if (isNearBottom) {
         requestAnimationFrame(() => { vp.scrollTop = vp.scrollHeight; });
       }
+      return;
     }
-  }, [messages]);
+
+    // Wait until lastSeenAt has been fetched
+    if (lastSeenAt === undefined) return;
+    // Wait until messages are loaded
+    if (messages.length === 0) return;
+
+    requestAnimationFrame(() => {
+      if (firstUnreadIdx > 0) {
+        const el = vp.querySelector(`[data-msg-idx="${firstUnreadIdx}"]`);
+        if (el) {
+          (el as HTMLElement).scrollIntoView({ block: "start" });
+          isInitialLoad.current = false;
+          return;
+        }
+      }
+      // Fallback: scroll to bottom
+      vp.scrollTop = vp.scrollHeight;
+      isInitialLoad.current = false;
+    });
+  }, [messages, lastSeenAt, firstUnreadIdx]);
 
   const getMemberName = (userId: string) => formatDisplayName(members.find((m) => m.user_id === userId)?.name, t.usuario);
   const getInitials = (name: string) => name.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2);
@@ -92,17 +137,13 @@ const Chat = () => {
 
   const deleteMessage = async (msg: Message) => {
     if (!user || msg.user_id !== user.id) return;
-    // Remove from local state immediately
     setMessages((prev) => prev.filter((m) => m.id !== msg.id));
-    // Delete file from storage if exists
     if (msg.file_path) {
       await supabase.storage.from("trip-photos").remove([msg.file_path]);
-      // Also remove from trip_photos if it was an image
       if (msg.type === "image") {
         await supabase.from("trip_photos").delete().eq("file_path", msg.file_path);
       }
     }
-    // Delete the message row (RLS enforces author-only)
     const { error } = await supabase.from("trip_messages").delete().eq("id", msg.id);
     if (error) toast({ title: t.errorSending, variant: "destructive" });
   };
@@ -124,7 +165,6 @@ const Chat = () => {
     const { error: uploadError } = await supabase.storage.from("trip-photos").upload(path, file, { upsert: true });
     if (uploadError) { toast({ title: t.errorUploadingImage, variant: "destructive" }); setSending(false); return; }
     await supabase.from("trip_messages").insert({ trip_id: tripId, user_id: user.id, type: "image", file_path: path });
-    // Also add to trip_photos so it appears in the Photos tab
     await supabase.from("trip_photos").insert({ trip_id: tripId, user_id: user.id, file_path: path });
     notifyTripEvent(tripId, "chat", user.id);
     setImagePreview(null); setImageFile(null); setSending(false);
@@ -185,10 +225,17 @@ const Chat = () => {
           {messages.map((msg, idx) => {
             const isOwn = msg.user_id === user?.id;
             return (
-              <div key={msg.id}>
+              <div key={msg.id} data-msg-idx={idx}>
                 {shouldShowDateSep(idx) && (
                   <div className="flex justify-center my-3">
                     <span className="text-xs bg-muted text-muted-foreground px-3 py-1 rounded-full">{formatDateSeparator(msg.created_at)}</span>
+                  </div>
+                )}
+                {firstUnreadIdx === idx && (
+                  <div className="flex items-center gap-2 my-3">
+                    <div className="flex-1 border-t border-primary/30" />
+                    <span className="text-xs text-primary font-medium px-2">{t.newMessages}</span>
+                    <div className="flex-1 border-t border-primary/30" />
                   </div>
                 )}
                 <div className={`flex gap-2 ${isOwn ? "justify-end" : "justify-start"}`}>
