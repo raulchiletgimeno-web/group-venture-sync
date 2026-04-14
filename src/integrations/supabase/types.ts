@@ -524,6 +524,7 @@ export type Database = {
           created_at: string
           file_path: string
           id: string
+          media_type: string
           trip_id: string
           user_id: string
         }
@@ -531,6 +532,7 @@ export type Database = {
           created_at?: string
           file_path: string
           id?: string
+          media_type?: string
           trip_id: string
           user_id: string
         }
@@ -538,6 +540,7 @@ export type Database = {
           created_at?: string
           file_path?: string
           id?: string
+          media_type?: string
           trip_id?: string
           user_id?: string
         }
