@@ -1,53 +1,37 @@
 
 
-## Ajuste de fotos en orientación horizontal
+## Swipe entre fotos en vista ampliada
 
-### Problema
+### Resumen
 
-1. **Grid de miniaturas** (línea 119): usa `grid-cols-2 sm:grid-cols-3` con `aspect-square`. En horizontal solo muestra 2-3 columnas cuadradas, desaprovechando el espacio.
-2. **Visor fullscreen** (línea 150-155): usa `max-h-[85vh]` que funciona bien, pero no aprovecha al máximo el ancho en landscape.
+Reemplazar el visor fullscreen estático actual por uno con soporte de swipe táctil, permitiendo navegar entre todas las fotos sin cerrar la vista ampliada.
 
-### Cambios (solo `src/pages/trips/Photos.tsx`)
+### Enfoque
 
-#### 1. Grid responsive para landscape
+Usar detección de gestos táctiles nativa (touchstart/touchmove/touchend) directamente en el componente, sin librerías externas. El estado `viewingPhoto` pasa de guardar `{url, userName}` a guardar el **índice** de la foto actual en el array `photos`.
 
-Cambiar la clase del grid para detectar orientación horizontal y mostrar más columnas:
+### Cambios en `src/pages/trips/Photos.tsx`
 
-```
-grid grid-cols-2 sm:grid-cols-3 landscape:grid-cols-4 gap-3
-```
+1. **Estado**: Cambiar `viewingPhoto` de `{url, userName} | null` a `number | null` (índice en el array `photos`)
 
-Esto añade 4 columnas cuando el móvil está en horizontal, aprovechando el ancho extra.
+2. **Grid**: Al hacer click en una foto, guardar su índice en vez del objeto
 
-#### 2. Miniaturas con aspect-ratio adaptativo
+3. **Visor fullscreen**:
+   - Añadir refs para tracking táctil (`touchStartX`, `touchEndX`)
+   - En `onTouchStart`: guardar posición X inicial
+   - En `onTouchMove`: guardar posición X actual
+   - En `onTouchEnd`: calcular delta; si > 50px → foto anterior; si < -50px → foto siguiente
+   - Mostrar la foto correspondiente a `photos[viewingPhoto]`
+   - Añadir flechas semitransparentes (ChevronLeft/ChevronRight) para navegación no táctil
+   - Indicador de posición (ej: "3 / 12") debajo del nombre
 
-Cambiar `aspect-square` a una clase que se adapte en landscape:
-
-```
-aspect-square landscape:aspect-video
-```
-
-En horizontal, las miniaturas pasan a formato 16:9 (más natural para pantallas anchas). En vertical se mantienen cuadradas.
-
-#### 3. Visor fullscreen mejorado en landscape
-
-Ajustar la imagen del visor para aprovechar mejor el espacio horizontal:
-
-```
-max-w-full max-h-[85vh] landscape:max-h-[90vh] landscape:max-w-[95vw] object-contain rounded-lg
-```
-
-Y ocultar el nombre del usuario debajo de la foto en landscape para dar más espacio vertical:
-
-```
-<p className="text-white/70 text-sm mt-3 landscape:mt-1 landscape:text-xs">
-```
+4. **Animación**: Transición CSS suave al cambiar de foto (`transition-opacity` o `transition-transform`)
 
 ### Fichero afectado
 
 | Fichero | Cambio |
 |---------|--------|
-| `src/pages/trips/Photos.tsx` | Clases CSS responsive para landscape en grid, miniaturas y visor |
+| `src/pages/trips/Photos.tsx` | Swipe táctil + navegación por índice en visor fullscreen |
 
-No se toca ningún otro fichero ni funcionalidad de la app. Solo se añaden clases Tailwind con el modificador `landscape:` que ya viene incluido en Tailwind CSS v3.
+No se toca ningún otro fichero ni funcionalidad.
 
