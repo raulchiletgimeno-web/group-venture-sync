@@ -64,6 +64,10 @@ const Expenses = () => {
   const [paymentMethod, setPaymentMethod] = useState("bizum");
   const [submittingPayment, setSubmittingPayment] = useState(false);
   const [detailPayment, setDetailPayment] = useState<DebtPayment | null>(null);
+  const [editPayment, setEditPayment] = useState<DebtPayment | null>(null);
+  const [editMethod, setEditMethod] = useState("bizum");
+  const [editAmount, setEditAmount] = useState("");
+  const [submittingEdit, setSubmittingEdit] = useState(false);
 
   const [title, setTitle] = useState("");
   const [amount2, setAmount2] = useState("");
