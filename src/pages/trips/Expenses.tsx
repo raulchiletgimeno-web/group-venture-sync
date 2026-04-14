@@ -692,15 +692,15 @@ const Expenses = () => {
                 {detailPayment && (
                   <div className="space-y-3 text-sm">
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">{t.from ?? "De"}</span>
+                      <span className="text-muted-foreground">{t.origin}</span>
                       <span className="font-medium text-card-foreground">{memberName(detailPayment.from_user)}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">{t.to ?? "A"}</span>
+                      <span className="text-muted-foreground">{t.arrivalLocation}</span>
                       <span className="font-medium text-card-foreground">{memberName(detailPayment.to_user)}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">{t.totalExpenses ?? "Importe"}</span>
+                      <span className="text-muted-foreground">{t.amount}</span>
                       <span className="font-semibold text-card-foreground">{detailPayment.amount.toFixed(2)} €</span>
                     </div>
                     <div className="flex justify-between">
