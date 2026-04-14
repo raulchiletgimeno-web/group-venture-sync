@@ -1,53 +1,65 @@
 
 
-## Mejora visual del sistema de deudas pagadas en Gastos
+## Corrección del botón "Marcar como pagado" en Gastos
 
-### Problema actual
-El botón "Marcar como pagado" es un pequeño icono azul (`CheckCircle2`) tipo `ghost` de 28px, sin texto, que no se entiende sin pasar el ratón por encima (tooltip). En móvil es prácticamente invisible y ambiguo.
+### Problemas identificados
+
+1. **Permiso incorrecto**: La condición actual (línea 629) permite que tanto el deudor como el acreedor marquen el pago (`user.id === d.from || user.id === d.to`). Debe ser solo el deudor (`user.id === d.from`).
+
+2. **Botón demasiado grande**: El `Button variant="outline" size="sm"` con texto completo rompe la línea en móvil (390px viewport). Ocupa demasiado y baja a segunda fila por el `flex-wrap`.
+
+3. **`flex-wrap` en la fila**: La clase `flex-wrap` en línea 624 permite que los elementos salten de línea, rompiendo la composición.
 
 ### Cambios propuestos
 
 Solo se modifica `src/pages/trips/Expenses.tsx`. Nada más.
 
-#### 1. Botón "Marcar como pagado" → visible y con texto
+#### 1. Permiso: solo el deudor
 
-Reemplazar el icono ghost actual (líneas 627-641) por un botón pequeño con texto e icono:
-
-```text
-┌─────────────────────────────────────────────────────┐
-│ Carlos  →  Ana           45.00 €  [✓ Marcar pagado] │
-└─────────────────────────────────────────────────────┘
+Cambiar la condición de visibilidad de:
+```
+user.id === d.from || user.id === d.to
+```
+a:
+```
+user.id === d.from
 ```
 
-- Botón `variant="outline"` con `size="sm"`
-- Texto: traducción de `markAsPaid` (ya existe)
-- Icono `CheckCircle2` al lado
-- Colores: borde primary, texto primary
-- Solo visible si el usuario es deudor o acreedor (sin cambios en la lógica)
+#### 2. Botón compacto tipo icon con tooltip
 
-#### 2. Historial de pagos → con acción "Ver detalle"
+Reemplazar el `Button outline size="sm"` con texto por un botón icono pequeño (`size="icon"`, `h-7 w-7`) con el icono `CheckCircle2` y un `Tooltip` que muestre el texto `markAsPaid`. Esto mantiene todo en una sola línea.
 
-Cada pago en el historial actual muestra nombre→nombre, método y fecha en línea. Mejora:
+Estilo: fondo transparente, icono en color primary, hover suave. Mismo patrón que el botón "Ver detalle" del historial.
 
-- Añadir un botón/enlace discreto "Ver detalle" que abre un mini-dialog o expande info
-- Usar un `Dialog` ligero que muestra: quién pagó, a quién, importe, método, fecha — todo formateado de forma clara y elegante
-- Icono `Eye` o `Info` como acción
+#### 3. Eliminar `flex-wrap`
 
-#### 3. Separación visual clara pendientes vs pagadas
+Quitar `flex-wrap` de la fila de deuda para forzar una sola línea.
 
-- Las deudas pendientes mantienen el estilo actual con el nuevo botón
-- Los pagos realizados en el historial llevan un badge verde "Pagado" para reforzar el estado
+#### 4. RLS (ya protegido)
 
-### Traducciones nuevas (7 idiomas)
+La política RLS de INSERT en `debt_payments` ya exige `from_user = auth.uid() OR to_user = auth.uid()`. Para mayor seguridad, podría restringirse solo a `from_user = auth.uid()`, pero esto requiere una migración. Lo incluyo como opcional.
 
-Nuevas claves: `viewPaymentDetail`, `paymentDetail`, `settled` (pagado/settled badge)
+### Resultado visual esperado
+
+```text
+┌──────────────────────────────────────────────────┐
+│ Carlos → Ana          45.00 €  (✓)               │
+└──────────────────────────────────────────────────┘
+```
+
+El `(✓)` es un icono compacto con tooltip. Solo visible para Carlos (el deudor).
 
 ### Ficheros afectados
 
 | Fichero | Cambio |
 |---------|--------|
-| `src/pages/trips/Expenses.tsx` | Botón con texto, dialog de detalle de pago, badge "Pagado" en historial |
-| `src/i18n/translations.ts` | ~3 claves nuevas en 7 idiomas |
+| `src/pages/trips/Expenses.tsx` | Condición solo deudor, botón icon compacto con tooltip, quitar flex-wrap |
+
+Opcionalmente:
+
+| Fichero | Cambio |
+|---------|--------|
+| Migración SQL | Restringir INSERT RLS a `from_user = auth.uid()` solamente |
 
 No se toca ninguna otra parte de la app.
 
