@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect, useCallback } from "react";
 import { useParams } from "react-router-dom";
-import { Camera, Loader2, Trash2, Image, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { Camera, Loader2, Trash2, Image, X, ChevronLeft, ChevronRight, Video, Play } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -18,15 +18,22 @@ interface MemberName {
   name: string | null;
 }
 
+const isVideoFile = (photo: { media_type?: string; file_path: string }) => {
+  if (photo.media_type === "video") return true;
+  const ext = photo.file_path.split(".").pop()?.toLowerCase();
+  return ["mp4", "mov", "webm", "avi", "m4v"].includes(ext || "");
+};
+
 const Photos = () => {
   const { tripId } = useParams();
   useMarkSectionSeen(tripId, "photos");
   const { user } = useAuth();
-  
+
   const { t } = useLanguage();
   const queryClient = useQueryClient();
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [viewingIndex, setViewingIndex] = useState<number | null>(null);
   const [members, setMembers] = useState<MemberName[]>([]);
@@ -81,20 +88,29 @@ const Photos = () => {
     const file = e.target.files?.[0];
     if (!file || !tripId || !user) return;
     setUploading(true);
+    const isVideo = file.type.startsWith("video/");
     try {
-      const ext = file.name.split(".").pop() || "jpg";
+      const ext = file.name.split(".").pop() || (isVideo ? "mp4" : "jpg");
       const filePath = `${tripId}/${user.id}/${crypto.randomUUID()}.${ext}`;
       const { error: uploadError } = await supabase.storage.from("trip-photos").upload(filePath, file, { contentType: file.type });
       if (uploadError) throw uploadError;
-      const { error: insertError } = await supabase.from("trip_photos").insert({ trip_id: tripId, user_id: user.id, file_path: filePath });
+      const { error: insertError } = await supabase.from("trip_photos").insert({
+        trip_id: tripId,
+        user_id: user.id,
+        file_path: filePath,
+        media_type: isVideo ? "video" : "image",
+      });
       if (insertError) throw insertError;
       queryClient.invalidateQueries({ queryKey: ["trip-photos", tripId] });
       notifyTripEvent(tripId, "photos", user.id);
-      toast.success(t.photoUploaded);
-    } catch { toast.error(t.errorUploadingPhoto); } finally {
+      toast.success(isVideo ? t.videoUploaded : t.photoUploaded);
+    } catch {
+      toast.error(isVideo ? t.errorUploadingVideo : t.errorUploadingPhoto);
+    } finally {
       setUploading(false);
       if (cameraInputRef.current) cameraInputRef.current.value = "";
       if (galleryInputRef.current) galleryInputRef.current.value = "";
+      if (videoInputRef.current) videoInputRef.current.value = "";
     }
   };
 
@@ -145,12 +161,16 @@ const Photos = () => {
           <Button size="icon" variant="outline" disabled={uploading} onClick={() => galleryInputRef.current?.click()} title={t.uploadFromGallery}>
             {uploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Image className="h-5 w-5" />}
           </Button>
+          <Button size="icon" variant="outline" disabled={uploading} onClick={() => videoInputRef.current?.click()} title={t.recordVideoBtn}>
+            {uploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Video className="h-5 w-5" />}
+          </Button>
           <Button size="icon" className="gradient-hero text-primary-foreground border-0" disabled={uploading} onClick={() => cameraInputRef.current?.click()} title={t.takePhotoBtn}>
             {uploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Camera className="h-5 w-5" />}
           </Button>
         </div>
         <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFileUpload} />
-        <input ref={galleryInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileUpload} />
+        <input ref={galleryInputRef} type="file" accept="image/*,video/*" className="hidden" onChange={handleFileUpload} />
+        <input ref={videoInputRef} type="file" accept="video/*" capture="environment" className="hidden" onChange={handleFileUpload} />
       </div>
 
       {isLoading ? (
@@ -159,28 +179,48 @@ const Photos = () => {
         <EmptyState icon={Camera} title={t.noPhotosTitle} description={t.noPhotosDesc} />
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 landscape:grid-cols-4 gap-3">
-          {photos.map((photo, index) => (
-            <div key={photo.id} className="relative group rounded-xl overflow-hidden bg-muted">
-              <div
-                className="aspect-square landscape:aspect-video cursor-pointer"
-                onClick={() => setViewingIndex(index)}
-              >
-                <img src={getPublicUrl(photo.file_path)} alt={t.tripPhoto} className="w-full h-full object-cover transition-opacity duration-300" loading="lazy" decoding="async" />
+          {photos.map((photo, index) => {
+            const video = isVideoFile(photo);
+            return (
+              <div key={photo.id} className="relative group rounded-xl overflow-hidden bg-muted">
+                <div
+                  className="aspect-square landscape:aspect-video cursor-pointer relative"
+                  onClick={() => setViewingIndex(index)}
+                >
+                  {video ? (
+                    <>
+                      <video
+                        src={getPublicUrl(photo.file_path)}
+                        muted
+                        preload="metadata"
+                        playsInline
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="rounded-full bg-black/50 p-2.5">
+                          <Play className="h-5 w-5 text-white fill-white" />
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <img src={getPublicUrl(photo.file_path)} alt={t.tripPhoto} className="w-full h-full object-cover transition-opacity duration-300" loading="lazy" decoding="async" />
+                  )}
+                </div>
+                <div className="px-2 py-1.5 bg-card">
+                  <p className="text-xs text-muted-foreground truncate">{getMemberName(photo.user_id)}</p>
+                </div>
+                {photo.user_id === user?.id && (
+                  <button onClick={() => deleteMutation.mutate({ id: photo.id, file_path: photo.file_path })} className="absolute top-2 right-2 p-1.5 rounded-full bg-background/80 text-destructive opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                )}
               </div>
-              <div className="px-2 py-1.5 bg-card">
-                <p className="text-xs text-muted-foreground truncate">{getMemberName(photo.user_id)}</p>
-              </div>
-              {photo.user_id === user?.id && (
-                <button onClick={() => deleteMutation.mutate({ id: photo.id, file_path: photo.file_path })} className="absolute top-2 right-2 p-1.5 rounded-full bg-background/80 text-destructive opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
-      {/* Fullscreen photo viewer with swipe */}
+      {/* Fullscreen viewer */}
       {currentPhoto && viewingIndex !== null && (
         <div
           className="fixed inset-0 z-50 bg-black/90 flex flex-col items-center justify-center animate-fade-in select-none"
@@ -189,12 +229,10 @@ const Photos = () => {
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
         >
-          {/* Close */}
           <button className="absolute top-4 right-4 text-white/80 hover:text-white z-10" onClick={() => setViewingIndex(null)}>
             <X className="h-7 w-7" />
           </button>
 
-          {/* Previous arrow */}
           {viewingIndex > 0 && (
             <button
               className="absolute left-2 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white/70 hover:text-white transition-colors"
@@ -204,7 +242,6 @@ const Photos = () => {
             </button>
           )}
 
-          {/* Next arrow */}
           {viewingIndex < photos.length - 1 && (
             <button
               className="absolute right-2 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white/70 hover:text-white transition-colors"
@@ -214,17 +251,27 @@ const Photos = () => {
             </button>
           )}
 
-          {/* Photo */}
-          <img
-            key={fadeKey}
-            src={getPublicUrl(currentPhoto.file_path)}
-            alt={t.tripPhoto}
-            className="max-w-[95vw] max-h-[80vh] landscape:max-h-[88vh] landscape:max-w-[96vw] object-contain rounded-lg animate-fade-in transition-all duration-300"
-            onClick={(e) => e.stopPropagation()}
-            draggable={false}
-          />
+          {isVideoFile(currentPhoto) ? (
+            <video
+              key={fadeKey}
+              src={getPublicUrl(currentPhoto.file_path)}
+              controls
+              autoPlay
+              playsInline
+              className="max-w-[95vw] max-h-[80vh] landscape:max-h-[88vh] landscape:max-w-[96vw] rounded-lg animate-fade-in"
+              onClick={(e) => e.stopPropagation()}
+            />
+          ) : (
+            <img
+              key={fadeKey}
+              src={getPublicUrl(currentPhoto.file_path)}
+              alt={t.tripPhoto}
+              className="max-w-[95vw] max-h-[80vh] landscape:max-h-[88vh] landscape:max-w-[96vw] object-contain rounded-lg animate-fade-in transition-all duration-300"
+              onClick={(e) => e.stopPropagation()}
+              draggable={false}
+            />
+          )}
 
-          {/* Info */}
           <div className="flex flex-col items-center mt-3 landscape:mt-1">
             <p className="text-white/70 text-sm landscape:text-xs">{getMemberName(currentPhoto.user_id)}</p>
             <p className="text-white/40 text-xs mt-1">{viewingIndex + 1} / {photos.length}</p>
