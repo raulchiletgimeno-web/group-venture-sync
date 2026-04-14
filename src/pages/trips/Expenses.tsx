@@ -77,6 +77,7 @@ const Expenses = () => {
   const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
   const [existingReceiptPath, setExistingReceiptPath] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
 
   const fetchMembers = async () => {
     if (!tripId) return;
