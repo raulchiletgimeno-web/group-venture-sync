@@ -1,6 +1,6 @@
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useCallback } from "react";
 import { useParams } from "react-router-dom";
-import { Camera, Loader2, Trash2, Image, X } from "lucide-react";
+import { Camera, Loader2, Trash2, Image, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -28,8 +28,13 @@ const Photos = () => {
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
-  const [viewingPhoto, setViewingPhoto] = useState<{ url: string; userName: string } | null>(null);
+  const [viewingIndex, setViewingIndex] = useState<number | null>(null);
   const [members, setMembers] = useState<MemberName[]>([]);
+  const [fadeKey, setFadeKey] = useState(0);
+
+  // Touch tracking refs
+  const touchStartX = useRef(0);
+  const touchEndX = useRef(0);
 
   useEffect(() => {
     if (!tripId) return;
@@ -95,6 +100,43 @@ const Photos = () => {
 
   const getPublicUrl = (filePath: string) => supabase.storage.from("trip-photos").getPublicUrl(filePath).data.publicUrl;
 
+  const navigateTo = useCallback((newIndex: number) => {
+    if (newIndex >= 0 && newIndex < photos.length) {
+      setFadeKey((k) => k + 1);
+      setViewingIndex(newIndex);
+    }
+  }, [photos.length]);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchEndX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    touchEndX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = () => {
+    if (viewingIndex === null) return;
+    const delta = touchStartX.current - touchEndX.current;
+    if (delta > 50) navigateTo(viewingIndex + 1);
+    else if (delta < -50) navigateTo(viewingIndex - 1);
+  };
+
+  // Keyboard navigation
+  useEffect(() => {
+    if (viewingIndex === null) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "ArrowRight") navigateTo(viewingIndex + 1);
+      else if (e.key === "ArrowLeft") navigateTo(viewingIndex - 1);
+      else if (e.key === "Escape") setViewingIndex(null);
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [viewingIndex, navigateTo]);
+
+  const currentPhoto = viewingIndex !== null ? photos[viewingIndex] : null;
+
   return (
     <div className="animate-fade-in">
       <div className="flex items-center justify-between mb-6">
@@ -117,11 +159,11 @@ const Photos = () => {
         <EmptyState icon={Camera} title={t.noPhotosTitle} description={t.noPhotosDesc} />
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 landscape:grid-cols-4 gap-3">
-          {photos.map((photo) => (
+          {photos.map((photo, index) => (
             <div key={photo.id} className="relative group rounded-xl overflow-hidden bg-muted">
               <div
                 className="aspect-square landscape:aspect-video cursor-pointer"
-                onClick={() => setViewingPhoto({ url: getPublicUrl(photo.file_path), userName: getMemberName(photo.user_id) })}
+                onClick={() => setViewingIndex(index)}
               >
                 <img src={getPublicUrl(photo.file_path)} alt={t.tripPhoto} className="w-full h-full object-cover transition-opacity duration-300" loading="lazy" decoding="async" />
               </div>
@@ -138,22 +180,55 @@ const Photos = () => {
         </div>
       )}
 
-      {/* Fullscreen photo viewer */}
-      {viewingPhoto && (
+      {/* Fullscreen photo viewer with swipe */}
+      {currentPhoto && viewingIndex !== null && (
         <div
-          className="fixed inset-0 z-50 bg-black/90 flex flex-col items-center justify-center animate-fade-in"
-          onClick={() => setViewingPhoto(null)}
+          className="fixed inset-0 z-50 bg-black/90 flex flex-col items-center justify-center animate-fade-in select-none"
+          onClick={() => setViewingIndex(null)}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
         >
-          <button className="absolute top-4 right-4 text-white/80 hover:text-white z-10" onClick={() => setViewingPhoto(null)}>
+          {/* Close */}
+          <button className="absolute top-4 right-4 text-white/80 hover:text-white z-10" onClick={() => setViewingIndex(null)}>
             <X className="h-7 w-7" />
           </button>
+
+          {/* Previous arrow */}
+          {viewingIndex > 0 && (
+            <button
+              className="absolute left-2 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white/70 hover:text-white transition-colors"
+              onClick={(e) => { e.stopPropagation(); navigateTo(viewingIndex - 1); }}
+            >
+              <ChevronLeft className="h-6 w-6" />
+            </button>
+          )}
+
+          {/* Next arrow */}
+          {viewingIndex < photos.length - 1 && (
+            <button
+              className="absolute right-2 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white/70 hover:text-white transition-colors"
+              onClick={(e) => { e.stopPropagation(); navigateTo(viewingIndex + 1); }}
+            >
+              <ChevronRight className="h-6 w-6" />
+            </button>
+          )}
+
+          {/* Photo */}
           <img
-            src={viewingPhoto.url}
+            key={fadeKey}
+            src={getPublicUrl(currentPhoto.file_path)}
             alt={t.tripPhoto}
-            className="max-w-full max-h-[85vh] landscape:max-h-[90vh] landscape:max-w-[95vw] object-contain rounded-lg"
+            className="max-w-full max-h-[85vh] landscape:max-h-[90vh] landscape:max-w-[95vw] object-contain rounded-lg animate-fade-in"
             onClick={(e) => e.stopPropagation()}
+            draggable={false}
           />
-          <p className="text-white/70 text-sm mt-3 landscape:mt-1 landscape:text-xs">{viewingPhoto.userName}</p>
+
+          {/* Info */}
+          <div className="flex flex-col items-center mt-3 landscape:mt-1">
+            <p className="text-white/70 text-sm landscape:text-xs">{getMemberName(currentPhoto.user_id)}</p>
+            <p className="text-white/40 text-xs mt-1">{viewingIndex + 1} / {photos.length}</p>
+          </div>
         </div>
       )}
     </div>
