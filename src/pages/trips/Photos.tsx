@@ -209,11 +209,11 @@ const Photos = () => {
                 <div className="px-2 py-1.5 bg-card">
                   <p className="text-xs text-muted-foreground truncate">{getMemberName(photo.user_id)}</p>
                 </div>
-                {photo.user_id === user?.id && (
-                  <button onClick={() => deleteMutation.mutate({ id: photo.id, file_path: photo.file_path })} className="absolute top-2 right-2 p-1.5 rounded-full bg-background/80 text-destructive opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                )}
+              {photo.user_id === user?.id && (
+                <button onClick={(e) => { e.stopPropagation(); deleteMutation.mutate({ id: photo.id, file_path: photo.file_path }); }} className="absolute top-2 right-2 p-1.5 rounded-full bg-background/80 text-destructive">
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              )}
               </div>
             );
           })}
