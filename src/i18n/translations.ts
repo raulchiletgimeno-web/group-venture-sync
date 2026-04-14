@@ -230,6 +230,9 @@ type TranslationKeys = {
   errorDeletingPhoto: string;
   errorUploadingPhoto: string;
   tripPhoto: string;
+  recordVideoBtn: string;
+  videoUploaded: string;
+  errorUploadingVideo: string;
 
   // Chat
   you: string;
@@ -671,6 +674,9 @@ const translations: Record<Language, TranslationKeys> = {
     errorDeletingPhoto: "Error al eliminar la foto",
     errorUploadingPhoto: "Error al subir la foto",
     tripPhoto: "Foto del viaje",
+    recordVideoBtn: "Grabar vídeo",
+    videoUploaded: "Vídeo subido correctamente",
+    errorUploadingVideo: "Error al subir el vídeo",
     you: "Tú",
     usuario: "Usuario",
     writeMessage: "Escribe un mensaje...",
@@ -1081,6 +1087,9 @@ const translations: Record<Language, TranslationKeys> = {
     errorDeletingPhoto: "Error deleting photo",
     errorUploadingPhoto: "Error uploading photo",
     tripPhoto: "Trip photo",
+    recordVideoBtn: "Record video",
+    videoUploaded: "Video uploaded successfully",
+    errorUploadingVideo: "Error uploading video",
     you: "You",
     usuario: "User",
     writeMessage: "Write a message...",
@@ -1491,6 +1500,9 @@ const translations: Record<Language, TranslationKeys> = {
     errorDeletingPhoto: "Erreur lors de la suppression de la photo",
     errorUploadingPhoto: "Erreur lors du téléchargement de la photo",
     tripPhoto: "Photo du voyage",
+    recordVideoBtn: "Enregistrer une vidéo",
+    videoUploaded: "Vidéo téléchargée avec succès",
+    errorUploadingVideo: "Erreur lors du téléchargement de la vidéo",
     you: "Vous",
     usuario: "Utilisateur",
     writeMessage: "Écrivez un message...",
@@ -1901,6 +1913,9 @@ const translations: Record<Language, TranslationKeys> = {
     errorDeletingPhoto: "Erro ao eliminar a foto",
     errorUploadingPhoto: "Erro ao carregar a foto",
     tripPhoto: "Foto da viagem",
+    recordVideoBtn: "Gravar vídeo",
+    videoUploaded: "Vídeo carregado com sucesso",
+    errorUploadingVideo: "Erro ao carregar o vídeo",
     you: "Você",
     usuario: "Utilizador",
     writeMessage: "Escreva uma mensagem...",
@@ -2311,6 +2326,9 @@ const translations: Record<Language, TranslationKeys> = {
     errorDeletingPhoto: "Errore nell'eliminazione della foto",
     errorUploadingPhoto: "Errore nel caricamento della foto",
     tripPhoto: "Foto del viaggio",
+    recordVideoBtn: "Registra video",
+    videoUploaded: "Video caricato con successo",
+    errorUploadingVideo: "Errore nel caricamento del video",
     you: "Tu",
     usuario: "Utente",
     writeMessage: "Scrivi un messaggio...",
@@ -2721,6 +2739,9 @@ const translations: Record<Language, TranslationKeys> = {
     errorDeletingPhoto: "删除照片出错",
     errorUploadingPhoto: "上传照片出错",
     tripPhoto: "旅行照片",
+    recordVideoBtn: "录制视频",
+    videoUploaded: "视频上传成功",
+    errorUploadingVideo: "上传视频出错",
     you: "你",
     usuario: "用户",
     writeMessage: "输入消息...",
@@ -3131,6 +3152,9 @@ const translations: Record<Language, TranslationKeys> = {
     errorDeletingPhoto: "Fehler beim Löschen des Fotos",
     errorUploadingPhoto: "Fehler beim Hochladen des Fotos",
     tripPhoto: "Reisefoto",
+    recordVideoBtn: "Video aufnehmen",
+    videoUploaded: "Video erfolgreich hochgeladen",
+    errorUploadingVideo: "Fehler beim Hochladen des Videos",
     you: "Du",
     usuario: "Benutzer",
     writeMessage: "Nachricht schreiben...",
