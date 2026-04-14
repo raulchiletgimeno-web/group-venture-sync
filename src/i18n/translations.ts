@@ -461,6 +461,20 @@ type TranslationKeys = {
   pushDeniedTitle: string;
   pushDeniedDescription: string;
   pushButton: string;
+
+  // Debt payments
+  markAsPaid: string;
+  confirmPayment: string;
+  paymentMethod: string;
+  bizum: string;
+  transfer: string;
+  cash: string;
+  otherMethod: string;
+  paymentHistory: string;
+  paymentRegistered: string;
+  paidOn: string;
+  noPayments: string;
+  debtSettled: string;
 };
 
 const translations: Record<Language, TranslationKeys> = {
