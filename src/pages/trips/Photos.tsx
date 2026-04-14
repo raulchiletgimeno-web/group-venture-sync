@@ -157,15 +157,15 @@ const Photos = () => {
     <div className="animate-fade-in">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-bold text-foreground">{t.photosTitle}</h2>
-        <div className="flex gap-2">
-          <Button size="icon" variant="outline" disabled={uploading} onClick={() => galleryInputRef.current?.click()} title={t.uploadFromGallery}>
-            {uploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Image className="h-5 w-5" />}
+        <div className="flex gap-3">
+          <Button size="icon" className="gradient-hero text-primary-foreground border-0 h-11 w-11" disabled={uploading} onClick={() => galleryInputRef.current?.click()} title={t.uploadFromGallery}>
+            {uploading ? <Loader2 className="h-6 w-6 animate-spin" /> : <Image className="h-6 w-6" />}
           </Button>
-          <Button size="icon" variant="outline" disabled={uploading} onClick={() => videoInputRef.current?.click()} title={t.recordVideoBtn}>
-            {uploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Video className="h-5 w-5" />}
+          <Button size="icon" className="gradient-hero text-primary-foreground border-0 h-11 w-11" disabled={uploading} onClick={() => videoInputRef.current?.click()} title={t.recordVideoBtn}>
+            {uploading ? <Loader2 className="h-6 w-6 animate-spin" /> : <Video className="h-6 w-6" />}
           </Button>
-          <Button size="icon" className="gradient-hero text-primary-foreground border-0" disabled={uploading} onClick={() => cameraInputRef.current?.click()} title={t.takePhotoBtn}>
-            {uploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Camera className="h-5 w-5" />}
+          <Button size="icon" className="gradient-hero text-primary-foreground border-0 h-11 w-11" disabled={uploading} onClick={() => cameraInputRef.current?.click()} title={t.takePhotoBtn}>
+            {uploading ? <Loader2 className="h-6 w-6 animate-spin" /> : <Camera className="h-6 w-6" />}
           </Button>
         </div>
         <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFileUpload} />
