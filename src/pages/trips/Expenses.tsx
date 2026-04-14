@@ -627,19 +627,15 @@ const Expenses = () => {
                       <span className="font-medium truncate" style={{ color: "hsl(var(--chart-2))" }}>{memberName(d.to)}</span>
                       <span className="ml-auto font-semibold text-card-foreground whitespace-nowrap">{d.amount.toFixed(2)} €</span>
                       {user && user.id === d.from && (
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7 text-primary hover:bg-primary/10 flex-shrink-0"
-                              onClick={() => openPaymentModal(d)}
-                            >
-                              <CheckCircle2 className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>{t.markAsPaid}</TooltipContent>
-                        </Tooltip>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          className="h-7 px-2.5 text-xs rounded-full flex-shrink-0 gap-1"
+                          onClick={() => openPaymentModal(d)}
+                        >
+                          <CheckCircle2 className="h-3 w-3" />
+                          Pagar
+                        </Button>
                       )}
                     </div>
                   ))}
