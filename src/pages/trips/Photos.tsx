@@ -219,7 +219,7 @@ const Photos = () => {
             key={fadeKey}
             src={getPublicUrl(currentPhoto.file_path)}
             alt={t.tripPhoto}
-            className="max-w-[95vw] max-h-[80dvh] landscape:max-h-[85dvh] landscape:max-w-[95vw] object-contain rounded-lg animate-fade-in transition-all duration-300"
+            className="max-w-[95vw] max-h-[80vh] landscape:max-h-[88vh] landscape:max-w-[96vw] object-contain rounded-lg animate-fade-in transition-all duration-300"
             onClick={(e) => e.stopPropagation()}
             draggable={false}
           />
