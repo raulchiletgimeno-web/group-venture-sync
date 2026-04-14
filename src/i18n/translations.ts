@@ -889,6 +889,9 @@ const translations: Record<Language, TranslationKeys> = {
     viewPaymentDetail: "Ver detalle",
     paymentDetail: "Detalle del pago",
     settled: "Pagado",
+    editPayment: "Editar pago",
+    savePayment: "Guardar",
+    editPaymentAmount: "Importe",
   },
 
   en: {
@@ -1296,6 +1299,9 @@ const translations: Record<Language, TranslationKeys> = {
     viewPaymentDetail: "View detail",
     paymentDetail: "Payment detail",
     settled: "Settled",
+    editPayment: "Edit payment",
+    savePayment: "Save",
+    editPaymentAmount: "Amount",
   },
 
   fr: {
@@ -1703,6 +1709,9 @@ const translations: Record<Language, TranslationKeys> = {
     viewPaymentDetail: "Voir détail",
     paymentDetail: "Détail du paiement",
     settled: "Réglé",
+    editPayment: "Modifier paiement",
+    savePayment: "Enregistrer",
+    editPaymentAmount: "Montant",
   },
 
   pt: {
@@ -2110,6 +2119,9 @@ const translations: Record<Language, TranslationKeys> = {
     viewPaymentDetail: "Ver detalhe",
     paymentDetail: "Detalhe do pagamento",
     settled: "Pago",
+    editPayment: "Editar pagamento",
+    savePayment: "Guardar",
+    editPaymentAmount: "Montante",
   },
 
   it: {
@@ -2517,6 +2529,9 @@ const translations: Record<Language, TranslationKeys> = {
     viewPaymentDetail: "Vedi dettaglio",
     paymentDetail: "Dettaglio pagamento",
     settled: "Saldato",
+    editPayment: "Modifica pagamento",
+    savePayment: "Salva",
+    editPaymentAmount: "Importo",
   },
 
   zh: {
@@ -2924,6 +2939,9 @@ const translations: Record<Language, TranslationKeys> = {
     viewPaymentDetail: "查看详情",
     paymentDetail: "付款详情",
     settled: "已结清",
+    editPayment: "编辑付款",
+    savePayment: "保存",
+    editPaymentAmount: "金额",
   },
 
   de: {
@@ -3331,6 +3349,9 @@ const translations: Record<Language, TranslationKeys> = {
     viewPaymentDetail: "Detail ansehen",
     paymentDetail: "Zahlungsdetail",
     settled: "Beglichen",
+    editPayment: "Zahlung bearbeiten",
+    savePayment: "Speichern",
+    editPaymentAmount: "Betrag",
   },
 };
 
