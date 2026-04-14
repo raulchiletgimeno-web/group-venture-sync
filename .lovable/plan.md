@@ -1,41 +1,28 @@
 
 
-## Aumento global de tipografía en YORMIT
+## Añadir botón de galería en el formulario de gastos
 
-### Enfoque
+### Cambio
 
-La forma más segura y quirúrgica de aumentar todos los textos sin tocar ningún componente individual es subir el `font-size` base del `<html>` element. Tailwind y la mayoría de estilos usan `rem`, por lo que todo escala proporcionalmente: títulos, subtítulos, botones, etiquetas, textos auxiliares — manteniendo la jerarquía exacta.
+En la pantalla de añadir/editar gasto, junto al botón de cámara ("Hacer foto"), añadir un segundo botón con icono de galería (`ImageIcon`) que permita seleccionar una imagen existente del dispositivo.
 
-### Cambio único
+### Implementación
 
-**Fichero**: `src/index.css`
+**Fichero**: `src/pages/trips/Expenses.tsx`
 
-Añadir en el bloque `@layer base` una regla para `html` que aumente el font-size base de 16px (default del navegador) a **17px**. Esto supone un ~6% de aumento — suficiente para mejorar legibilidad sin desajustar nada.
+1. Añadir un segundo `<input type="file">` oculto con `accept="image/*"` pero **sin** el atributo `capture` (esto abre la galería del móvil en lugar de la cámara).
+2. Añadir un nuevo `ref` (`galleryInputRef`) para ese input.
+3. Donde ahora hay un solo botón de cámara, mostrar dos botones lado a lado:
+   - **Cámara** (icono `Camera`) → abre el input con `capture="environment"` (comportamiento actual)
+   - **Galería** (icono `ImageIcon`) → abre el input sin `capture` (abre selector de archivos/galería)
+4. Ambos inputs comparten el mismo `handleFileChange`, por lo que el resto de la lógica no cambia.
 
-```css
-@layer base {
-  html {
-    font-size: 17px;
-  }
-  * {
-    @apply border-border;
-  }
-  /* ... resto sin cambios */
-}
+### Resultado visual
+
+Cuando no hay imagen adjunta, se verán dos botones:
+```text
+[ 📷 Hacer foto ]  [ 🖼 Galería ]
 ```
 
-### Por qué funciona
-
-- Todos los valores `rem` en Tailwind (`text-sm`, `text-base`, `text-lg`, `p-4`, `gap-2`, etc.) se calculan sobre el font-size raíz
-- La jerarquía visual se mantiene intacta (un `text-lg` sigue siendo más grande que un `text-sm`)
-- Márgenes, paddings y espaciados en `rem` también escalan proporcionalmente, evitando desajustes
-- Los valores en `px` (como bordes y sombras) no cambian, lo cual es correcto
-
-### Ficheros afectados
-
-| Fichero | Cambio |
-|---------|--------|
-| `src/index.css` | 1 línea añadida: `font-size: 17px` en `html` |
-
-No se toca ningún componente, página, lógica ni estructura.
+No se toca ningún otro fichero ni funcionalidad.
 
