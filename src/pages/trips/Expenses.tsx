@@ -621,21 +621,25 @@ const Expenses = () => {
                 <p className="text-sm font-semibold text-card-foreground mb-3">{t.whoOwesWhom}</p>
                 <div className="space-y-2">
                   {debts.map((d, i) => (
-                    <div key={i} className="flex items-center gap-2 text-sm flex-wrap">
-                      <span className="text-destructive font-medium">{memberName(d.from)}</span>
+                    <div key={i} className="flex items-center gap-2 text-sm">
+                      <span className="text-destructive font-medium truncate">{memberName(d.from)}</span>
                       <ArrowRight className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
-                      <span className="font-medium" style={{ color: "hsl(var(--chart-2))" }}>{memberName(d.to)}</span>
+                      <span className="font-medium truncate" style={{ color: "hsl(var(--chart-2))" }}>{memberName(d.to)}</span>
                       <span className="ml-auto font-semibold text-card-foreground whitespace-nowrap">{d.amount.toFixed(2)} €</span>
-                      {user && (user.id === d.from || user.id === d.to) && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-8 border-primary text-primary hover:bg-primary hover:text-primary-foreground flex-shrink-0"
-                          onClick={() => openPaymentModal(d)}
-                        >
-                          <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
-                          {t.markAsPaid}
-                        </Button>
+                      {user && user.id === d.from && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-primary hover:bg-primary/10 flex-shrink-0"
+                              onClick={() => openPaymentModal(d)}
+                            >
+                              <CheckCircle2 className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>{t.markAsPaid}</TooltipContent>
+                        </Tooltip>
                       )}
                     </div>
                   ))}
