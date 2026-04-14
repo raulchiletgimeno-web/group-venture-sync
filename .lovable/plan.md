@@ -1,71 +1,57 @@
 
 
-## Enviar email al cobrador cuando el deudor marca un pago
+## Añadir mensaje automático en el chat al registrar un pago
 
 ### Resumen
 
-Cuando el deudor confirma un pago en Gastos → Saldos, se enviará automáticamente un email al usuario cobrador informándole del pago registrado, con tono YORMIT (amistoso, premium, simpático).
+El email al cobrador ya está implementado (plantilla `payment-notification` + invocación en `handleConfirmPayment`). Solo falta añadir la publicación automática de un mensaje en el chat del viaje cuando se registra un pago.
 
-### Cambios
+### Cambio único: `src/pages/trips/Expenses.tsx`
 
-#### 1. Nueva plantilla de email: `payment-notification.tsx`
-
-Crear `supabase/functions/_shared/transactional-email-templates/payment-notification.tsx`:
-
-- Props: `debtorName`, `creditorName`, `amount`, `tripName`, `paymentMethod`, `paidAt`
-- Estilo visual idéntico al de `debt-reminder.tsx` (header azul YORMIT, tarjeta central, branding premium)
-- Tono amistoso: "¡Buenas noticias! {debtorName} ha marcado como pagados {amount} € del viaje {tripName}..."
-- Detalle del método de pago y fecha
-- Asuntos variados y simpáticos (ej: "💰 ¡Te han pagado! {debtorName} ha saldado su deuda")
-
-#### 2. Actualizar `registry.ts`
-
-Añadir import y entrada `'payment-notification'` en el mapa `TEMPLATES`.
-
-#### 3. Modificar `handleConfirmPayment` en `Expenses.tsx`
-
-Después de insertar el pago con éxito (línea ~394), añadir:
+Después del bloque de envío de email (línea ~418), añadir un bloque fire-and-forget que inserte un mensaje en `trip_messages` con el contenido del pago:
 
 ```typescript
-// Obtener datos para el email
-const creditorProfile = members.find(m => m.user_id === paymentDebt.to);
-const debtorProfile = members.find(m => m.user_id === paymentDebt.from);
-const tripData = await supabase.from("trips").select("title").eq("id", tripId).single();
+// Post automatic chat message (fire-and-forget)
+try {
+  const debtorName = debtorProfile?.name || 'Alguien';
+  const creditorName = creditorProfile?.name || 'su compañero/a';
+  const formattedAmount = paymentDebt.amount.toFixed(2);
 
-// Obtener email del cobrador
-const { data: creditorData } = await supabase
-  .from("profiles").select("email").eq("id", paymentDebt.to).single();
+  const chatMessages = [
+    `💸 ¡Cuentas claras! ${debtorName} ya ha pagado a ${creditorName} los ${formattedAmount} € pendientes.`,
+    `✅ Movimiento registrado: ${debtorName} ha saldado ${formattedAmount} € con ${creditorName}. ¡Así da gusto viajar!`,
+    `🎉 ${debtorName} ya está en paz con ${creditorName}: ${formattedAmount} € liquidados.`,
+    `🤝 Deuda saldada: ${debtorName} → ${creditorName} · ${formattedAmount} €. ¡Viaje sin dramas!`,
+    `💰 ${debtorName} ha pagado ${formattedAmount} € a ${creditorName}. Las cuentas del viaje van tomando forma.`,
+  ];
+  const msg = chatMessages[Math.floor(Math.random() * chatMessages.length)];
 
-if (creditorData?.email) {
-  await supabase.functions.invoke('send-transactional-email', {
-    body: {
-      templateName: 'payment-notification',
-      recipientEmail: creditorData.email,
-      idempotencyKey: `payment-notif-${insertedId}`,
-      templateData: {
-        debtorName: debtorProfile?.name,
-        creditorName: creditorProfile?.name,
-        amount: paymentDebt.amount.toFixed(2),
-        tripName: tripData?.data?.title,
-        paymentMethod: paymentMethod,
-        paidAt: new Date().toISOString(),
-      },
-    },
+  await supabase.from("trip_messages").insert({
+    trip_id: tripId,
+    user_id: user.id,
+    content: msg,
+    type: "text",
   });
+} catch (chatErr) {
+  console.error('Failed to post payment chat message:', chatErr);
 }
 ```
 
-#### 4. Redesplegar Edge Functions
-
-Desplegar `send-transactional-email` para que cargue la nueva plantilla del registry.
+Se reutilizan las variables `debtorProfile`, `creditorProfile` y `tripData` que ya se obtienen para el email. El mensaje se inserta como un mensaje de texto normal del usuario actual, usando la tabla `trip_messages` existente con las políticas RLS ya configuradas.
 
 ### Ficheros afectados
 
 | Fichero | Cambio |
 |---------|--------|
-| `supabase/functions/_shared/transactional-email-templates/payment-notification.tsx` | Nueva plantilla de email |
-| `supabase/functions/_shared/transactional-email-templates/registry.ts` | Registrar nueva plantilla |
-| `src/pages/trips/Expenses.tsx` | Invocar envío de email tras confirmar pago |
+| `src/pages/trips/Expenses.tsx` | Insertar mensaje automático en el chat tras registrar pago |
 
-No se toca ninguna otra parte de la app.
+No se toca ningún otro fichero ni funcionalidad.
+
+### Detalle técnico
+
+- Se selecciona aleatoriamente entre 5 mensajes con tono YORMIT (simpático, premium, claro)
+- El mensaje incluye: nombre del deudor, nombre del acreedor e importe
+- Se inserta como mensaje de tipo `text` en `trip_messages` — no requiere cambios en el chat ni en la base de datos
+- Es fire-and-forget: si falla, no bloquea el flujo de pago
+- Las notificaciones push del chat se dispararán automáticamente si `notifyTripEvent` ya se invoca en el chat
 
