@@ -693,8 +693,18 @@ const Expenses = () => {
                           {paymentMethodLabel(p.payment_method)} · {t.paidOn} {new Date(p.paid_at).toLocaleDateString(getLocale(language), { day: "numeric", month: "short", year: "numeric" })}
                         </p>
                       </div>
-                      <div className="flex items-center gap-2 flex-shrink-0">
+                      <div className="flex items-center gap-1 flex-shrink-0">
                         <span className="font-semibold whitespace-nowrap" style={{ color: "hsl(var(--chart-2))" }}>{p.amount.toFixed(2)} €</span>
+                        {p.from_user === user?.id && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-muted-foreground hover:text-primary"
+                            onClick={() => openEditPayment(p)}
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
                         <Button
                           variant="ghost"
                           size="icon"
