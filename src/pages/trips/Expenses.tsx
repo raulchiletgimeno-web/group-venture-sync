@@ -621,25 +621,21 @@ const Expenses = () => {
                 <p className="text-sm font-semibold text-card-foreground mb-3">{t.whoOwesWhom}</p>
                 <div className="space-y-2">
                   {debts.map((d, i) => (
-                    <div key={i} className="flex items-center gap-2 text-sm">
+                    <div key={i} className="flex items-center gap-2 text-sm flex-wrap">
                       <span className="text-destructive font-medium">{memberName(d.from)}</span>
                       <ArrowRight className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
-                      <span className="text-green-600 font-medium">{memberName(d.to)}</span>
+                      <span className="font-medium" style={{ color: "hsl(var(--chart-2))" }}>{memberName(d.to)}</span>
                       <span className="ml-auto font-semibold text-card-foreground whitespace-nowrap">{d.amount.toFixed(2)} €</span>
                       {user && (user.id === d.from || user.id === d.to) && (
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7 text-primary flex-shrink-0"
-                              onClick={() => openPaymentModal(d)}
-                            >
-                              <CheckCircle2 className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>{t.markAsPaid}</TooltipContent>
-                        </Tooltip>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-8 border-primary text-primary hover:bg-primary hover:text-primary-foreground flex-shrink-0"
+                          onClick={() => openPaymentModal(d)}
+                        >
+                          <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
+                          {t.markAsPaid}
+                        </Button>
                       )}
                     </div>
                   ))}
@@ -657,22 +653,76 @@ const Expenses = () => {
                 <div className="space-y-3">
                   {payments.map((p) => (
                     <div key={p.id} className="flex items-start justify-between text-sm border-b border-border pb-2 last:border-0 last:pb-0">
-                      <div>
-                        <div className="flex items-center gap-1.5">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
                           <span className="font-medium text-card-foreground">{memberName(p.from_user)}</span>
                           <ArrowRight className="h-3 w-3 text-muted-foreground" />
                           <span className="font-medium text-card-foreground">{memberName(p.to_user)}</span>
+                          <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border-0 text-[10px] px-1.5 py-0">
+                            {t.settled}
+                          </Badge>
                         </div>
                         <p className="text-xs text-muted-foreground mt-0.5">
                           {paymentMethodLabel(p.payment_method)} · {t.paidOn} {new Date(p.paid_at).toLocaleDateString(getLocale(language), { day: "numeric", month: "short", year: "numeric" })}
                         </p>
                       </div>
-                      <span className="font-semibold text-green-600 whitespace-nowrap">{p.amount.toFixed(2)} €</span>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <span className="font-semibold whitespace-nowrap" style={{ color: "hsl(var(--chart-2))" }}>{p.amount.toFixed(2)} €</span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-muted-foreground hover:text-primary"
+                          onClick={() => setDetailPayment(p)}
+                        >
+                          <Eye className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
                     </div>
                   ))}
                 </div>
               </div>
             )}
+
+            {/* Payment detail dialog */}
+            <Dialog open={!!detailPayment} onOpenChange={(o) => !o && setDetailPayment(null)}>
+              <DialogContent className="max-w-sm">
+                <DialogHeader>
+                  <DialogTitle>{t.paymentDetail}</DialogTitle>
+                </DialogHeader>
+                {detailPayment && (
+                  <div className="space-y-3 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">{t.from ?? "De"}</span>
+                      <span className="font-medium text-card-foreground">{memberName(detailPayment.from_user)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">{t.to ?? "A"}</span>
+                      <span className="font-medium text-card-foreground">{memberName(detailPayment.to_user)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">{t.totalExpenses ?? "Importe"}</span>
+                      <span className="font-semibold text-card-foreground">{detailPayment.amount.toFixed(2)} €</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">{t.paymentMethod}</span>
+                      <span className="font-medium text-card-foreground">{paymentMethodLabel(detailPayment.payment_method)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">{t.paidOn}</span>
+                      <span className="font-medium text-card-foreground">
+                        {new Date(detailPayment.paid_at).toLocaleDateString(getLocale(language), { day: "numeric", month: "long", year: "numeric" })}
+                      </span>
+                    </div>
+                    <div className="flex justify-center pt-2">
+                      <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border-0">
+                        <CheckCircle2 className="h-3 w-3 mr-1" />
+                        {t.settled}
+                      </Badge>
+                    </div>
+                  </div>
+                )}
+              </DialogContent>
+            </Dialog>
           </TabsContent>
 
           <TabsContent value="gastos">
