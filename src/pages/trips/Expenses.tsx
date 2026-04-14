@@ -258,6 +258,8 @@ const Expenses = () => {
       fetchExpenses();
       toast({ title: t.expenseUpdated });
     } else {
+      setOpen(false);
+
       const { data: inserted, error } = await supabase
         .from("trip_expenses")
         .insert({ trip_id: tripId, title: title.trim(), amount: parsedAmount, paid_by: paidBy })
@@ -281,7 +283,6 @@ const Expenses = () => {
         return;
       }
 
-      setOpen(false);
       fetchExpenses();
       notifyTripEvent(tripId, "expenses", user?.id);
       toast({ title: t.expenseAdded });
