@@ -417,6 +417,31 @@ const Expenses = () => {
       console.error('Failed to send payment notification email:', emailErr);
     }
 
+    // Post automatic chat message (fire-and-forget)
+    try {
+      const debtorName = debtorProfile?.name || 'Alguien';
+      const credName = creditorProfile?.name || 'su compañero/a';
+      const formattedAmount = paymentDebt.amount.toFixed(2);
+
+      const chatMessages = [
+        `💸 ¡Cuentas claras! ${debtorName} ya ha pagado a ${credName} los ${formattedAmount} € pendientes.`,
+        `✅ Movimiento registrado: ${debtorName} ha saldado ${formattedAmount} € con ${credName}. ¡Así da gusto viajar!`,
+        `🎉 ${debtorName} ya está en paz con ${credName}: ${formattedAmount} € liquidados.`,
+        `🤝 Deuda saldada: ${debtorName} → ${credName} · ${formattedAmount} €. ¡Viaje sin dramas!`,
+        `💰 ${debtorName} ha pagado ${formattedAmount} € a ${credName}. Las cuentas del viaje van tomando forma.`,
+      ];
+      const msg = chatMessages[Math.floor(Math.random() * chatMessages.length)];
+
+      await supabase.from("trip_messages").insert({
+        trip_id: tripId,
+        user_id: user.id,
+        content: msg,
+        type: "text",
+      });
+    } catch (chatErr) {
+      console.error('Failed to post payment chat message:', chatErr);
+    }
+
     setPaymentOpen(false);
     setPaymentDebt(null);
     fetchPayments();
