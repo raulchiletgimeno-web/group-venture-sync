@@ -14,6 +14,61 @@ export type Database = {
   }
   public: {
     Tables: {
+      debt_payments: {
+        Row: {
+          amount: number
+          created_at: string
+          from_user: string
+          id: string
+          paid_at: string
+          payment_method: string
+          to_user: string
+          trip_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          from_user: string
+          id?: string
+          paid_at?: string
+          payment_method?: string
+          to_user: string
+          trip_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          from_user?: string
+          id?: string
+          paid_at?: string
+          payment_method?: string
+          to_user?: string
+          trip_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "debt_payments_from_user_fkey"
+            columns: ["from_user"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "debt_payments_to_user_fkey"
+            columns: ["to_user"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "debt_payments_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       debt_reminders: {
         Row: {
           amount: number
