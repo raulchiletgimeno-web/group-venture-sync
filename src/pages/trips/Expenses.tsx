@@ -757,6 +757,63 @@ const Expenses = () => {
                 )}
               </DialogContent>
             </Dialog>
+
+            {/* Edit payment dialog */}
+            <Dialog open={!!editPayment} onOpenChange={(o) => !o && setEditPayment(null)}>
+              <DialogContent className="max-w-sm">
+                <DialogHeader>
+                  <DialogTitle>{t.editPayment}</DialogTitle>
+                </DialogHeader>
+                {editPayment && (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-center gap-2 py-2 text-sm">
+                      <span className="font-semibold text-card-foreground">{memberName(editPayment.from_user)}</span>
+                      <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                      <span className="font-semibold text-card-foreground">{memberName(editPayment.to_user)}</span>
+                    </div>
+                    <div>
+                      <Label className="text-sm">{t.paymentMethod}</Label>
+                      <RadioGroup value={editMethod} onValueChange={setEditMethod} className="mt-2 space-y-2">
+                        {[
+                          { value: "bizum", label: t.bizum },
+                          { value: "transfer", label: t.transfer },
+                          { value: "cash", label: t.cash },
+                          { value: "other", label: t.otherMethod },
+                        ].map((m) => (
+                          <div key={m.value} className="flex items-center gap-2">
+                            <RadioGroupItem value={m.value} id={`edit-${m.value}`} />
+                            <Label htmlFor={`edit-${m.value}`} className="text-sm font-normal">{m.label}</Label>
+                          </div>
+                        ))}
+                      </RadioGroup>
+                    </div>
+                    <div>
+                      <Label className="text-sm">{t.editPaymentAmount}</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0.01"
+                        value={editAmount}
+                        onChange={(e) => setEditAmount(e.target.value)}
+                        className="mt-1"
+                      />
+                    </div>
+                    <div className="flex gap-2 justify-end">
+                      <Button variant="outline" size="sm" onClick={() => setEditPayment(null)}>
+                        {t.cancel}
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={handleUpdatePayment}
+                        disabled={submittingEdit || !editAmount || parseFloat(editAmount) <= 0}
+                      >
+                        {submittingEdit ? t.loading : t.savePayment}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </DialogContent>
+            </Dialog>
           </TabsContent>
 
           <TabsContent value="gastos">
