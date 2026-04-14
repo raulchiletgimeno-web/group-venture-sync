@@ -203,6 +203,7 @@ const Expenses = () => {
     setReceiptPreview(null);
     setExistingReceiptPath(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
+    if (galleryInputRef.current) galleryInputRef.current.value = "";
   };
 
   const uploadReceipt = async (expenseId: string): Promise<string | null> => {
