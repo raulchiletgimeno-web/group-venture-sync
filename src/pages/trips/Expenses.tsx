@@ -560,6 +560,13 @@ const Expenses = () => {
                   className="hidden"
                   onChange={handleFileChange}
                 />
+                <input
+                  ref={galleryInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleFileChange}
+                />
                 {receiptPreview || existingReceiptPath ? (
                   <div className="relative inline-block">
                     <img
@@ -576,16 +583,28 @@ const Expenses = () => {
                     </button>
                   </div>
                 ) : (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="gap-2"
-                  >
-                    <Camera className="h-4 w-4" />
-                    {t.takePhoto}
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="gap-2"
+                    >
+                      <Camera className="h-4 w-4" />
+                      {t.takePhoto}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => galleryInputRef.current?.click()}
+                      className="gap-2"
+                    >
+                      <ImageIcon className="h-4 w-4" />
+                      {t.gallery || "Galería"}
+                    </Button>
+                  </div>
                 )}
               </div>
                <Button type="submit" className="w-full gradient-hero text-primary-foreground border-0">
