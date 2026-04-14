@@ -1,57 +1,53 @@
 
 
-## Añadir mensaje automático en el chat al registrar un pago
+## Ajuste de fotos en orientación horizontal
 
-### Resumen
+### Problema
 
-El email al cobrador ya está implementado (plantilla `payment-notification` + invocación en `handleConfirmPayment`). Solo falta añadir la publicación automática de un mensaje en el chat del viaje cuando se registra un pago.
+1. **Grid de miniaturas** (línea 119): usa `grid-cols-2 sm:grid-cols-3` con `aspect-square`. En horizontal solo muestra 2-3 columnas cuadradas, desaprovechando el espacio.
+2. **Visor fullscreen** (línea 150-155): usa `max-h-[85vh]` que funciona bien, pero no aprovecha al máximo el ancho en landscape.
 
-### Cambio único: `src/pages/trips/Expenses.tsx`
+### Cambios (solo `src/pages/trips/Photos.tsx`)
 
-Después del bloque de envío de email (línea ~418), añadir un bloque fire-and-forget que inserte un mensaje en `trip_messages` con el contenido del pago:
+#### 1. Grid responsive para landscape
 
-```typescript
-// Post automatic chat message (fire-and-forget)
-try {
-  const debtorName = debtorProfile?.name || 'Alguien';
-  const creditorName = creditorProfile?.name || 'su compañero/a';
-  const formattedAmount = paymentDebt.amount.toFixed(2);
+Cambiar la clase del grid para detectar orientación horizontal y mostrar más columnas:
 
-  const chatMessages = [
-    `💸 ¡Cuentas claras! ${debtorName} ya ha pagado a ${creditorName} los ${formattedAmount} € pendientes.`,
-    `✅ Movimiento registrado: ${debtorName} ha saldado ${formattedAmount} € con ${creditorName}. ¡Así da gusto viajar!`,
-    `🎉 ${debtorName} ya está en paz con ${creditorName}: ${formattedAmount} € liquidados.`,
-    `🤝 Deuda saldada: ${debtorName} → ${creditorName} · ${formattedAmount} €. ¡Viaje sin dramas!`,
-    `💰 ${debtorName} ha pagado ${formattedAmount} € a ${creditorName}. Las cuentas del viaje van tomando forma.`,
-  ];
-  const msg = chatMessages[Math.floor(Math.random() * chatMessages.length)];
-
-  await supabase.from("trip_messages").insert({
-    trip_id: tripId,
-    user_id: user.id,
-    content: msg,
-    type: "text",
-  });
-} catch (chatErr) {
-  console.error('Failed to post payment chat message:', chatErr);
-}
+```
+grid grid-cols-2 sm:grid-cols-3 landscape:grid-cols-4 gap-3
 ```
 
-Se reutilizan las variables `debtorProfile`, `creditorProfile` y `tripData` que ya se obtienen para el email. El mensaje se inserta como un mensaje de texto normal del usuario actual, usando la tabla `trip_messages` existente con las políticas RLS ya configuradas.
+Esto añade 4 columnas cuando el móvil está en horizontal, aprovechando el ancho extra.
 
-### Ficheros afectados
+#### 2. Miniaturas con aspect-ratio adaptativo
+
+Cambiar `aspect-square` a una clase que se adapte en landscape:
+
+```
+aspect-square landscape:aspect-video
+```
+
+En horizontal, las miniaturas pasan a formato 16:9 (más natural para pantallas anchas). En vertical se mantienen cuadradas.
+
+#### 3. Visor fullscreen mejorado en landscape
+
+Ajustar la imagen del visor para aprovechar mejor el espacio horizontal:
+
+```
+max-w-full max-h-[85vh] landscape:max-h-[90vh] landscape:max-w-[95vw] object-contain rounded-lg
+```
+
+Y ocultar el nombre del usuario debajo de la foto en landscape para dar más espacio vertical:
+
+```
+<p className="text-white/70 text-sm mt-3 landscape:mt-1 landscape:text-xs">
+```
+
+### Fichero afectado
 
 | Fichero | Cambio |
 |---------|--------|
-| `src/pages/trips/Expenses.tsx` | Insertar mensaje automático en el chat tras registrar pago |
+| `src/pages/trips/Photos.tsx` | Clases CSS responsive para landscape en grid, miniaturas y visor |
 
-No se toca ningún otro fichero ni funcionalidad.
-
-### Detalle técnico
-
-- Se selecciona aleatoriamente entre 5 mensajes con tono YORMIT (simpático, premium, claro)
-- El mensaje incluye: nombre del deudor, nombre del acreedor e importe
-- Se inserta como mensaje de tipo `text` en `trip_messages` — no requiere cambios en el chat ni en la base de datos
-- Es fire-and-forget: si falla, no bloquea el flujo de pago
-- Las notificaciones push del chat se dispararán automáticamente si `notifyTripEvent` ya se invoca en el chat
+No se toca ningún otro fichero ni funcionalidad de la app. Solo se añaden clases Tailwind con el modificador `landscape:` que ya viene incluido en Tailwind CSS v3.
 
