@@ -116,11 +116,11 @@ const Photos = () => {
       ) : photos.length === 0 ? (
         <EmptyState icon={Camera} title={t.noPhotosTitle} description={t.noPhotosDesc} />
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 landscape:grid-cols-4 gap-3">
           {photos.map((photo) => (
             <div key={photo.id} className="relative group rounded-xl overflow-hidden bg-muted">
               <div
-                className="aspect-square cursor-pointer"
+                className="aspect-square landscape:aspect-video cursor-pointer"
                 onClick={() => setViewingPhoto({ url: getPublicUrl(photo.file_path), userName: getMemberName(photo.user_id) })}
               >
                 <img src={getPublicUrl(photo.file_path)} alt={t.tripPhoto} className="w-full h-full object-cover transition-opacity duration-300" loading="lazy" decoding="async" />
@@ -150,10 +150,10 @@ const Photos = () => {
           <img
             src={viewingPhoto.url}
             alt={t.tripPhoto}
-            className="max-w-full max-h-[85vh] object-contain rounded-lg"
+            className="max-w-full max-h-[85vh] landscape:max-h-[90vh] landscape:max-w-[95vw] object-contain rounded-lg"
             onClick={(e) => e.stopPropagation()}
           />
-          <p className="text-white/70 text-sm mt-3">{viewingPhoto.userName}</p>
+          <p className="text-white/70 text-sm mt-3 landscape:mt-1 landscape:text-xs">{viewingPhoto.userName}</p>
         </div>
       )}
     </div>
