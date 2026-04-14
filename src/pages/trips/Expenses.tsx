@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useRef } from "react";
 import { useParams } from "react-router-dom";
-import { Receipt, Plus, Trash2, Users, Pencil, Camera, ImageIcon, X, ArrowRight } from "lucide-react";
+import { Receipt, Plus, Trash2, Users, Pencil, Camera, ImageIcon, X, ArrowRight, CheckCircle2, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import EmptyState from "@/components/EmptyState";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -34,6 +35,15 @@ interface Expense {
   receipt_path: string | null;
 }
 
+interface DebtPayment {
+  id: string;
+  from_user: string;
+  to_user: string;
+  amount: number;
+  payment_method: string;
+  paid_at: string;
+}
+
 const Expenses = () => {
   const { tripId } = useParams();
   useMarkSectionSeen(tripId, "expenses");
@@ -42,12 +52,19 @@ const Expenses = () => {
   const { t, language } = useLanguage();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
+  const [payments, setPayments] = useState<DebtPayment[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
+  // Payment modal state
+  const [paymentOpen, setPaymentOpen] = useState(false);
+  const [paymentDebt, setPaymentDebt] = useState<{ from: string; to: string; amount: number } | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState("bizum");
+  const [submittingPayment, setSubmittingPayment] = useState(false);
+
   const [title, setTitle] = useState("");
-  const [amount, setAmount] = useState("");
+  const [amount2, setAmount2] = useState("");
   const [paidBy, setPaidBy] = useState("");
   const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
@@ -115,14 +132,37 @@ const Expenses = () => {
     setLoading(false);
   };
 
+  const fetchPayments = async () => {
+    if (!tripId) return;
+    const { data } = await supabase
+      .from("debt_payments")
+      .select("*")
+      .eq("trip_id", tripId)
+      .order("paid_at", { ascending: false });
+
+    setPayments(
+      (data ?? []).map((p) => ({
+        id: p.id,
+        from_user: p.from_user,
+        to_user: p.to_user,
+        amount: Number(p.amount),
+        payment_method: p.payment_method,
+        paid_at: p.paid_at,
+      }))
+    );
+  };
+
   useEffect(() => {
-    fetchMembers().then(() => fetchExpenses());
+    fetchMembers().then(() => {
+      fetchExpenses();
+      fetchPayments();
+    });
   }, [tripId]);
 
   const openCreate = () => {
     setEditingId(null);
     setTitle("");
-    setAmount("");
+    setAmount2("");
     setPaidBy(user?.id ?? "");
     setSelectedMembers(members.map((m) => m.user_id));
     setReceiptFile(null);
@@ -134,7 +174,7 @@ const Expenses = () => {
   const openEdit = (exp: Expense) => {
     setEditingId(exp.id);
     setTitle(exp.title);
-    setAmount(exp.amount.toString());
+    setAmount2(exp.amount.toString());
     setPaidBy(exp.paid_by);
     setSelectedMembers(exp.splits);
     setReceiptFile(null);
@@ -185,17 +225,14 @@ const Expenses = () => {
     e.preventDefault();
     if (!tripId || !paidBy || selectedMembers.length === 0) return;
 
-    const parsedAmount = parseFloat(amount);
+    const parsedAmount = parseFloat(amount2);
     if (isNaN(parsedAmount) || parsedAmount <= 0) {
       toast({ title: t.error, description: t.invalidAmount, variant: "destructive" });
       return;
     }
 
     if (editingId) {
-      // Upload receipt if new file
       const receiptPath = await uploadReceipt(editingId);
-
-      // Update existing expense
       const { error } = await supabase
         .from("trip_expenses")
         .update({ title: title.trim(), amount: parsedAmount, paid_by: paidBy, receipt_path: receiptPath })
@@ -206,7 +243,6 @@ const Expenses = () => {
         return;
       }
 
-      // Delete old splits and insert new ones
       await supabase.from("trip_expense_splits").delete().eq("expense_id", editingId);
       const splits = selectedMembers.map((uid) => ({ expense_id: editingId, user_id: uid }));
       await supabase.from("trip_expense_splits").insert(splits);
@@ -216,7 +252,6 @@ const Expenses = () => {
       fetchExpenses();
       toast({ title: t.expenseUpdated });
     } else {
-      // Create new expense
       const { data: inserted, error } = await supabase
         .from("trip_expenses")
         .insert({ trip_id: tripId, title: title.trim(), amount: parsedAmount, paid_by: paidBy })
@@ -228,7 +263,6 @@ const Expenses = () => {
         return;
       }
 
-      // Upload receipt
       const receiptPath = await uploadReceipt(inserted.id);
       if (receiptPath) {
         await supabase.from("trip_expenses").update({ receipt_path: receiptPath }).eq("id", inserted.id);
@@ -263,16 +297,20 @@ const Expenses = () => {
 
     expenses.forEach((exp) => {
       const share = exp.amount / (exp.splits.length || 1);
-      // The payer gets credited
       balanceMap.set(exp.paid_by, (balanceMap.get(exp.paid_by) ?? 0) + exp.amount);
-      // Each participant owes their share
       exp.splits.forEach((uid) => {
         balanceMap.set(uid, (balanceMap.get(uid) ?? 0) - share);
       });
     });
 
+    // Adjust balances with debt payments
+    payments.forEach((p) => {
+      balanceMap.set(p.from_user, (balanceMap.get(p.from_user) ?? 0) + p.amount);
+      balanceMap.set(p.to_user, (balanceMap.get(p.to_user) ?? 0) - p.amount);
+    });
+
     return balanceMap;
-  }, [expenses, members]);
+  }, [expenses, members, payments]);
 
   const totalExpenses = useMemo(
     () => expenses.reduce((sum, e) => sum + e.amount, 0),
@@ -294,7 +332,6 @@ const Expenses = () => {
     const debtors: { from: string; to: string; amount: number }[] = [];
     const bals = new Map(balances);
 
-    // Get sorted arrays of creditors and debtors
     const creditors = members
       .filter((m) => (bals.get(m.user_id) ?? 0) > 0.01)
       .map((m) => ({ uid: m.user_id, amount: bals.get(m.user_id)! }))
@@ -319,6 +356,47 @@ const Expenses = () => {
 
     return debtors;
   }, [balances, members]);
+
+  // Payment handlers
+  const openPaymentModal = (debt: { from: string; to: string; amount: number }) => {
+    setPaymentDebt(debt);
+    setPaymentMethod("bizum");
+    setPaymentOpen(true);
+  };
+
+  const handleConfirmPayment = async () => {
+    if (!paymentDebt || !tripId) return;
+    setSubmittingPayment(true);
+
+    const { error } = await supabase.from("debt_payments").insert({
+      trip_id: tripId,
+      from_user: paymentDebt.from,
+      to_user: paymentDebt.to,
+      amount: paymentDebt.amount,
+      payment_method: paymentMethod,
+    });
+
+    setSubmittingPayment(false);
+
+    if (error) {
+      toast({ title: t.error, description: error.message, variant: "destructive" });
+      return;
+    }
+
+    setPaymentOpen(false);
+    setPaymentDebt(null);
+    fetchPayments();
+    toast({ title: t.debtSettled });
+  };
+
+  const paymentMethodLabel = (method: string) => {
+    switch (method) {
+      case "bizum": return t.bizum;
+      case "transfer": return t.transfer;
+      case "cash": return t.cash;
+      default: return t.otherMethod;
+    }
+  };
 
   if (loading) {
     return (
@@ -360,8 +438,8 @@ const Expenses = () => {
                   type="number"
                   step="0.01"
                   min="0.01"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
+                  value={amount2}
+                  onChange={(e) => setAmount2(e.target.value)}
                   placeholder="0.00"
                 />
               </div>
@@ -431,6 +509,60 @@ const Expenses = () => {
         </Dialog>
       </div>
 
+      {/* Payment confirmation modal */}
+      <Dialog open={paymentOpen} onOpenChange={setPaymentOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>{t.confirmPayment}</DialogTitle>
+          </DialogHeader>
+          {paymentDebt && (
+            <div className="space-y-4">
+              <div className="rounded-lg bg-muted p-3 text-center">
+                <div className="flex items-center justify-center gap-2 text-sm font-medium">
+                  <span className="text-foreground">{memberName(paymentDebt.from)}</span>
+                  <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-foreground">{memberName(paymentDebt.to)}</span>
+                </div>
+                <p className="text-lg font-bold text-foreground mt-1">{paymentDebt.amount.toFixed(2)} €</p>
+              </div>
+
+              <div>
+                <Label className="mb-3 block">{t.paymentMethod}</Label>
+                <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod} className="grid grid-cols-2 gap-2">
+                  {[
+                    { value: "bizum", label: t.bizum },
+                    { value: "transfer", label: t.transfer },
+                    { value: "cash", label: t.cash },
+                    { value: "other", label: t.otherMethod },
+                  ].map((opt) => (
+                    <label
+                      key={opt.value}
+                      className={`flex items-center gap-2 rounded-lg border p-3 cursor-pointer transition-colors ${
+                        paymentMethod === opt.value
+                          ? "border-primary bg-primary/5"
+                          : "border-border hover:bg-muted"
+                      }`}
+                    >
+                      <RadioGroupItem value={opt.value} />
+                      <span className="text-sm font-medium">{opt.label}</span>
+                    </label>
+                  ))}
+                </RadioGroup>
+              </div>
+
+              <Button
+                onClick={handleConfirmPayment}
+                disabled={submittingPayment}
+                className="w-full gradient-hero text-primary-foreground border-0"
+              >
+                <CheckCircle2 className="h-4 w-4 mr-2" />
+                {t.confirmPayment}
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       {expenses.length === 0 ? (
          <EmptyState
            icon={Receipt}
@@ -489,9 +621,51 @@ const Expenses = () => {
                   {debts.map((d, i) => (
                     <div key={i} className="flex items-center gap-2 text-sm">
                       <span className="text-destructive font-medium">{memberName(d.from)}</span>
-                      <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
+                      <ArrowRight className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
                       <span className="text-green-600 font-medium">{memberName(d.to)}</span>
-                      <span className="ml-auto font-semibold text-card-foreground">{d.amount.toFixed(2)} €</span>
+                      <span className="ml-auto font-semibold text-card-foreground whitespace-nowrap">{d.amount.toFixed(2)} €</span>
+                      {user && (user.id === d.from || user.id === d.to) && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-primary flex-shrink-0"
+                              onClick={() => openPaymentModal(d)}
+                            >
+                              <CheckCircle2 className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>{t.markAsPaid}</TooltipContent>
+                        </Tooltip>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Payment history */}
+            {payments.length > 0 && (
+              <div className="rounded-xl bg-card p-4 shadow-card">
+                <div className="flex items-center gap-2 mb-3">
+                  <History className="h-4 w-4 text-muted-foreground" />
+                  <p className="text-sm font-semibold text-card-foreground">{t.paymentHistory}</p>
+                </div>
+                <div className="space-y-3">
+                  {payments.map((p) => (
+                    <div key={p.id} className="flex items-start justify-between text-sm border-b border-border pb-2 last:border-0 last:pb-0">
+                      <div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-medium text-card-foreground">{memberName(p.from_user)}</span>
+                          <ArrowRight className="h-3 w-3 text-muted-foreground" />
+                          <span className="font-medium text-card-foreground">{memberName(p.to_user)}</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {paymentMethodLabel(p.payment_method)} · {t.paidOn} {new Date(p.paid_at).toLocaleDateString(getLocale(language), { day: "numeric", month: "short", year: "numeric" })}
+                        </p>
+                      </div>
+                      <span className="font-semibold text-green-600 whitespace-nowrap">{p.amount.toFixed(2)} €</span>
                     </div>
                   ))}
                 </div>
