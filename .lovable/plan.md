@@ -1,57 +1,71 @@
 
 
-## Añadir edición de pagos en el historial
+## Enviar email al cobrador cuando el deudor marca un pago
 
 ### Resumen
 
-Permitir que el usuario que realizó el pago (deudor / `from_user`) pueda editar el método de pago y el importe desde el historial de pagos. Se añade un botón de edición junto al de "Ver detalle" y un dialog de edición con los campos editables.
+Cuando el deudor confirma un pago en Gastos → Saldos, se enviará automáticamente un email al usuario cobrador informándole del pago registrado, con tono YORMIT (amistoso, premium, simpático).
 
 ### Cambios
 
-#### 1. Migración SQL — Permitir UPDATE en `debt_payments`
+#### 1. Nueva plantilla de email: `payment-notification.tsx`
 
-Crear política RLS para UPDATE que solo permita al deudor editar sus propios pagos:
+Crear `supabase/functions/_shared/transactional-email-templates/payment-notification.tsx`:
 
-```sql
-CREATE POLICY "Only debtor can update payments"
-ON public.debt_payments
-FOR UPDATE
-TO authenticated
-USING (from_user = auth.uid())
-WITH CHECK (from_user = auth.uid());
+- Props: `debtorName`, `creditorName`, `amount`, `tripName`, `paymentMethod`, `paidAt`
+- Estilo visual idéntico al de `debt-reminder.tsx` (header azul YORMIT, tarjeta central, branding premium)
+- Tono amistoso: "¡Buenas noticias! {debtorName} ha marcado como pagados {amount} € del viaje {tripName}..."
+- Detalle del método de pago y fecha
+- Asuntos variados y simpáticos (ej: "💰 ¡Te han pagado! {debtorName} ha saldado su deuda")
+
+#### 2. Actualizar `registry.ts`
+
+Añadir import y entrada `'payment-notification'` en el mapa `TEMPLATES`.
+
+#### 3. Modificar `handleConfirmPayment` en `Expenses.tsx`
+
+Después de insertar el pago con éxito (línea ~394), añadir:
+
+```typescript
+// Obtener datos para el email
+const creditorProfile = members.find(m => m.user_id === paymentDebt.to);
+const debtorProfile = members.find(m => m.user_id === paymentDebt.from);
+const tripData = await supabase.from("trips").select("title").eq("id", tripId).single();
+
+// Obtener email del cobrador
+const { data: creditorData } = await supabase
+  .from("profiles").select("email").eq("id", paymentDebt.to).single();
+
+if (creditorData?.email) {
+  await supabase.functions.invoke('send-transactional-email', {
+    body: {
+      templateName: 'payment-notification',
+      recipientEmail: creditorData.email,
+      idempotencyKey: `payment-notif-${insertedId}`,
+      templateData: {
+        debtorName: debtorProfile?.name,
+        creditorName: creditorProfile?.name,
+        amount: paymentDebt.amount.toFixed(2),
+        tripName: tripData?.data?.title,
+        paymentMethod: paymentMethod,
+        paidAt: new Date().toISOString(),
+      },
+    },
+  });
+}
 ```
 
-#### 2. `src/pages/trips/Expenses.tsx`
+#### 4. Redesplegar Edge Functions
 
-- Añadir estado para el dialog de edición (`editPayment`, `editMethod`, `editAmount`, `submittingEdit`)
-- Añadir función `handleUpdatePayment` que hace `supabase.from("debt_payments").update(...)` con el nuevo método y/o importe
-- En el historial de pagos, junto al botón `Eye` (ver detalle), añadir un botón `Pencil` (editar) **solo si** `p.from_user === user?.id`
-- Dialog de edición con:
-  - RadioGroup para método de pago (Bizum, Transferencia, Efectivo, Otro)
-  - Input numérico para el importe
-  - Botón "Guardar" y "Cancelar"
-
-#### 3. `src/i18n/translations.ts`
-
-Nuevas claves en 7 idiomas: `editPayment`, `savePayment`, `editPaymentAmount`
-
-| Idioma | `editPayment` | `savePayment` |
-|--------|--------------|---------------|
-| es | Editar pago | Guardar |
-| en | Edit payment | Save |
-| fr | Modifier paiement | Enregistrer |
-| pt | Editar pagamento | Guardar |
-| it | Modifica pagamento | Salva |
-| zh | 编辑付款 | 保存 |
-| de | Zahlung bearbeiten | Speichern |
+Desplegar `send-transactional-email` para que cargue la nueva plantilla del registry.
 
 ### Ficheros afectados
 
 | Fichero | Cambio |
 |---------|--------|
-| Migración SQL | Política UPDATE para `debt_payments` (solo `from_user`) |
-| `src/pages/trips/Expenses.tsx` | Estado de edición, dialog, botón Pencil en historial |
-| `src/i18n/translations.ts` | 2-3 claves nuevas en 7 idiomas |
+| `supabase/functions/_shared/transactional-email-templates/payment-notification.tsx` | Nueva plantilla de email |
+| `supabase/functions/_shared/transactional-email-templates/registry.ts` | Registrar nueva plantilla |
+| `src/pages/trips/Expenses.tsx` | Invocar envío de email tras confirmar pago |
 
 No se toca ninguna otra parte de la app.
 
