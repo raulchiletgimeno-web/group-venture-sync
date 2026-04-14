@@ -690,14 +690,11 @@ const Expenses = () => {
                   <DialogTitle>{t.paymentDetail}</DialogTitle>
                 </DialogHeader>
                 {detailPayment && (
-                  <div className="space-y-3 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">{t.origin}</span>
-                      <span className="font-medium text-card-foreground">{memberName(detailPayment.from_user)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">{t.arrivalLocation}</span>
-                      <span className="font-medium text-card-foreground">{memberName(detailPayment.to_user)}</span>
+                  <div className="space-y-4 text-sm">
+                    <div className="flex items-center justify-center gap-2 py-2">
+                      <span className="font-semibold text-card-foreground">{memberName(detailPayment.from_user)}</span>
+                      <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                      <span className="font-semibold text-card-foreground">{memberName(detailPayment.to_user)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">{t.amount}</span>
