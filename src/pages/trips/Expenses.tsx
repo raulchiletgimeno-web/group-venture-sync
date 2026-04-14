@@ -404,7 +404,29 @@ const Expenses = () => {
     }
   };
 
-  if (loading) {
+  const openEditPayment = (p: DebtPayment) => {
+    setEditPayment(p);
+    setEditMethod(p.payment_method);
+    setEditAmount(p.amount.toString());
+  };
+
+  const handleUpdatePayment = async () => {
+    if (!editPayment) return;
+    setSubmittingEdit(true);
+    const { error } = await supabase
+      .from("debt_payments")
+      .update({ payment_method: editMethod, amount: parseFloat(editAmount) })
+      .eq("id", editPayment.id);
+    setSubmittingEdit(false);
+    if (error) {
+      toast({ title: t.error, description: error.message, variant: "destructive" });
+      return;
+    }
+    setEditPayment(null);
+    fetchPayments();
+    toast({ title: t.paymentRegistered });
+  };
+
     return (
       <div className="flex justify-center py-10">
         <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
