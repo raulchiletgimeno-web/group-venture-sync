@@ -883,6 +883,9 @@ const translations: Record<Language, TranslationKeys> = {
     paidOn: "Pagado el",
     noPayments: "No hay pagos registrados",
     debtSettled: "Deuda saldada correctamente",
+    viewPaymentDetail: "Ver detalle",
+    paymentDetail: "Detalle del pago",
+    settled: "Pagado",
   },
 
   en: {
@@ -1287,6 +1290,9 @@ const translations: Record<Language, TranslationKeys> = {
     paidOn: "Paid on",
     noPayments: "No payments registered",
     debtSettled: "Debt settled successfully",
+    viewPaymentDetail: "View detail",
+    paymentDetail: "Payment detail",
+    settled: "Settled",
   },
 
   fr: {
@@ -1691,6 +1697,9 @@ const translations: Record<Language, TranslationKeys> = {
     paidOn: "Payé le",
     noPayments: "Aucun paiement enregistré",
     debtSettled: "Dette réglée avec succès",
+    viewPaymentDetail: "Voir détail",
+    paymentDetail: "Détail du paiement",
+    settled: "Réglé",
   },
 
   pt: {
@@ -2095,6 +2104,9 @@ const translations: Record<Language, TranslationKeys> = {
     paidOn: "Pago em",
     noPayments: "Nenhum pagamento registado",
     debtSettled: "Dívida liquidada com sucesso",
+    viewPaymentDetail: "Ver detalhe",
+    paymentDetail: "Detalhe do pagamento",
+    settled: "Pago",
   },
 
   it: {
@@ -2499,6 +2511,9 @@ const translations: Record<Language, TranslationKeys> = {
     paidOn: "Pagato il",
     noPayments: "Nessun pagamento registrato",
     debtSettled: "Debito saldato con successo",
+    viewPaymentDetail: "Vedi dettaglio",
+    paymentDetail: "Dettaglio pagamento",
+    settled: "Saldato",
   },
 
   zh: {
@@ -2903,6 +2918,9 @@ const translations: Record<Language, TranslationKeys> = {
     paidOn: "付款日期",
     noPayments: "暂无付款记录",
     debtSettled: "债务已成功结清",
+    viewPaymentDetail: "查看详情",
+    paymentDetail: "付款详情",
+    settled: "已结清",
   },
 
   de: {
@@ -3307,6 +3325,9 @@ const translations: Record<Language, TranslationKeys> = {
     paidOn: "Bezahlt am",
     noPayments: "Keine Zahlungen registriert",
     debtSettled: "Schuld erfolgreich beglichen",
+    viewPaymentDetail: "Detail ansehen",
+    paymentDetail: "Zahlungsdetail",
+    settled: "Beglichen",
   },
 };
 
