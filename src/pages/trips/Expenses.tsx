@@ -407,7 +407,7 @@ const Expenses = () => {
   const openEditPayment = (p: DebtPayment) => {
     setEditPayment(p);
     setEditMethod(p.payment_method);
-    setEditAmount(p.amount.toString());
+    setEditAmount(p.amount.toFixed(2));
   };
 
   const handleUpdatePayment = async () => {
