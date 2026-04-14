@@ -389,10 +389,12 @@ const Expenses = () => {
       return;
     }
 
+    // Shared data for email and chat notifications
+    const creditorProfile = members.find(m => m.user_id === paymentDebt.to);
+    const debtorProfile = members.find(m => m.user_id === paymentDebt.from);
+
     // Send email notification to the creditor (fire-and-forget)
     try {
-      const creditorProfile = members.find(m => m.user_id === paymentDebt.to);
-      const debtorProfile = members.find(m => m.user_id === paymentDebt.from);
       const { data: tripData } = await supabase.from("trips").select("title").eq("id", tripId).single();
       const { data: creditorData } = await supabase.from("profiles").select("email").eq("id", paymentDebt.to).single();
 
