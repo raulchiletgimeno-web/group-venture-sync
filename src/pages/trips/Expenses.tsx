@@ -602,7 +602,7 @@ const Expenses = () => {
                       className="gap-2"
                     >
                       <ImageIcon className="h-4 w-4" />
-                      {t.gallery || "Galería"}
+                      {t.uploadFromGallery}
                     </Button>
                   </div>
                 )}
