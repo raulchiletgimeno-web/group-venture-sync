@@ -64,6 +64,10 @@ const Expenses = () => {
   const [paymentMethod, setPaymentMethod] = useState("bizum");
   const [submittingPayment, setSubmittingPayment] = useState(false);
   const [detailPayment, setDetailPayment] = useState<DebtPayment | null>(null);
+  const [editPayment, setEditPayment] = useState<DebtPayment | null>(null);
+  const [editMethod, setEditMethod] = useState("bizum");
+  const [editAmount, setEditAmount] = useState("");
+  const [submittingEdit, setSubmittingEdit] = useState(false);
 
   const [title, setTitle] = useState("");
   const [amount2, setAmount2] = useState("");
@@ -400,6 +404,29 @@ const Expenses = () => {
     }
   };
 
+  const openEditPayment = (p: DebtPayment) => {
+    setEditPayment(p);
+    setEditMethod(p.payment_method);
+    setEditAmount(p.amount.toString());
+  };
+
+  const handleUpdatePayment = async () => {
+    if (!editPayment) return;
+    setSubmittingEdit(true);
+    const { error } = await supabase
+      .from("debt_payments")
+      .update({ payment_method: editMethod, amount: parseFloat(editAmount) })
+      .eq("id", editPayment.id);
+    setSubmittingEdit(false);
+    if (error) {
+      toast({ title: t.error, description: error.message, variant: "destructive" });
+      return;
+    }
+    setEditPayment(null);
+    fetchPayments();
+    toast({ title: t.paymentRegistered });
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center py-10">
@@ -666,8 +693,18 @@ const Expenses = () => {
                           {paymentMethodLabel(p.payment_method)} · {t.paidOn} {new Date(p.paid_at).toLocaleDateString(getLocale(language), { day: "numeric", month: "short", year: "numeric" })}
                         </p>
                       </div>
-                      <div className="flex items-center gap-2 flex-shrink-0">
+                      <div className="flex items-center gap-1 flex-shrink-0">
                         <span className="font-semibold whitespace-nowrap" style={{ color: "hsl(var(--chart-2))" }}>{p.amount.toFixed(2)} €</span>
+                        {p.from_user === user?.id && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-muted-foreground hover:text-primary"
+                            onClick={() => openEditPayment(p)}
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
                         <Button
                           variant="ghost"
                           size="icon"
@@ -715,6 +752,63 @@ const Expenses = () => {
                         <CheckCircle2 className="h-3 w-3 mr-1" />
                         {t.settled}
                       </Badge>
+                    </div>
+                  </div>
+                )}
+              </DialogContent>
+            </Dialog>
+
+            {/* Edit payment dialog */}
+            <Dialog open={!!editPayment} onOpenChange={(o) => !o && setEditPayment(null)}>
+              <DialogContent className="max-w-sm">
+                <DialogHeader>
+                  <DialogTitle>{t.editPayment}</DialogTitle>
+                </DialogHeader>
+                {editPayment && (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-center gap-2 py-2 text-sm">
+                      <span className="font-semibold text-card-foreground">{memberName(editPayment.from_user)}</span>
+                      <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                      <span className="font-semibold text-card-foreground">{memberName(editPayment.to_user)}</span>
+                    </div>
+                    <div>
+                      <Label className="text-sm">{t.paymentMethod}</Label>
+                      <RadioGroup value={editMethod} onValueChange={setEditMethod} className="mt-2 space-y-2">
+                        {[
+                          { value: "bizum", label: t.bizum },
+                          { value: "transfer", label: t.transfer },
+                          { value: "cash", label: t.cash },
+                          { value: "other", label: t.otherMethod },
+                        ].map((m) => (
+                          <div key={m.value} className="flex items-center gap-2">
+                            <RadioGroupItem value={m.value} id={`edit-${m.value}`} />
+                            <Label htmlFor={`edit-${m.value}`} className="text-sm font-normal">{m.label}</Label>
+                          </div>
+                        ))}
+                      </RadioGroup>
+                    </div>
+                    <div>
+                      <Label className="text-sm">{t.editPaymentAmount}</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0.01"
+                        value={editAmount}
+                        onChange={(e) => setEditAmount(e.target.value)}
+                        className="mt-1"
+                      />
+                    </div>
+                    <div className="flex gap-2 justify-end">
+                      <Button variant="outline" size="sm" onClick={() => setEditPayment(null)}>
+                        {t.cancel}
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={handleUpdatePayment}
+                        disabled={submittingEdit || !editAmount || parseFloat(editAmount) <= 0}
+                      >
+                        {submittingEdit ? t.loading : t.savePayment}
+                      </Button>
                     </div>
                   </div>
                 )}
