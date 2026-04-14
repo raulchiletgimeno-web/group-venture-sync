@@ -1,68 +1,79 @@
 
 
-## Personalizar el email de verificación de registro de YORMIT
+## Gestión de deudas pagadas en el apartado de Gastos
 
-### Situación actual
+### Resumen
 
-- El dominio de email `notify.mail.yormit.com` está verificado y activo
-- No existen plantillas de auth email personalizadas — se usan las plantillas por defecto de Lovable
-- La infraestructura de email (colas, cron, etc.) ya está configurada
+Crear una tabla `debt_payments` para registrar pagos de deudas, añadir un botón "Marcar como pagado" en cada línea de "Quién debe a quién", un modal de confirmación con selector de método de pago, y una sección de historial de pagos. Los saldos se recalcularán restando los pagos registrados.
 
-### Qué voy a hacer
+### Cambios en base de datos
 
-#### 1. Crear las plantillas de auth email personalizadas
+**Nueva tabla `debt_payments`:**
+```sql
+CREATE TABLE public.debt_payments (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  trip_id uuid NOT NULL,
+  from_user uuid NOT NULL,
+  to_user uuid NOT NULL,
+  amount numeric NOT NULL,
+  payment_method text NOT NULL DEFAULT 'bizum',
+  paid_at timestamptz NOT NULL DEFAULT now(),
+  created_at timestamptz NOT NULL DEFAULT now()
+);
 
-Usaré la herramienta de scaffolding para generar las 6 plantillas de auth email (signup, recovery, magic-link, invite, email-change, reauthentication) y el edge function `auth-email-hook`.
+ALTER TABLE public.debt_payments ENABLE ROW LEVEL SECURITY;
 
-#### 2. Personalizar la plantilla de signup (verificación de registro)
+-- Miembros del viaje pueden ver los pagos
+CREATE POLICY "Members can view payments"
+  ON public.debt_payments FOR SELECT TO authenticated
+  USING (is_trip_member(trip_id));
 
-Aplicaré el branding de YORMIT con estos elementos:
+-- Miembros del viaje pueden registrar pagos
+CREATE POLICY "Members can insert payments"
+  ON public.debt_payments FOR INSERT TO authenticated
+  WITH CHECK (is_trip_member(trip_id) AND (from_user = auth.uid() OR to_user = auth.uid()));
 
-**Colores extraídos del proyecto:**
-- Primary: `hsl(200, 80%, 50%)` — azul YORMIT
-- Foreground: `hsl(215, 30%, 12%)` — texto oscuro
-- Muted foreground: `hsl(215, 12%, 50%)` — texto secundario
-- Border radius: `0.75rem`
-- Font: Plus Jakarta Sans (con fallback Arial)
-- Fondo del email: `#ffffff`
+-- Solo el creador del pago puede eliminarlo
+CREATE POLICY "Payment creator can delete"
+  ON public.debt_payments FOR DELETE TO authenticated
+  USING (from_user = auth.uid() OR to_user = auth.uid());
+```
 
-**Asunto:**
-> Verifica tu correo y activa tu cuenta en YORMIT
+### Cambios en `Expenses.tsx`
 
-**Contenido del email:**
-- Marca YORMIT visible en la cabecera (texto con estilo, sin imagen externa)
-- Saludo: "Hola,"
-- Bienvenida: "Te damos la bienvenida a YORMIT."
-- Texto: "Ya casi está todo listo. Solo falta verificar tu correo electrónico para activar tu cuenta y empezar a usar la app con normalidad."
-- Botón azul YORMIT: "Verificar mi cuenta"
-- Texto alternativo con enlace por si el botón no funciona
-- Nota discreta: "Si no has solicitado esta cuenta, puedes ignorar este mensaje."
-- Cierre: "Gracias por confiar en YORMIT. Nos vemos dentro."
+1. **Fetch `debt_payments`** al cargar el componente (junto con expenses y members)
 
-#### 3. Aplicar branding a las demás plantillas de auth
+2. **Recálculo de saldos**: Después de calcular balances por gastos, restar los `debt_payments` del viaje:
+   - `from_user` gana balance (ya pagó su deuda) → +amount
+   - `to_user` pierde balance (ya cobró) → -amount
+   - Los `debts` simplificados se recalculan con los saldos ajustados
 
-Las otras 5 plantillas (recovery, magic-link, etc.) también recibirán el branding de YORMIT para consistencia visual, aunque el foco principal es signup.
+3. **Botón "Marcar como pagado"** en cada línea de "Quién debe a quién":
+   - Icono de check/círculo al final de cada fila
+   - Solo visible para el deudor (`from`) o el acreedor (`to`)
 
-#### 4. Desplegar el edge function
+4. **Modal de confirmación**:
+   - Muestra: "{deudor} → {acreedor}: {importe} €"
+   - Selector de método de pago: Bizum, Transferencia, Efectivo, Otro
+   - Botón "Confirmar pago"
 
-Desplegar `auth-email-hook` para que los emails personalizados se activen.
+5. **Historial de pagos**: Nueva sección debajo de "Quién debe a quién" que muestra los pagos realizados con:
+   - Quién pagó a quién
+   - Importe
+   - Método de pago
+   - Fecha
 
-### Ficheros que se crearán/modificarán
+### Traducciones (7 idiomas)
 
-| Fichero | Acción |
+Nuevas claves: `markAsPaid`, `confirmPayment`, `paymentMethod`, `bizum`, `transfer`, `cash`, `other`, `paymentHistory`, `paymentRegistered`, `paidOn`, `noPayments`
+
+### Ficheros afectados
+
+| Fichero | Cambio |
 |---------|--------|
-| `supabase/functions/auth-email-hook/index.ts` | Crear (scaffold) |
-| `supabase/functions/auth-email-hook/deno.json` | Crear (scaffold) |
-| `supabase/functions/_shared/email-templates/signup.tsx` | Crear y personalizar |
-| `supabase/functions/_shared/email-templates/recovery.tsx` | Crear y personalizar |
-| `supabase/functions/_shared/email-templates/magic-link.tsx` | Crear y personalizar |
-| `supabase/functions/_shared/email-templates/invite.tsx` | Crear y personalizar |
-| `supabase/functions/_shared/email-templates/email-change.tsx` | Crear y personalizar |
-| `supabase/functions/_shared/email-templates/reauthentication.tsx` | Crear y personalizar |
+| Migración SQL | Nueva tabla `debt_payments` con RLS |
+| `src/pages/trips/Expenses.tsx` | Fetch payments, recálculo saldos, botón marcar pagado, modal, historial |
+| `src/i18n/translations.ts` | ~11 claves nuevas en 7 idiomas |
 
-### Lo que NO se toca
-
-- Ningún fichero de la app (Auth.tsx, ProtectedRoute.tsx, AuthContext.tsx, etc.)
-- Ninguna lógica de registro ni verificación
-- Ninguna otra pantalla ni funcionalidad
+No se toca ninguna otra parte de la app.
 
