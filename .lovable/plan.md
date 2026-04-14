@@ -1,79 +1,53 @@
 
 
-## Gestión de deudas pagadas en el apartado de Gastos
+## Mejora visual del sistema de deudas pagadas en Gastos
 
-### Resumen
+### Problema actual
+El botón "Marcar como pagado" es un pequeño icono azul (`CheckCircle2`) tipo `ghost` de 28px, sin texto, que no se entiende sin pasar el ratón por encima (tooltip). En móvil es prácticamente invisible y ambiguo.
 
-Crear una tabla `debt_payments` para registrar pagos de deudas, añadir un botón "Marcar como pagado" en cada línea de "Quién debe a quién", un modal de confirmación con selector de método de pago, y una sección de historial de pagos. Los saldos se recalcularán restando los pagos registrados.
+### Cambios propuestos
 
-### Cambios en base de datos
+Solo se modifica `src/pages/trips/Expenses.tsx`. Nada más.
 
-**Nueva tabla `debt_payments`:**
-```sql
-CREATE TABLE public.debt_payments (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  trip_id uuid NOT NULL,
-  from_user uuid NOT NULL,
-  to_user uuid NOT NULL,
-  amount numeric NOT NULL,
-  payment_method text NOT NULL DEFAULT 'bizum',
-  paid_at timestamptz NOT NULL DEFAULT now(),
-  created_at timestamptz NOT NULL DEFAULT now()
-);
+#### 1. Botón "Marcar como pagado" → visible y con texto
 
-ALTER TABLE public.debt_payments ENABLE ROW LEVEL SECURITY;
+Reemplazar el icono ghost actual (líneas 627-641) por un botón pequeño con texto e icono:
 
--- Miembros del viaje pueden ver los pagos
-CREATE POLICY "Members can view payments"
-  ON public.debt_payments FOR SELECT TO authenticated
-  USING (is_trip_member(trip_id));
-
--- Miembros del viaje pueden registrar pagos
-CREATE POLICY "Members can insert payments"
-  ON public.debt_payments FOR INSERT TO authenticated
-  WITH CHECK (is_trip_member(trip_id) AND (from_user = auth.uid() OR to_user = auth.uid()));
-
--- Solo el creador del pago puede eliminarlo
-CREATE POLICY "Payment creator can delete"
-  ON public.debt_payments FOR DELETE TO authenticated
-  USING (from_user = auth.uid() OR to_user = auth.uid());
+```text
+┌─────────────────────────────────────────────────────┐
+│ Carlos  →  Ana           45.00 €  [✓ Marcar pagado] │
+└─────────────────────────────────────────────────────┘
 ```
 
-### Cambios en `Expenses.tsx`
+- Botón `variant="outline"` con `size="sm"`
+- Texto: traducción de `markAsPaid` (ya existe)
+- Icono `CheckCircle2` al lado
+- Colores: borde primary, texto primary
+- Solo visible si el usuario es deudor o acreedor (sin cambios en la lógica)
 
-1. **Fetch `debt_payments`** al cargar el componente (junto con expenses y members)
+#### 2. Historial de pagos → con acción "Ver detalle"
 
-2. **Recálculo de saldos**: Después de calcular balances por gastos, restar los `debt_payments` del viaje:
-   - `from_user` gana balance (ya pagó su deuda) → +amount
-   - `to_user` pierde balance (ya cobró) → -amount
-   - Los `debts` simplificados se recalculan con los saldos ajustados
+Cada pago en el historial actual muestra nombre→nombre, método y fecha en línea. Mejora:
 
-3. **Botón "Marcar como pagado"** en cada línea de "Quién debe a quién":
-   - Icono de check/círculo al final de cada fila
-   - Solo visible para el deudor (`from`) o el acreedor (`to`)
+- Añadir un botón/enlace discreto "Ver detalle" que abre un mini-dialog o expande info
+- Usar un `Dialog` ligero que muestra: quién pagó, a quién, importe, método, fecha — todo formateado de forma clara y elegante
+- Icono `Eye` o `Info` como acción
 
-4. **Modal de confirmación**:
-   - Muestra: "{deudor} → {acreedor}: {importe} €"
-   - Selector de método de pago: Bizum, Transferencia, Efectivo, Otro
-   - Botón "Confirmar pago"
+#### 3. Separación visual clara pendientes vs pagadas
 
-5. **Historial de pagos**: Nueva sección debajo de "Quién debe a quién" que muestra los pagos realizados con:
-   - Quién pagó a quién
-   - Importe
-   - Método de pago
-   - Fecha
+- Las deudas pendientes mantienen el estilo actual con el nuevo botón
+- Los pagos realizados en el historial llevan un badge verde "Pagado" para reforzar el estado
 
-### Traducciones (7 idiomas)
+### Traducciones nuevas (7 idiomas)
 
-Nuevas claves: `markAsPaid`, `confirmPayment`, `paymentMethod`, `bizum`, `transfer`, `cash`, `other`, `paymentHistory`, `paymentRegistered`, `paidOn`, `noPayments`
+Nuevas claves: `viewPaymentDetail`, `paymentDetail`, `settled` (pagado/settled badge)
 
 ### Ficheros afectados
 
 | Fichero | Cambio |
 |---------|--------|
-| Migración SQL | Nueva tabla `debt_payments` con RLS |
-| `src/pages/trips/Expenses.tsx` | Fetch payments, recálculo saldos, botón marcar pagado, modal, historial |
-| `src/i18n/translations.ts` | ~11 claves nuevas en 7 idiomas |
+| `src/pages/trips/Expenses.tsx` | Botón con texto, dialog de detalle de pago, badge "Pagado" en historial |
+| `src/i18n/translations.ts` | ~3 claves nuevas en 7 idiomas |
 
 No se toca ninguna otra parte de la app.
 
