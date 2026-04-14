@@ -101,7 +101,14 @@ const TripDashboard = () => {
       .eq("id", tripId)
       .single()
       .then(({ data }) => {
-        if (data) setTrip(data);
+        if (data) {
+          const today = new Date().toISOString().split("T")[0];
+          const computedStatus =
+            data.end_date < today ? "finished" :
+            data.start_date <= today ? "active" :
+            "upcoming";
+          setTrip({ ...data, status: computedStatus });
+        }
       });
 
     supabase
@@ -409,7 +416,11 @@ const TripDashboard = () => {
                 <Pencil className="h-4 w-4 text-muted-foreground" />
               </button>
             )}
-            <span className="gradient-hero text-primary-foreground text-xs font-medium px-2.5 py-1 rounded-full">
+            <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${
+              trip.status === "active" ? "gradient-hero text-primary-foreground" :
+              trip.status === "finished" ? "bg-muted text-muted-foreground" :
+              "bg-secondary text-secondary-foreground"
+            }`}>
               {statusLabels[trip.status] ?? trip.status}
             </span>
           </div>
