@@ -475,6 +475,9 @@ type TranslationKeys = {
   paidOn: string;
   noPayments: string;
   debtSettled: string;
+  viewPaymentDetail: string;
+  paymentDetail: string;
+  settled: string;
 };
 
 const translations: Record<Language, TranslationKeys> = {
