@@ -230,6 +230,9 @@ type TranslationKeys = {
   errorDeletingPhoto: string;
   errorUploadingPhoto: string;
   tripPhoto: string;
+  recordVideoBtn: string;
+  videoUploaded: string;
+  errorUploadingVideo: string;
 
   // Chat
   you: string;
