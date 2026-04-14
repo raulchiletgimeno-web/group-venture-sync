@@ -1,37 +1,57 @@
 
 
-## Swipe entre fotos en vista ampliada
+## Añadir soporte de vídeo en la galería de Fotos
 
 ### Resumen
 
-Reemplazar el visor fullscreen estático actual por uno con soporte de swipe táctil, permitiendo navegar entre todas las fotos sin cerrar la vista ampliada.
+Añadir un tercer botón de "Vídeo" junto a los de Galería y Cámara. Los vídeos se suben al mismo bucket y tabla, diferenciados por una nueva columna `media_type`. En la galería se muestran con un icono de play superpuesto, y en el visor fullscreen se reproducen con un `<video>` nativo.
 
-### Enfoque
+### 1. Migración de base de datos
 
-Usar detección de gestos táctiles nativa (touchstart/touchmove/touchend) directamente en el componente, sin librerías externas. El estado `viewingPhoto` pasa de guardar `{url, userName}` a guardar el **índice** de la foto actual en el array `photos`.
+Añadir columna `media_type` a `trip_photos`:
 
-### Cambios en `src/pages/trips/Photos.tsx`
+```sql
+ALTER TABLE public.trip_photos
+  ADD COLUMN media_type text NOT NULL DEFAULT 'image';
+```
 
-1. **Estado**: Cambiar `viewingPhoto` de `{url, userName} | null` a `number | null` (índice en el array `photos`)
+Esto no afecta a los registros existentes (todos quedan como `'image'`). No se necesitan cambios en RLS ni en storage (el bucket `trip-photos` ya es público y acepta cualquier tipo de archivo).
 
-2. **Grid**: Al hacer click en una foto, guardar su índice en vez del objeto
+### 2. Traducciones (`src/i18n/translations.ts`)
 
-3. **Visor fullscreen**:
-   - Añadir refs para tracking táctil (`touchStartX`, `touchEndX`)
-   - En `onTouchStart`: guardar posición X inicial
-   - En `onTouchMove`: guardar posición X actual
-   - En `onTouchEnd`: calcular delta; si > 50px → foto anterior; si < -50px → foto siguiente
-   - Mostrar la foto correspondiente a `photos[viewingPhoto]`
-   - Añadir flechas semitransparentes (ChevronLeft/ChevronRight) para navegación no táctil
-   - Indicador de posición (ej: "3 / 12") debajo del nombre
+Añadir las siguientes claves en todos los idiomas:
 
-4. **Animación**: Transición CSS suave al cambiar de foto (`transition-opacity` o `transition-transform`)
+- `recordVideoBtn` — tooltip del botón de vídeo
+- `videoUploaded` — toast de éxito
+- `errorUploadingVideo` — toast de error
 
-### Fichero afectado
+### 3. Cambios en `src/pages/trips/Photos.tsx`
+
+**Botón de vídeo**:
+- Nuevo `<input ref={videoInputRef} type="file" accept="video/*" capture="environment">` oculto
+- Nuevo `<Button>` con icono `Video` de lucide-react junto a los existentes
+
+**Upload**:
+- Reutilizar `handleFileUpload` detectando si el archivo es vídeo (`file.type.startsWith('video/')`)
+- Si es vídeo, insertar con `media_type: 'video'`; si no, `media_type: 'image'`
+
+**Grid de miniaturas**:
+- Función helper `isVideo(photo)` que comprueba `photo.media_type === 'video'` o la extensión del `file_path` (.mp4, .mov, .webm)
+- Para vídeos: usar `<video>` con atributos `muted preload="metadata"` como miniatura, con un icono de play semitransparente superpuesto (icono `Play` de lucide, centrado, fondo negro/50%)
+- Para fotos: mantener `<img>` actual sin cambios
+
+**Visor fullscreen**:
+- Si el elemento actual es vídeo: renderizar `<video controls autoPlay>` en lugar de `<img>`
+- Si es foto: mantener `<img>` actual
+- El swipe y la navegación por flechas/teclado siguen funcionando exactamente igual
+
+### Ficheros afectados
 
 | Fichero | Cambio |
 |---------|--------|
-| `src/pages/trips/Photos.tsx` | Swipe táctil + navegación por índice en visor fullscreen |
+| Migración SQL | Nueva columna `media_type` en `trip_photos` |
+| `src/i18n/translations.ts` | 3 nuevas claves de traducción (7 idiomas) |
+| `src/pages/trips/Photos.tsx` | Botón de vídeo, upload dual, miniatura con play, visor con `<video>` |
 
-No se toca ningún otro fichero ni funcionalidad.
+No se toca ningún otro fichero ni funcionalidad de la app.
 
