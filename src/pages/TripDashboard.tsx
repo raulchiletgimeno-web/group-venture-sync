@@ -260,7 +260,7 @@ const TripDashboard = () => {
     <div className="animate-fade-in">
       {isCreator && tripId && <MemberApprovalManager tripId={tripId} />}
 
-      <div className="rounded-xl bg-card p-5 shadow-card mb-6">
+      <div className="rounded-xl bg-card p-4 shadow-card mb-4">
         <div className="flex items-start justify-between">
           <div className="flex-1 min-w-0">
             {editing ? (
@@ -458,20 +458,20 @@ const TripDashboard = () => {
         )}
       </div>
 
-      <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">{t.sections}</h3>
-      <div className="grid grid-cols-2 gap-3">
+      <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2">{t.sections}</h3>
+      <div className="grid grid-cols-2 gap-2">
         {sections.map(({ path, label, icon: Icon, color }) => {
           const count = sectionCounts[sectionKey[path] ?? ""] ?? 0;
           return (
             <Link
               key={path}
               to={`/trip/${tripId}/${path}`}
-              className="relative flex items-center gap-3 rounded-xl bg-card p-4 shadow-card hover:shadow-card-hover transition-all duration-300"
+              className="relative flex items-center gap-3 rounded-xl bg-card p-3 shadow-card hover:shadow-card-hover transition-all duration-300"
             >
-              <div className={`rounded-lg p-2.5 ${color}`}>
+              <div className={`rounded-lg p-2 ${color}`}>
                 <Icon className="h-5 w-5" />
               </div>
-              <span className="text-sm font-semibold text-card-foreground flex-1">{label}</span>
+              <span className="text-xs font-semibold text-card-foreground flex-1">{label}</span>
               <UnseenBadge count={count} size="sm" />
             </Link>
           );
