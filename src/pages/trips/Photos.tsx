@@ -132,7 +132,7 @@ const Photos = () => {
       let ext = file.name.split(".").pop() || (isVideo ? "mp4" : "jpg");
 
       if (!isVideo) {
-        setUploadStatus(t.optimizingPhoto || "Optimizando…");
+        setUploadStatus("Optimizando…");
         setUploadProgress(20);
         try {
           uploadBlob = await compressImage(file);
@@ -146,7 +146,7 @@ const Photos = () => {
         setUploadProgress(30);
       }
 
-      setUploadStatus(t.uploadingMedia || "Subiendo…");
+      setUploadStatus("Subiendo…");
       const filePath = `${tripId}/${user.id}/${crypto.randomUUID()}.${ext}`;
       setUploadProgress(50);
 
@@ -156,7 +156,7 @@ const Photos = () => {
       if (uploadError) throw uploadError;
 
       setUploadProgress(80);
-      setUploadStatus(t.savingMedia || "Guardando…");
+      setUploadStatus("Guardando…");
 
       const { error: insertError } = await supabase.from("trip_photos").insert({
         trip_id: tripId,
@@ -173,9 +173,9 @@ const Photos = () => {
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "";
       if (msg.includes("exceeded") || msg.includes("too large") || msg.includes("413")) {
-        toast.error(t.fileTooLarge || "Archivo demasiado grande");
+        toast.error("Archivo demasiado grande");
       } else if (msg.includes("network") || msg.includes("Failed to fetch")) {
-        toast.error(t.networkError || "Error de conexión. Inténtalo de nuevo.");
+        toast.error("Error de conexión. Inténtalo de nuevo.");
       } else {
         toast.error(isVideo ? t.errorUploadingVideo : t.errorUploadingPhoto);
       }
