@@ -4,19 +4,14 @@ import { Camera, Loader2, Trash2, Image, X, ChevronLeft, ChevronRight, Video, Pl
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-
 import { useLanguage } from "@/contexts/LanguageContext";
 import { formatDisplayName } from "@/lib/formatDisplayName";
 import EmptyState from "@/components/EmptyState";
 import { notifyTripEvent } from "@/lib/notifyTripEvent";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { useMarkSectionSeen } from "@/hooks/use-mark-section-seen";
-
-interface MemberName {
-  id: string;
-  name: string | null;
-}
 
 const isVideoFile = (photo: { media_type?: string; file_path: string }) => {
   if (photo.media_type === "video") return true;
@@ -24,39 +19,80 @@ const isVideoFile = (photo: { media_type?: string; file_path: string }) => {
   return ["mp4", "mov", "webm", "avi", "m4v"].includes(ext || "");
 };
 
+const compressImage = (file: File, maxDim = 1920, quality = 0.8): Promise<Blob> => {
+  return new Promise((resolve, reject) => {
+    // Skip non-image or already small files
+    if (!file.type.startsWith("image/") || file.size < 500_000) {
+      resolve(file);
+      return;
+    }
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("read_error"));
+    reader.onload = (e) => {
+      const img = new window.Image();
+      img.onerror = () => reject(new Error("decode_error"));
+      img.onload = () => {
+        let { width, height } = img;
+        if (width <= maxDim && height <= maxDim && file.size < 1_000_000) {
+          resolve(file);
+          return;
+        }
+        const ratio = Math.min(maxDim / width, maxDim / height, 1);
+        width = Math.round(width * ratio);
+        height = Math.round(height * ratio);
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) { resolve(file); return; }
+        ctx.drawImage(img, 0, 0, width, height);
+        canvas.toBlob(
+          (blob) => blob ? resolve(blob) : resolve(file),
+          "image/jpeg",
+          quality
+        );
+      };
+      img.src = e.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  });
+};
+
 const Photos = () => {
   const { tripId } = useParams();
   useMarkSectionSeen(tripId, "photos");
   const { user } = useAuth();
-
   const { t } = useLanguage();
   const queryClient = useQueryClient();
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState("");
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [viewingIndex, setViewingIndex] = useState<number | null>(null);
-  const [members, setMembers] = useState<MemberName[]>([]);
   const [fadeKey, setFadeKey] = useState(0);
 
-  // Touch tracking refs
   const touchStartX = useRef(0);
   const touchEndX = useRef(0);
 
-  useEffect(() => {
-    if (!tripId) return;
-    supabase
-      .from("trip_members")
-      .select("user_id")
-      .eq("trip_id", tripId)
-      .eq("status", "approved")
-      .then(async ({ data }) => {
-        if (!data) return;
-        const ids = data.map((m) => m.user_id);
-        const { data: profiles } = await supabase.from("profiles").select("id, name").in("id", ids);
-        setMembers(profiles ?? []);
-      });
-  }, [tripId]);
+  // Members via useQuery for instant cache + parallel fetch
+  const { data: members = [] } = useQuery({
+    queryKey: ["trip-members-profiles", tripId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("trip_members")
+        .select("user_id")
+        .eq("trip_id", tripId!)
+        .eq("status", "approved");
+      if (!data?.length) return [];
+      const ids = data.map((m) => m.user_id);
+      const { data: profiles } = await supabase.from("profiles").select("id, name").in("id", ids);
+      return profiles ?? [];
+    },
+    enabled: !!tripId,
+    staleTime: 60_000,
+  });
 
   const getMemberName = (userId: string) => {
     const m = members.find((p) => p.id === userId);
@@ -88,12 +124,40 @@ const Photos = () => {
     const file = e.target.files?.[0];
     if (!file || !tripId || !user) return;
     setUploading(true);
+    setUploadProgress(10);
     const isVideo = file.type.startsWith("video/");
+
     try {
-      const ext = file.name.split(".").pop() || (isVideo ? "mp4" : "jpg");
+      let uploadBlob: Blob = file;
+      let ext = file.name.split(".").pop() || (isVideo ? "mp4" : "jpg");
+
+      if (!isVideo) {
+        setUploadStatus(t.optimizingPhoto || "Optimizando…");
+        setUploadProgress(20);
+        try {
+          uploadBlob = await compressImage(file);
+          ext = "jpg"; // compressed to JPEG
+        } catch {
+          // Compression failed, upload original
+          uploadBlob = file;
+        }
+        setUploadProgress(40);
+      } else {
+        setUploadProgress(30);
+      }
+
+      setUploadStatus(t.uploadingMedia || "Subiendo…");
       const filePath = `${tripId}/${user.id}/${crypto.randomUUID()}.${ext}`;
-      const { error: uploadError } = await supabase.storage.from("trip-photos").upload(filePath, file, { contentType: file.type });
+      setUploadProgress(50);
+
+      const { error: uploadError } = await supabase.storage
+        .from("trip-photos")
+        .upload(filePath, uploadBlob, { contentType: isVideo ? file.type : "image/jpeg" });
       if (uploadError) throw uploadError;
+
+      setUploadProgress(80);
+      setUploadStatus(t.savingMedia || "Guardando…");
+
       const { error: insertError } = await supabase.from("trip_photos").insert({
         trip_id: tripId,
         user_id: user.id,
@@ -101,13 +165,24 @@ const Photos = () => {
         media_type: isVideo ? "video" : "image",
       });
       if (insertError) throw insertError;
+
+      setUploadProgress(100);
       queryClient.invalidateQueries({ queryKey: ["trip-photos", tripId] });
       notifyTripEvent(tripId, "photos", user.id);
       toast.success(isVideo ? t.videoUploaded : t.photoUploaded);
-    } catch {
-      toast.error(isVideo ? t.errorUploadingVideo : t.errorUploadingPhoto);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "";
+      if (msg.includes("exceeded") || msg.includes("too large") || msg.includes("413")) {
+        toast.error(t.fileTooLarge || "Archivo demasiado grande");
+      } else if (msg.includes("network") || msg.includes("Failed to fetch")) {
+        toast.error(t.networkError || "Error de conexión. Inténtalo de nuevo.");
+      } else {
+        toast.error(isVideo ? t.errorUploadingVideo : t.errorUploadingPhoto);
+      }
     } finally {
       setUploading(false);
+      setUploadStatus("");
+      setUploadProgress(0);
       if (cameraInputRef.current) cameraInputRef.current.value = "";
       if (galleryInputRef.current) galleryInputRef.current.value = "";
       if (videoInputRef.current) videoInputRef.current.value = "";
@@ -139,7 +214,6 @@ const Photos = () => {
     else if (delta < -50) navigateTo(viewingIndex - 1);
   };
 
-  // Keyboard navigation
   useEffect(() => {
     if (viewingIndex === null) return;
     const handler = (e: KeyboardEvent) => {
@@ -172,6 +246,17 @@ const Photos = () => {
         <input ref={galleryInputRef} type="file" accept="image/*,video/*" className="hidden" onChange={handleFileUpload} />
         <input ref={videoInputRef} type="file" accept="video/*" capture="environment" className="hidden" onChange={handleFileUpload} />
       </div>
+
+      {/* Upload progress banner */}
+      {uploading && (
+        <div className="mb-4 p-3 rounded-xl bg-muted/60 backdrop-blur-sm border border-border/50 animate-fade-in">
+          <div className="flex items-center gap-3 mb-2">
+            <Loader2 className="h-4 w-4 animate-spin text-primary" />
+            <span className="text-sm font-medium text-foreground">{uploadStatus}</span>
+          </div>
+          <Progress value={uploadProgress} className="h-1.5" />
+        </div>
+      )}
 
       {isLoading ? (
         <div className="flex justify-center py-16"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
