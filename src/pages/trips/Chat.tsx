@@ -116,7 +116,7 @@ const Chat = () => {
     // Wait until messages are loaded
     if (messages.length === 0) return;
 
-    requestAnimationFrame(() => {
+    const doScroll = () => {
       if (firstUnreadIdx > 0) {
         const el = vp.querySelector(`[data-msg-idx="${firstUnreadIdx}"]`);
         if (el) {
@@ -128,7 +128,17 @@ const Chat = () => {
       // Fallback: scroll to bottom
       vp.scrollTop = vp.scrollHeight;
       isInitialLoad.current = false;
-    });
+    };
+
+    const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
+    if (isIOS) {
+      // Safari needs an extra layout pass before scrollIntoView works reliably
+      requestAnimationFrame(() => {
+        setTimeout(doScroll, 300);
+      });
+    } else {
+      requestAnimationFrame(doScroll);
+    }
   }, [messages, lastSeenAt, firstUnreadIdx]);
 
   const getMemberName = (userId: string) => formatDisplayName(members.find((m) => m.user_id === userId)?.name, t.usuario);
