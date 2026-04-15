@@ -1,72 +1,42 @@
 
 
-## Corrección del scroll inicial del chat en iOS
+## Optimizacion del apartado de Fotos
 
-### Problema
+### Problemas identificados
 
-En iOS/Safari, `scrollIntoView()` no se ejecuta correctamente en el primer render porque Safari necesita un ciclo de layout adicional tras el montaje del DOM. El `requestAnimationFrame` simple que funciona en Android no es suficiente en Safari.
+1. **Sin compresion de imagen**: Las fotos de movil (3-10MB) se suben tal cual, causando lentitud y timeouts
+2. **Nombres de usuario lentos**: Se cargan los miembros en un `useEffect` separado con 2 queries secuenciales; si llegan despues de las fotos, se muestra "Usuario" temporalmente
+3. **Sin feedback visual durante la subida**: Solo un spinner generico en los botones, sin indicacion de progreso
+4. **Gestion de errores basica**: Un toast generico sin reintentos
 
-### Solución
+### Cambios (solo en `src/pages/trips/Photos.tsx`)
 
-En el bloque de scroll inicial (líneas 119-131 de `Chat.tsx`), añadir un `setTimeout` extra **solo para iOS** que permita a Safari completar su layout antes de hacer el scroll. Esto no afecta a Android porque el `requestAnimationFrame` seguirá funcionando igual para dispositivos no-iOS.
+**1. Compresion de imagen client-side antes de subir**
+- Crear funcion `compressImage(file, maxWidth=1920, quality=0.8)` usando Canvas API
+- Redimensiona imagenes grandes a max 1920px de ancho manteniendo ratio
+- Comprime a JPEG 80% calidad
+- Reduce fotos tipicas de 5-8MB a ~200-500KB
+- Solo aplica a imagenes, no a videos
 
-### Cambio concreto
+**2. Precarga de miembros con `useQuery` en paralelo**
+- Reemplazar el `useEffect` manual por un `useQuery` con la misma queryKey
+- Los miembros se cachean y estan disponibles instantaneamente en re-renders
+- Elimina el estado `members` manual y la carga secuencial
 
-**Fichero**: `src/pages/trips/Chat.tsx` (solo el bloque de scroll, líneas ~119-131)
+**3. Barra de progreso visual durante subida**
+- Anadir estado `uploadProgress` con mensaje ("Optimizando...", "Subiendo...")
+- Mostrar un banner sutil encima de la galeria mientras se sube
+- Feedback claro de cada fase del proceso
 
-Lógica actual:
-```js
-requestAnimationFrame(() => {
-  if (firstUnreadIdx > 0) {
-    const el = vp.querySelector(`[data-msg-idx="${firstUnreadIdx}"]`);
-    if (el) {
-      (el as HTMLElement).scrollIntoView({ block: "start" });
-      isInitialLoad.current = false;
-      return;
-    }
-  }
-  vp.scrollTop = vp.scrollHeight;
-  isInitialLoad.current = false;
-});
-```
-
-Nueva lógica:
-```js
-const doScroll = () => {
-  if (firstUnreadIdx > 0) {
-    const el = vp.querySelector(`[data-msg-idx="${firstUnreadIdx}"]`);
-    if (el) {
-      (el as HTMLElement).scrollIntoView({ block: "start" });
-      isInitialLoad.current = false;
-      return;
-    }
-  }
-  vp.scrollTop = vp.scrollHeight;
-  isInitialLoad.current = false;
-};
-
-const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
-if (isIOS) {
-  // Safari needs an extra layout pass before scrollIntoView works reliably
-  requestAnimationFrame(() => {
-    setTimeout(doScroll, 300);
-  });
-} else {
-  requestAnimationFrame(doScroll);
-}
-```
-
-### Por qué funciona
-
-- Safari/iOS a menudo necesita un frame extra + un pequeño delay para que el layout del scroll container se estabilice
-- El `setTimeout(300)` da tiempo a Safari para completar el layout sin afectar a Android
-- En Android se mantiene el comportamiento actual exacto (solo `requestAnimationFrame`)
+**4. Mejor gestion de errores**
+- Mostrar mensajes mas descriptivos segun el tipo de error (tamano, red, timeout)
+- Anadir timeout de seguridad para evitar que se quede bloqueado
 
 ### Ficheros afectados
 
 | Fichero | Cambio |
 |---------|--------|
-| `src/pages/trips/Chat.tsx` | Bloque de scroll inicial (~10 líneas modificadas) |
+| `src/pages/trips/Photos.tsx` | Compresion, useQuery para miembros, feedback de subida, mejor error handling |
 
-No se toca ningún otro fichero, pantalla ni funcionalidad.
+No se toca ningun otro fichero, pantalla ni funcionalidad. El visor fullscreen, swipe, videos y eliminacion quedan intactos.
 
