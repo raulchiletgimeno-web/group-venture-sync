@@ -60,6 +60,12 @@ interface Expense {
   splits: string[];
 }
 
+interface Payment {
+  from_user: string;
+  to_user: string;
+  amount: number;
+}
+
 interface Debt {
   from: string;
   to: string;
