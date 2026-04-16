@@ -89,7 +89,7 @@ const Schedule = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!tripId) return;
-    const payload = { trip_id: tripId, date: form.date, time: form.time || null, title: form.title, description: form.description || null, location: form.location || null, website: form.website || null };
+    const payload = { trip_id: tripId, date: form.date, time: form.time || null, title: form.title, description: form.description || null, location: form.location || null, address: form.address || null, website: form.website || null };
     const { error } = editingId
       ? await supabase.from("trip_schedule").update(payload).eq("id", editingId)
       : await supabase.from("trip_schedule").insert(payload);
@@ -102,7 +102,7 @@ const Schedule = () => {
   const resetForm = () => { setForm({ date: "", time: "", title: "", description: "", location: "", address: "", website: "" }); setEditingId(null); };
 
   const startEdit = (item: ScheduleItem) => {
-    setForm({ date: item.date, time: item.time || "", title: item.title, description: item.description || "", location: item.location || "", address: item.location || "", website: item.website || "" });
+    setForm({ date: item.date, time: item.time || "", title: item.title, description: item.description || "", location: item.location || "", address: (item as any).address || "", website: item.website || "" });
     setEditingId(item.id); setOpen(true);
   };
 
@@ -226,7 +226,7 @@ const Schedule = () => {
                     <ActivityTicketManager scheduleId={item.id} tripId={tripId!} isCreator={isCreator} />
                     {item.location && (
                       <Tooltip><TooltipTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(item.location!)}`, '_blank')}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent((item as any).address || item.location!)}`, '_blank')}>
                           <MapPin className="h-4 w-4" />
                         </Button>
                       </TooltipTrigger><TooltipContent>{t.howToGet}</TooltipContent></Tooltip>
