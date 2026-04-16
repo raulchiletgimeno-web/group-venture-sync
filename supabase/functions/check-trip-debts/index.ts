@@ -85,6 +85,12 @@ function calculateDebts(expenses: Expense[], memberIds: string[], payments: Paym
     });
   });
 
+  // Adjust balances with recorded payments
+  payments.forEach((p) => {
+    balanceMap.set(p.from_user, (balanceMap.get(p.from_user) ?? 0) + p.amount);
+    balanceMap.set(p.to_user, (balanceMap.get(p.to_user) ?? 0) - p.amount);
+  });
+
   // Simplify debts
   const creditors = memberIds
     .filter((id) => (balanceMap.get(id) ?? 0) > 0.01)
