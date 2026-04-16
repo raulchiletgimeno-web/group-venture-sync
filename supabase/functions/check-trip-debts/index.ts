@@ -179,8 +179,14 @@ Deno.serve(async (req) => {
         splits: (splits || []).filter((s) => s.expense_id === e.id).map((s) => s.user_id),
       }));
 
-      // Calculate debts
-      const debts = calculateDebts(expensesWithSplits, memberIds);
+      // Get recorded payments
+      const { data: payments } = await supabase
+        .from("debt_payments")
+        .select("from_user, to_user, amount")
+        .eq("trip_id", trip.id);
+
+      // Calculate debts (subtracting payments)
+      const debts = calculateDebts(expensesWithSplits, memberIds, payments || []);
       if (debts.length === 0) continue;
 
       // Get profiles for names
