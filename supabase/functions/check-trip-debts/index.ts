@@ -60,13 +60,19 @@ interface Expense {
   splits: string[];
 }
 
+interface Payment {
+  from_user: string;
+  to_user: string;
+  amount: number;
+}
+
 interface Debt {
   from: string;
   to: string;
   amount: number;
 }
 
-function calculateDebts(expenses: Expense[], memberIds: string[]): Debt[] {
+function calculateDebts(expenses: Expense[], memberIds: string[], payments: Payment[]): Debt[] {
   // Calculate balances
   const balanceMap = new Map<string, number>();
   memberIds.forEach((id) => balanceMap.set(id, 0));
@@ -77,6 +83,12 @@ function calculateDebts(expenses: Expense[], memberIds: string[]): Debt[] {
     exp.splits.forEach((uid) => {
       balanceMap.set(uid, (balanceMap.get(uid) ?? 0) - share);
     });
+  });
+
+  // Adjust balances with recorded payments
+  payments.forEach((p) => {
+    balanceMap.set(p.from_user, (balanceMap.get(p.from_user) ?? 0) + p.amount);
+    balanceMap.set(p.to_user, (balanceMap.get(p.to_user) ?? 0) - p.amount);
   });
 
   // Simplify debts
@@ -167,8 +179,14 @@ Deno.serve(async (req) => {
         splits: (splits || []).filter((s) => s.expense_id === e.id).map((s) => s.user_id),
       }));
 
-      // Calculate debts
-      const debts = calculateDebts(expensesWithSplits, memberIds);
+      // Get recorded payments
+      const { data: payments } = await supabase
+        .from("debt_payments")
+        .select("from_user, to_user, amount")
+        .eq("trip_id", trip.id);
+
+      // Calculate debts (subtracting payments)
+      const debts = calculateDebts(expensesWithSplits, memberIds, payments || []);
       if (debts.length === 0) continue;
 
       // Get profiles for names
