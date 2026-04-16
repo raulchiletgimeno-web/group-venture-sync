@@ -72,7 +72,7 @@ interface Debt {
   amount: number;
 }
 
-function calculateDebts(expenses: Expense[], memberIds: string[]): Debt[] {
+function calculateDebts(expenses: Expense[], memberIds: string[], payments: Payment[]): Debt[] {
   // Calculate balances
   const balanceMap = new Map<string, number>();
   memberIds.forEach((id) => balanceMap.set(id, 0));
