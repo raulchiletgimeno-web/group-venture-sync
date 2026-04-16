@@ -1,0 +1,1 @@
+ALTER TABLE public.trip_schedule ADD COLUMN address text DEFAULT NULL;

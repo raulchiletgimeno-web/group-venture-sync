@@ -563,6 +563,7 @@ export type Database = {
       }
       trip_schedule: {
         Row: {
+          address: string | null
           created_at: string
           date: string
           description: string | null
@@ -574,6 +575,7 @@ export type Database = {
           website: string | null
         }
         Insert: {
+          address?: string | null
           created_at?: string
           date: string
           description?: string | null
@@ -585,6 +587,7 @@ export type Database = {
           website?: string | null
         }
         Update: {
+          address?: string | null
           created_at?: string
           date?: string
           description?: string | null
