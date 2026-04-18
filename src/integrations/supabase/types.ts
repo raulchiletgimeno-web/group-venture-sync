@@ -480,6 +480,7 @@ export type Database = {
           created_at: string
           file_path: string | null
           id: string
+          reply_to_id: string | null
           trip_id: string
           type: string
           user_id: string
@@ -489,6 +490,7 @@ export type Database = {
           created_at?: string
           file_path?: string | null
           id?: string
+          reply_to_id?: string | null
           trip_id: string
           type?: string
           user_id: string
@@ -498,11 +500,19 @@ export type Database = {
           created_at?: string
           file_path?: string | null
           id?: string
+          reply_to_id?: string | null
           trip_id?: string
           type?: string
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "trip_messages_reply_to_id_fkey"
+            columns: ["reply_to_id"]
+            isOneToOne: false
+            referencedRelation: "trip_messages"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "trip_messages_trip_id_fkey"
             columns: ["trip_id"]

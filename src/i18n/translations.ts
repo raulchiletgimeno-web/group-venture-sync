@@ -240,6 +240,11 @@ type TranslationKeys = {
   writeMessage: string;
   recordingAudio: string;
   newMessages: string;
+  reply: string;
+  replyingTo: string;
+  messageUnavailable: string;
+  imageMsg: string;
+  audioMsg: string;
   today: string;
   yesterday: string;
   errorSending: string;
@@ -682,6 +687,11 @@ const translations: Record<Language, TranslationKeys> = {
     writeMessage: "Escribe un mensaje...",
     recordingAudio: "Grabando audio...",
     newMessages: "Mensajes nuevos",
+    reply: "Responder",
+    replyingTo: "Respondiendo a",
+    messageUnavailable: "Mensaje no disponible",
+    imageMsg: "📷 Imagen",
+    audioMsg: "🎤 Audio",
     today: "Hoy",
     yesterday: "Ayer",
     errorSending: "Error al enviar",
@@ -1095,6 +1105,11 @@ const translations: Record<Language, TranslationKeys> = {
     writeMessage: "Write a message...",
     recordingAudio: "Recording audio...",
     newMessages: "New messages",
+    reply: "Reply",
+    replyingTo: "Replying to",
+    messageUnavailable: "Message unavailable",
+    imageMsg: "📷 Image",
+    audioMsg: "🎤 Audio",
     today: "Today",
     yesterday: "Yesterday",
     errorSending: "Error sending",
@@ -1508,6 +1523,11 @@ const translations: Record<Language, TranslationKeys> = {
     writeMessage: "Écrivez un message...",
     recordingAudio: "Enregistrement audio...",
     newMessages: "Nouveaux messages",
+    reply: "Répondre",
+    replyingTo: "Réponse à",
+    messageUnavailable: "Message indisponible",
+    imageMsg: "📷 Image",
+    audioMsg: "🎤 Audio",
     today: "Aujourd'hui",
     yesterday: "Hier",
     errorSending: "Erreur d'envoi",
@@ -1921,6 +1941,11 @@ const translations: Record<Language, TranslationKeys> = {
     writeMessage: "Escreva uma mensagem...",
     recordingAudio: "A gravar áudio...",
     newMessages: "Novas mensagens",
+    reply: "Responder",
+    replyingTo: "A responder a",
+    messageUnavailable: "Mensagem indisponível",
+    imageMsg: "📷 Imagem",
+    audioMsg: "🎤 Áudio",
     today: "Hoje",
     yesterday: "Ontem",
     errorSending: "Erro ao enviar",
@@ -2334,6 +2359,11 @@ const translations: Record<Language, TranslationKeys> = {
     writeMessage: "Scrivi un messaggio...",
     recordingAudio: "Registrazione audio...",
     newMessages: "Nuovi messaggi",
+    reply: "Rispondi",
+    replyingTo: "In risposta a",
+    messageUnavailable: "Messaggio non disponibile",
+    imageMsg: "📷 Immagine",
+    audioMsg: "🎤 Audio",
     today: "Oggi",
     yesterday: "Ieri",
     errorSending: "Errore nell'invio",
@@ -2747,6 +2777,11 @@ const translations: Record<Language, TranslationKeys> = {
     writeMessage: "输入消息...",
     recordingAudio: "正在录音...",
     newMessages: "新消息",
+    reply: "回复",
+    replyingTo: "回复",
+    messageUnavailable: "消息不可用",
+    imageMsg: "📷 图片",
+    audioMsg: "🎤 语音",
     today: "今天",
     yesterday: "昨天",
     errorSending: "发送出错",
@@ -3160,6 +3195,11 @@ const translations: Record<Language, TranslationKeys> = {
     writeMessage: "Nachricht schreiben...",
     recordingAudio: "Audio wird aufgenommen...",
     newMessages: "Neue Nachrichten",
+    reply: "Antworten",
+    replyingTo: "Antwort an",
+    messageUnavailable: "Nachricht nicht verfügbar",
+    imageMsg: "📷 Bild",
+    audioMsg: "🎤 Audio",
     today: "Heute",
     yesterday: "Gestern",
     errorSending: "Fehler beim Senden",
