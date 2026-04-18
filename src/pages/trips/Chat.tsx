@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useMemo } from "react";
 import { useParams } from "react-router-dom";
-import { Send, Camera, Mic, Square, Image as ImageIcon, X, Trash2 } from "lucide-react";
+import { Send, Camera, Mic, Square, Image as ImageIcon, X, Trash2, Reply } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -21,6 +21,7 @@ interface Message {
   type: "text" | "audio" | "image";
   file_path: string | null;
   created_at: string;
+  reply_to_id: string | null;
 }
 
 interface Member {
@@ -41,6 +42,8 @@ const Chat = () => {
   const [recording, setRecording] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [replyTo, setReplyTo] = useState<Message | null>(null);
+  const [highlightedId, setHighlightedId] = useState<string | null>(null);
 
   // undefined = not yet fetched, null = no record (first visit)
   const [lastSeenAt, setLastSeenAt] = useState<string | null | undefined>(undefined);
@@ -51,6 +54,13 @@ const Chat = () => {
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Swipe gesture refs (per-message tracking)
+  const touchStartX = useRef<number>(0);
+  const touchStartY = useRef<number>(0);
+  const swipingId = useRef<string | null>(null);
+  const [swipeOffset, setSwipeOffset] = useState<{ id: string; x: number } | null>(null);
 
   // Fetch last_seen_at for this chat on mount (before marking seen)
   useEffect(() => {
@@ -91,8 +101,8 @@ const Chat = () => {
 
   // Compute first unread message index
   const firstUnreadIdx = useMemo(() => {
-    if (lastSeenAt === undefined) return -1; // still loading
-    if (lastSeenAt === null) return -1; // first visit → no separator
+    if (lastSeenAt === undefined) return -1;
+    if (lastSeenAt === null) return -1;
     const idx = messages.findIndex(m => m.user_id !== user?.id && m.created_at > lastSeenAt);
     return idx;
   }, [messages, lastSeenAt, user?.id]);
@@ -103,7 +113,6 @@ const Chat = () => {
     if (!vp) return;
 
     if (!isInitialLoad.current) {
-      // For subsequent new messages, auto-scroll only if near bottom
       const isNearBottom = vp.scrollHeight - vp.scrollTop - vp.clientHeight < 150;
       if (isNearBottom) {
         requestAnimationFrame(() => { vp.scrollTop = vp.scrollHeight; });
@@ -111,9 +120,7 @@ const Chat = () => {
       return;
     }
 
-    // Wait until lastSeenAt has been fetched
     if (lastSeenAt === undefined) return;
-    // Wait until messages are loaded
     if (messages.length === 0) return;
 
     const doScroll = () => {
@@ -125,14 +132,12 @@ const Chat = () => {
           return;
         }
       }
-      // Fallback: scroll to bottom
       vp.scrollTop = vp.scrollHeight;
       isInitialLoad.current = false;
     };
 
     const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
     if (isIOS) {
-      // Safari needs an extra layout pass before scrollIntoView works reliably
       requestAnimationFrame(() => {
         setTimeout(doScroll, 300);
       });
@@ -144,6 +149,28 @@ const Chat = () => {
   const getMemberName = (userId: string) => formatDisplayName(members.find((m) => m.user_id === userId)?.name, t.usuario);
   const getInitials = (name: string) => name.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2);
   const getFileUrl = (path: string) => supabase.storage.from("trip-photos").getPublicUrl(path).data.publicUrl;
+
+  const messageSnippet = (msg: Message) => {
+    if (msg.type === "image") return t.imageMsg;
+    if (msg.type === "audio") return t.audioMsg;
+    return msg.content || "";
+  };
+
+  const startReply = (msg: Message) => {
+    setReplyTo(msg);
+    setTimeout(() => inputRef.current?.focus(), 50);
+  };
+
+  const scrollToMessage = (id: string) => {
+    const vp = viewportRef.current;
+    if (!vp) return;
+    const el = vp.querySelector(`[data-msg-id="${id}"]`);
+    if (el) {
+      (el as HTMLElement).scrollIntoView({ block: "center", behavior: "smooth" });
+      setHighlightedId(id);
+      setTimeout(() => setHighlightedId(null), 1500);
+    }
+  };
 
   const deleteMessage = async (msg: Message) => {
     if (!user || msg.user_id !== user.id) return;
@@ -161,10 +188,13 @@ const Chat = () => {
   const sendText = async () => {
     if (!text.trim() || !user || !tripId || sending) return;
     setSending(true);
-    const { error } = await supabase.from("trip_messages").insert({ trip_id: tripId, user_id: user.id, content: text.trim(), type: "text" });
+    const { error } = await supabase.from("trip_messages").insert({
+      trip_id: tripId, user_id: user.id, content: text.trim(), type: "text",
+      reply_to_id: replyTo?.id ?? null,
+    });
     if (error) toast({ title: t.errorSending, variant: "destructive" });
     else notifyTripEvent(tripId, "chat", user.id);
-    setText(""); setSending(false);
+    setText(""); setReplyTo(null); setSending(false);
   };
 
   const sendImage = async (file: File) => {
@@ -174,10 +204,13 @@ const Chat = () => {
     const path = `${tripId}/chat/${Date.now()}.${ext}`;
     const { error: uploadError } = await supabase.storage.from("trip-photos").upload(path, file, { upsert: true });
     if (uploadError) { toast({ title: t.errorUploadingImage, variant: "destructive" }); setSending(false); return; }
-    await supabase.from("trip_messages").insert({ trip_id: tripId, user_id: user.id, type: "image", file_path: path });
+    await supabase.from("trip_messages").insert({
+      trip_id: tripId, user_id: user.id, type: "image", file_path: path,
+      reply_to_id: replyTo?.id ?? null,
+    });
     await supabase.from("trip_photos").insert({ trip_id: tripId, user_id: user.id, file_path: path });
     notifyTripEvent(tripId, "chat", user.id);
-    setImagePreview(null); setImageFile(null); setSending(false);
+    setImagePreview(null); setImageFile(null); setReplyTo(null); setSending(false);
   };
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -192,6 +225,7 @@ const Chat = () => {
       const mediaRecorder = new MediaRecorder(stream);
       mediaRecorderRef.current = mediaRecorder;
       chunksRef.current = [];
+      const replySnap = replyTo;
       mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
       mediaRecorder.onstop = async () => {
         stream.getTracks().forEach((t) => t.stop());
@@ -201,9 +235,12 @@ const Chat = () => {
         const path = `${tripId}/chat/${Date.now()}.webm`;
         const { error: uploadError } = await supabase.storage.from("trip-photos").upload(path, blob, { upsert: true, contentType: "audio/webm" });
         if (uploadError) { toast({ title: t.errorUploadingAudio, variant: "destructive" }); setSending(false); return; }
-        await supabase.from("trip_messages").insert({ trip_id: tripId, user_id: user.id, type: "audio", file_path: path });
+        await supabase.from("trip_messages").insert({
+          trip_id: tripId, user_id: user.id, type: "audio", file_path: path,
+          reply_to_id: replySnap?.id ?? null,
+        });
         notifyTripEvent(tripId, "chat", user.id);
-        setSending(false);
+        setReplyTo(null); setSending(false);
       };
       mediaRecorder.start(); setRecording(true);
     } catch { toast({ title: t.errorMicrophone, variant: "destructive" }); }
@@ -228,14 +265,64 @@ const Chat = () => {
     return new Date(messages[idx].created_at).toDateString() !== new Date(messages[idx - 1].created_at).toDateString();
   };
 
+  // Swipe handlers
+  const onTouchStart = (e: React.TouchEvent, msgId: string) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+    swipingId.current = msgId;
+  };
+
+  const onTouchMove = (e: React.TouchEvent, msgId: string) => {
+    if (swipingId.current !== msgId) return;
+    const dx = e.touches[0].clientX - touchStartX.current;
+    const dy = Math.abs(e.touches[0].clientY - touchStartY.current);
+    if (dy > 30) { swipingId.current = null; setSwipeOffset(null); return; }
+    if (dx > 0) {
+      const offset = Math.min(dx, 90);
+      setSwipeOffset({ id: msgId, x: offset });
+    }
+  };
+
+  const onTouchEnd = (msg: Message) => {
+    if (swipingId.current !== msg.id) return;
+    const offset = swipeOffset?.id === msg.id ? swipeOffset.x : 0;
+    swipingId.current = null;
+    setSwipeOffset(null);
+    if (offset > 60) startReply(msg);
+  };
+
+  const renderQuotedBlock = (replyId: string, isOwn: boolean) => {
+    const original = messages.find(m => m.id === replyId);
+    if (!original) {
+      return (
+        <div className="mb-1.5 pl-2 py-1 border-l-2 border-muted-foreground/40 bg-muted/30 rounded text-xs text-muted-foreground italic">
+          {t.messageUnavailable}
+        </div>
+      );
+    }
+    const snippet = messageSnippet(original);
+    return (
+      <button
+        type="button"
+        onClick={() => scrollToMessage(original.id)}
+        className="block w-full text-left mb-1.5 pl-2 pr-2 py-1 border-l-[3px] border-primary bg-primary/5 hover:bg-primary/10 transition-colors rounded"
+      >
+        <p className="text-xs font-semibold text-primary truncate">{getMemberName(original.user_id)}</p>
+        <p className="text-xs text-foreground/70 truncate">{snippet}</p>
+      </button>
+    );
+  };
+
   return (
     <div className="animate-fade-in flex flex-col" style={{ height: "calc(100vh - 7rem)" }}>
       <div ref={viewportRef} className="flex-1 overflow-y-auto px-2">
         <div className="flex flex-col gap-1 py-2">
           {messages.map((msg, idx) => {
             const isOwn = msg.user_id === user?.id;
+            const offset = swipeOffset?.id === msg.id ? swipeOffset.x : 0;
+            const isHighlighted = highlightedId === msg.id;
             return (
-              <div key={msg.id} data-msg-idx={idx}>
+              <div key={msg.id} data-msg-idx={idx} data-msg-id={msg.id}>
                 {shouldShowDateSep(idx) && (
                   <div className="flex justify-center my-3">
                     <span className="text-sm bg-muted text-muted-foreground px-3 py-1 rounded-full">{formatDateSeparator(msg.created_at)}</span>
@@ -248,33 +335,66 @@ const Chat = () => {
                     <div className="flex-1 border-t border-primary/30" />
                   </div>
                 )}
-                <div className={`flex gap-2 ${isOwn ? "justify-end" : "justify-start"}`}>
-                  {!isOwn && (
-                    <Avatar className="h-9 w-9 mt-1 shrink-0">
-                      <AvatarFallback className="text-sm bg-primary/10 text-primary">{getInitials(getMemberName(msg.user_id))}</AvatarFallback>
-                    </Avatar>
+                <div
+                  className="relative"
+                  onTouchStart={(e) => onTouchStart(e, msg.id)}
+                  onTouchMove={(e) => onTouchMove(e, msg.id)}
+                  onTouchEnd={() => onTouchEnd(msg)}
+                  onTouchCancel={() => { swipingId.current = null; setSwipeOffset(null); }}
+                >
+                  {offset > 10 && (
+                    <div
+                      className="absolute left-2 top-1/2 -translate-y-1/2 flex items-center justify-center h-9 w-9 rounded-full bg-primary/10 transition-opacity"
+                      style={{ opacity: Math.min(offset / 60, 1) }}
+                    >
+                      <Reply className="h-4 w-4 text-primary" />
+                    </div>
                   )}
-                  <div className={`max-w-[75%] min-w-0 rounded-2xl px-4 py-3 shadow-sm group ${isOwn ? "bg-white text-foreground rounded-br-md" : "bg-white text-foreground rounded-bl-md"}`}>
-                    <p className={`text-sm font-semibold mb-0.5 ${isOwn ? "text-foreground/70 text-right" : "text-foreground/70"}`}>
-                      {isOwn ? t.you : getMemberName(msg.user_id)}
-                    </p>
-                    {msg.type === "text" && <p className="text-[17px] whitespace-pre-wrap break-words overflow-hidden text-foreground" style={{ overflowWrap: "anywhere" }}>{msg.content}</p>}
-                    {msg.type === "image" && msg.file_path && (
-                      <img src={getFileUrl(msg.file_path)} alt={t.image} className="rounded-lg max-w-full max-h-60 object-cover cursor-pointer" loading="lazy" decoding="async" onClick={() => window.open(getFileUrl(msg.file_path!), "_blank")} />
+                  <div
+                    className={`flex gap-2 ${isOwn ? "justify-end" : "justify-start"}`}
+                    style={{
+                      transform: `translateX(${offset}px)`,
+                      transition: swipingId.current === msg.id ? "none" : "transform 0.2s ease-out",
+                    }}
+                  >
+                    {!isOwn && (
+                      <Avatar className="h-9 w-9 mt-1 shrink-0">
+                        <AvatarFallback className="text-sm bg-primary/10 text-primary">{getInitials(getMemberName(msg.user_id))}</AvatarFallback>
+                      </Avatar>
                     )}
-                    {msg.type === "audio" && msg.file_path && (
-                      <audio controls src={getFileUrl(msg.file_path)} className="max-w-[260px] h-12" ref={(el) => { if (el) el.volume = 1.0; }} />
-                    )}
-                    <div className={`flex items-center gap-1.5 mt-0.5 ${isOwn ? "justify-end" : ""}`}>
-                      <p className="text-[13px] text-foreground/50">{formatTime(msg.created_at)}</p>
-                      {isOwn && (
-                        <button
-                          onClick={() => deleteMessage(msg)}
-                          className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded hover:bg-destructive/10"
-                        >
-                          <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive transition-colors" />
-                        </button>
+                    <div
+                      className={`max-w-[75%] min-w-0 rounded-2xl px-4 py-3 shadow-sm group transition-shadow ${isOwn ? "bg-white text-foreground rounded-br-md" : "bg-white text-foreground rounded-bl-md"} ${isHighlighted ? "ring-2 ring-primary" : ""}`}
+                    >
+                      {msg.reply_to_id && renderQuotedBlock(msg.reply_to_id, isOwn)}
+                      <p className={`text-sm font-semibold mb-0.5 ${isOwn ? "text-foreground/70 text-right" : "text-foreground/70"}`}>
+                        {isOwn ? t.you : getMemberName(msg.user_id)}
+                      </p>
+                      {msg.type === "text" && <p className="text-[17px] whitespace-pre-wrap break-words overflow-hidden text-foreground" style={{ overflowWrap: "anywhere" }}>{msg.content}</p>}
+                      {msg.type === "image" && msg.file_path && (
+                        <img src={getFileUrl(msg.file_path)} alt={t.image} className="rounded-lg max-w-full max-h-60 object-cover cursor-pointer" loading="lazy" decoding="async" onClick={() => window.open(getFileUrl(msg.file_path!), "_blank")} />
                       )}
+                      {msg.type === "audio" && msg.file_path && (
+                        <audio controls src={getFileUrl(msg.file_path)} className="max-w-[260px] h-12" ref={(el) => { if (el) el.volume = 1.0; }} />
+                      )}
+                      <div className={`flex items-center gap-1.5 mt-0.5 ${isOwn ? "justify-end" : ""}`}>
+                        <p className="text-[13px] text-foreground/50">{formatTime(msg.created_at)}</p>
+                        <button
+                          onClick={() => startReply(msg)}
+                          className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded hover:bg-primary/10"
+                          aria-label={t.reply}
+                          title={t.reply}
+                        >
+                          <Reply className="h-4 w-4 text-muted-foreground hover:text-primary transition-colors" />
+                        </button>
+                        {isOwn && (
+                          <button
+                            onClick={() => deleteMessage(msg)}
+                            className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded hover:bg-destructive/10"
+                          >
+                            <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive transition-colors" />
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -283,6 +403,27 @@ const Chat = () => {
           })}
         </div>
       </div>
+
+      {replyTo && (
+        <div className="px-3 py-2 border-t border-border bg-card">
+          <div className="flex items-stretch gap-2">
+            <div className="w-1 rounded-full bg-primary shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-semibold text-primary">
+                {t.replyingTo} {getMemberName(replyTo.user_id)}
+              </p>
+              <p className="text-sm text-foreground/70 truncate">{messageSnippet(replyTo)}</p>
+            </div>
+            <button
+              onClick={() => setReplyTo(null)}
+              className="shrink-0 p-1 rounded hover:bg-muted transition-colors self-start"
+              aria-label="Cancel reply"
+            >
+              <X className="h-4 w-4 text-muted-foreground" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {imagePreview && (
         <div className="px-3 py-2 border-t border-border bg-card">
@@ -317,7 +458,7 @@ const Chat = () => {
           </div>
         ) : (
           <>
-            <Input value={text} onChange={(e) => setText(e.target.value)} placeholder={t.writeMessage} className="flex-1 h-9 text-sm"
+            <Input ref={inputRef} value={text} onChange={(e) => setText(e.target.value)} placeholder={t.writeMessage} className="flex-1 h-9 text-sm"
               onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); if (imageFile) sendImage(imageFile); else sendText(); } }}
               disabled={sending}
             />
