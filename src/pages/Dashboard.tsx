@@ -214,10 +214,10 @@ const Index = () => {
           <p className="text-sm text-primary-foreground/75 mt-3 max-w-xs leading-relaxed">
             {t.heroSubtitle}
           </p>
-          <div className="flex gap-3 mt-6">
+          <div className="flex gap-2 mt-6 flex-wrap">
             <Button
               size="lg"
-              className="bg-card text-foreground hover:bg-card/90 font-semibold shadow-card-hover"
+              className="bg-card text-foreground hover:bg-card/90 font-semibold shadow-card-hover px-4"
               onClick={() => setCreateOpen(true)}
             >
               <Plus className="h-4 w-4 mr-2" />
@@ -226,7 +226,7 @@ const Index = () => {
             <Button
               size="lg"
               variant="outline"
-              className="border-primary-foreground/60 text-foreground bg-card hover:bg-card/90 font-semibold shadow-card-hover"
+              className="border-primary-foreground/60 text-foreground bg-card hover:bg-card/90 font-semibold shadow-card-hover px-4"
               onClick={() => setJoinOpen(true)}
             >
               <UserPlus className="h-4 w-4 mr-2" />
