@@ -1,59 +1,39 @@
 
 
-The user wants WhatsApp-style reply-to-message in chat. I need to:
-1. Add `reply_to_id` column to `trip_messages` (nullable uuid, self-reference)
-2. Add swipe-right gesture on messages (touch events, works on mobile + desktop)
-3. Show quoted preview above input when replying (with cancel X)
-4. Render quoted block inside reply messages, clickable to scroll to original
+## Bloque de reseñas en la landing pública
 
-Schema check: trip_messages has no reply column → need migration. RLS unchanged since it's same table.
+### Ubicación
+Nueva sección entre **"How it works"** (acaba en línea 302) y **"Benefits"** (empieza en línea 304). Es el punto natural tras explicar cómo funciona y antes de listar beneficios — refuerza confianza justo donde el usuario empieza a evaluar.
 
-Scope is strictly Chat.tsx + one migration. No other files touched.
+### Diseño
+- **Formato**: rejilla limpia (3 columnas en escritorio, 2 en tablet, 1 en móvil con scroll natural)
+- **Fondo**: blanco / `bg-background` para contrastar con el `bg-muted/30` de la sección siguiente
+- **Cada card**:
+  - 5 estrellas amarillas (`text-yellow-400`, `fill-yellow-400`, tamaño `h-4 w-4`, gap pequeño) — elegantes, no exageradas
+  - Frase entre comillas tipográficas “ ” en `text-base`/`text-lg`, peso medio, color `text-foreground`
+  - Nombre del autor debajo, en `text-sm font-semibold text-muted-foreground` con un pequeño separador visual (línea fina o punto)
+  - Card con `bg-card`, `border-border/50`, `shadow-card`, `rounded-2xl`, padding generoso, hover sutil con `shadow-card-hover`
+- **Header de sección**: título `t.landingTestimonialsTitle` ("Lo que dicen nuestros usuarios") y subtítulo opcional, mismo estilo que el resto de secciones para integración perfecta
 
-## Responder mensajes estilo WhatsApp en el chat
+### Contenido (6 reseñas)
+Texto fijo (nombres reales no se traducen). Las 5 frases en español + 1 en inglés tal cual las has dado. Render directo desde un array local en `Landing.tsx` — no requiere base de datos.
 
-### Cambios
-
-**1. Base de datos** (migración)
-- Añadir columna `reply_to_id uuid NULL` a `trip_messages` (auto-referencia a `id`)
-- Sin cambios en RLS (misma tabla)
-
-**2. `src/pages/trips/Chat.tsx`** (único fichero de la app)
-
-Gesto de swipe:
-- Detectar `touchstart` / `touchmove` / `touchend` en cada burbuja de mensaje
-- Si el desplazamiento horizontal es > 60px hacia la derecha (y vertical < 30px), activar respuesta
-- Animación: la burbuja se traslada con el dedo y vuelve a su sitio al soltar
-- En desktop: botón sutil de "responder" visible en hover (mismo grupo que el de borrar)
-
-Vista previa antes de enviar:
-- Cuando hay `replyTo` activo, mostrar bloque por encima del input con:
-  - Barra vertical color primario
-  - Nombre del autor del mensaje citado
-  - Snippet del contenido (texto truncado, "📷 Imagen" o "🎤 Audio" según tipo)
-  - Botón X para cancelar la respuesta
-
-Envío:
-- En `sendText` y `sendImage` y audio, incluir `reply_to_id: replyTo?.id ?? null` en el insert
-- Limpiar `replyTo` tras enviar
-
-Visualización de la respuesta:
-- En cada mensaje con `reply_to_id`, renderizar un bloque dentro de la burbuja (encima del contenido) con:
-  - Borde izquierdo color primario
-  - Nombre del autor original + snippet (truncado a ~60 chars)
-- Al pulsar la cita, hacer scroll suave hasta el mensaje original con un highlight breve
-- Si el mensaje original fue eliminado, mostrar "Mensaje no disponible"
+### Responsive
+- **Escritorio (≥1024px)**: rejilla 3×2
+- **Tablet (≥640px)**: rejilla 2×3
+- **Móvil**: 1 columna apilada con espaciado cómodo
 
 ### Traducciones
-- Añadir 2 claves nuevas en `src/i18n/translations.ts`: `reply` y `replyingTo` (ES/EN/FR/DE/IT/PT) — única excepción al "no tocar nada más", indispensable para el copy del bloque de respuesta
+Solo 2 claves nuevas en `src/i18n/translations.ts` para el título y subtítulo de la sección (7 idiomas):
+- `landingTestimonialsTitle`
+- `landingTestimonialsSubtitle`
 
 ### Ficheros afectados
 
 | Fichero | Cambio |
 |---------|--------|
-| Migración SQL | Añadir `reply_to_id` a `trip_messages` |
-| `src/pages/trips/Chat.tsx` | Swipe, preview, envío con referencia, render del bloque citado |
-| `src/i18n/translations.ts` | 2 claves nuevas (`reply`, `replyingTo`) |
+| `src/pages/Landing.tsx` | Insertar nueva `<section>` de testimonios entre "How it works" y "Benefits" |
+| `src/i18n/translations.ts` | Añadir 2 claves de copy de la sección en los 7 idiomas |
 
-No se toca ningún otro fichero, pantalla ni funcionalidad. La galería, fotos, gastos, recordatorios, transporte, etc. quedan intactos.
+No se toca el hero, ni los CTAs, ni ninguna otra sección, ni ningún otro fichero de la app.
 
