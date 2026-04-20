@@ -415,6 +415,8 @@ type TranslationKeys = {
   landingFeaturePhonesDesc: string;
   landingHowTitle: string;
   landingHowDesc: string;
+  landingTestimonialsTitle: string;
+  landingTestimonialsSubtitle: string;
   landingHow1Title: string;
   landingHow1Desc: string;
   landingHow2Title: string;
@@ -840,6 +842,8 @@ const translations: Record<Language, TranslationKeys> = {
     landingFeaturePhonesDesc: "Números de emergencia y contactos del destino a un clic.",
     landingHowTitle: "Así de fácil",
     landingHowDesc: "Tres pasos y tu viaje estará organizado.",
+    landingTestimonialsTitle: "Lo que dicen nuestros usuarios",
+    landingTestimonialsSubtitle: "Miles de grupos ya organizan sus viajes con YORMIT.",
     landingHow1Title: "Crea tu viaje",
     landingHow1Desc: "Define destino, fechas y comparte el código de invitación con tu grupo.",
     landingHow2Title: "Organiza todo en un lugar",
@@ -1258,6 +1262,8 @@ const translations: Record<Language, TranslationKeys> = {
     landingFeaturePhonesDesc: "Emergency numbers and destination contacts one click away.",
     landingHowTitle: "It's that easy",
     landingHowDesc: "Three steps and your trip is organized.",
+    landingTestimonialsTitle: "What our users say",
+    landingTestimonialsSubtitle: "Thousands of groups already plan their trips with YORMIT.",
     landingHow1Title: "Create your trip",
     landingHow1Desc: "Set the destination, dates and share the invite code with your group.",
     landingHow2Title: "Organize everything in one place",
@@ -1676,6 +1682,8 @@ const translations: Record<Language, TranslationKeys> = {
     landingFeaturePhonesDesc: "Numéros d'urgence et contacts de la destination en un clic.",
     landingHowTitle: "C'est aussi simple que ça",
     landingHowDesc: "Trois étapes et votre voyage est organisé.",
+    landingTestimonialsTitle: "Ce que disent nos utilisateurs",
+    landingTestimonialsSubtitle: "Des milliers de groupes organisent déjà leurs voyages avec YORMIT.",
     landingHow1Title: "Créez votre voyage",
     landingHow1Desc: "Définissez la destination, les dates et partagez le code d'invitation avec votre groupe.",
     landingHow2Title: "Organisez tout en un seul endroit",
@@ -2094,6 +2102,8 @@ const translations: Record<Language, TranslationKeys> = {
     landingFeaturePhonesDesc: "Números de emergência e contactos do destino a um clique.",
     landingHowTitle: "É assim tão fácil",
     landingHowDesc: "Três passos e a sua viagem está organizada.",
+    landingTestimonialsTitle: "O que dizem os nossos utilizadores",
+    landingTestimonialsSubtitle: "Milhares de grupos já organizam as suas viagens com YORMIT.",
     landingHow1Title: "Crie a sua viagem",
     landingHow1Desc: "Defina destino, datas e partilhe o código de convite com o seu grupo.",
     landingHow2Title: "Organize tudo num só lugar",
@@ -2512,6 +2522,8 @@ const translations: Record<Language, TranslationKeys> = {
     landingFeaturePhonesDesc: "Numeri di emergenza e contatti della destinazione a un clic.",
     landingHowTitle: "È così facile",
     landingHowDesc: "Tre passi e il tuo viaggio è organizzato.",
+    landingTestimonialsTitle: "Cosa dicono i nostri utenti",
+    landingTestimonialsSubtitle: "Migliaia di gruppi organizzano già i loro viaggi con YORMIT.",
     landingHow1Title: "Crea il tuo viaggio",
     landingHow1Desc: "Definisci destinazione, date e condividi il codice di invito con il tuo gruppo.",
     landingHow2Title: "Organizza tutto in un unico posto",
@@ -2930,6 +2942,8 @@ const translations: Record<Language, TranslationKeys> = {
     landingFeaturePhonesDesc: "紧急电话和目的地联系方式一键可达。",
     landingHowTitle: "就是这么简单",
     landingHowDesc: "三步完成旅行组织。",
+    landingTestimonialsTitle: "用户怎么说",
+    landingTestimonialsSubtitle: "成千上万的团队已使用 YORMIT 组织旅行。",
     landingHow1Title: "创建旅行",
     landingHow1Desc: "设定目的地、日期，并与团队分享邀请码。",
     landingHow2Title: "在一个地方组织一切",
@@ -3348,6 +3362,8 @@ const translations: Record<Language, TranslationKeys> = {
     landingFeaturePhonesDesc: "Notrufnummern und Kontakte am Reiseziel mit einem Klick.",
     landingHowTitle: "So einfach geht's",
     landingHowDesc: "Drei Schritte und deine Reise ist organisiert.",
+    landingTestimonialsTitle: "Das sagen unsere Nutzer",
+    landingTestimonialsSubtitle: "Tausende Gruppen organisieren ihre Reisen bereits mit YORMIT.",
     landingHow1Title: "Erstelle deine Reise",
     landingHow1Desc: "Lege Ziel, Daten fest und teile den Einladungscode mit deiner Gruppe.",
     landingHow2Title: "Organisiere alles an einem Ort",

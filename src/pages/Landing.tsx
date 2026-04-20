@@ -5,7 +5,7 @@ import {
   Camera, CloudSun, Phone, ArrowRight, Play,
   MessageSquare, MapPinOff, ReceiptText, SearchX, FolderOpen,
   PlusCircle, LayoutDashboard, Share2,
-  Zap, HeartHandshake, ListChecks, Users, Clock, HelpCircle, Download
+  Zap, HeartHandshake, ListChecks, Users, Clock, HelpCircle, Download, Star
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -295,6 +295,43 @@ const Landing = () => {
                 </div>
                 <h3 className="font-bold text-lg mb-2">{s.title}</h3>
                 <p className="text-muted-foreground text-sm leading-relaxed max-w-xs mx-auto">{s.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* TESTIMONIALS */}
+      <section className="py-16 md:py-24">
+        <div className="max-w-6xl mx-auto px-5">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-extrabold">{t.landingTestimonialsTitle}</h2>
+            <p className="text-muted-foreground mt-3 max-w-lg mx-auto text-lg">{t.landingTestimonialsSubtitle}</p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[
+              { quote: "Muy útil, completa e intuitiva. Organizar un viaje en grupo así es mucho más fácil.", name: "Juan Rodríguez" },
+              { quote: "Gran herramienta para viajes en grupo. Facilita la organización, la comunicación y los gastos.", name: "Vicente Fresneda" },
+              { quote: "Ideal para viajes en grupo.", name: "Javier Castelló" },
+              { quote: "Varias funciones en una sola app. Muy práctica y muy útil.", name: "Javier Olmos" },
+              { quote: "Muy útil y cómoda para viajar.", name: "Primitivo Murcia" },
+              { quote: "Everything our group needed in one place. Simple, practical and really helpful.", name: "Emily Carter" },
+            ].map((r, i) => (
+              <div
+                key={i}
+                className="flex flex-col p-7 rounded-2xl bg-card border border-border/50 shadow-card hover:shadow-card-hover transition-shadow"
+              >
+                <div className="flex gap-1 mb-4" aria-label="5 stars">
+                  {Array.from({ length: 5 }).map((_, s) => (
+                    <Star key={s} className="h-4 w-4 text-yellow-400 fill-yellow-400" />
+                  ))}
+                </div>
+                <p className="text-base md:text-lg text-foreground leading-relaxed font-medium flex-1">
+                  &ldquo;{r.quote}&rdquo;
+                </p>
+                <div className="mt-5 pt-4 border-t border-border/50">
+                  <p className="text-sm font-semibold text-muted-foreground">{r.name}</p>
+                </div>
               </div>
             ))}
           </div>
