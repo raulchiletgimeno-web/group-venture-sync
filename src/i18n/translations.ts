@@ -415,6 +415,8 @@ type TranslationKeys = {
   landingFeaturePhonesDesc: string;
   landingHowTitle: string;
   landingHowDesc: string;
+  landingTestimonialsTitle: string;
+  landingTestimonialsSubtitle: string;
   landingHow1Title: string;
   landingHow1Desc: string;
   landingHow2Title: string;
