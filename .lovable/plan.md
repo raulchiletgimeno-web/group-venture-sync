@@ -1,39 +1,47 @@
 
 
-## Bloque de reseñas en la landing pública
+## Recolocar reseñas en la primera vista de la landing
 
-### Ubicación
-Nueva sección entre **"How it works"** (acaba en línea 302) y **"Benefits"** (empieza en línea 304). Es el punto natural tras explicar cómo funciona y antes de listar beneficios — refuerza confianza justo donde el usuario empieza a evaluar.
+### Cambio principal
+Las reseñas ya no estarán escondidas abajo. Pasarán a aparecer **dentro del hero**, justo debajo de los CTAs ("Empezar" / "Ver vídeo"), como una franja compacta y elegante visible en la primera impresión de la landing pública.
 
-### Diseño
-- **Formato**: rejilla limpia (3 columnas en escritorio, 2 en tablet, 1 en móvil con scroll natural)
-- **Fondo**: blanco / `bg-background` para contrastar con el `bg-muted/30` de la sección siguiente
-- **Cada card**:
-  - 5 estrellas amarillas (`text-yellow-400`, `fill-yellow-400`, tamaño `h-4 w-4`, gap pequeño) — elegantes, no exageradas
-  - Frase entre comillas tipográficas “ ” en `text-base`/`text-lg`, peso medio, color `text-foreground`
-  - Nombre del autor debajo, en `text-sm font-semibold text-muted-foreground` con un pequeño separador visual (línea fina o punto)
-  - Card con `bg-card`, `border-border/50`, `shadow-card`, `rounded-2xl`, padding generoso, hover sutil con `shadow-card-hover`
-- **Header de sección**: título `t.landingTestimonialsTitle` ("Lo que dicen nuestros usuarios") y subtítulo opcional, mismo estilo que el resto de secciones para integración perfecta
+### Ubicación nueva
+- **Dentro del bloque hero** (`<section>` con fondo de vídeo), debajo de los dos botones CTA (línea ~202).
+- Se elimina por completo la sección de testimonios actual (líneas 304-339), que quedaba demasiado abajo entre "How it works" y "Benefits".
 
-### Contenido (6 reseñas)
-Texto fijo (nombres reales no se traducen). Las 5 frases en español + 1 en inglés tal cual las has dado. Render directo desde un array local en `Landing.tsx` — no requiere base de datos.
+### Diseño nuevo (franja compacta premium)
+Una **franja horizontal ligera** integrada sobre el fondo oscuro del hero:
+
+- **Carrusel sutil en móvil** (`overflow-x-auto` con scroll-snap, sin flechas visibles) y **fila de 3 visibles en escritorio**.
+- Cada mini-card:
+  - Fondo `bg-white/10` con `backdrop-blur-md` y `border border-white/15` → se integra con el hero sin tapar el vídeo
+  - `rounded-2xl`, padding moderado, ancho controlado (~280-320px)
+  - **Estrellas amarillas elegantes**: `text-yellow-400 fill-yellow-400`, tamaño `h-3.5 w-3.5`, gap pequeño
+  - **Una de las 6 reseñas mostrará 4,5 estrellas** (4 estrellas llenas + 1 media usando `<StarHalf />` de lucide-react, también amarilla) — esto comunica visualmente que son ratings reales 1-5
+  - Frase corta entre comillas tipográficas, `text-sm` blanco con buena legibilidad
+  - Nombre debajo en `text-xs` blanco con opacidad reducida
+
+- **Margen superior generoso** (`mt-12`) para que respire respecto a los CTAs y no agobie el hero.
+- **Sin título de sección** dentro del hero (lo haría pesado). La franja se entiende sola como prueba social.
+
+### Reseña con 4,5 estrellas
+La asignaré a **"Primitivo Murcia"** (`"Muy útil y cómoda para viajar."`) — es la frase más corta y queda natural mostrar una variación honesta. Las otras 5 mantienen 5 estrellas.
 
 ### Responsive
-- **Escritorio (≥1024px)**: rejilla 3×2
-- **Tablet (≥640px)**: rejilla 2×3
-- **Móvil**: 1 columna apilada con espaciado cómodo
+- **Móvil (<640px)**: scroll horizontal con snap, 1 card visible + peek de la siguiente para invitar a deslizar.
+- **Tablet (≥640px)**: 2 cards visibles con scroll.
+- **Escritorio (≥1024px)**: 3 cards en fila, sin scroll.
 
-### Traducciones
-Solo 2 claves nuevas en `src/i18n/translations.ts` para el título y subtítulo de la sección (7 idiomas):
-- `landingTestimonialsTitle`
-- `landingTestimonialsSubtitle`
+### Lo que NO se toca
+- Hero, logo, headline, subtítulo, CTAs, vídeo de fondo, vídeo modal: intactos.
+- Secciones Problem, Features, How it works, Benefits, FAQ, footer: intactas.
+- Traducciones existentes (`landingTestimonialsTitle` / `landingTestimonialsSubtitle`) se quedan en `translations.ts` sin uso (no estorban) — no eliminamos para evitar tocar 7 idiomas innecesariamente.
 
 ### Ficheros afectados
 
 | Fichero | Cambio |
 |---------|--------|
-| `src/pages/Landing.tsx` | Insertar nueva `<section>` de testimonios entre "How it works" y "Benefits" |
-| `src/i18n/translations.ts` | Añadir 2 claves de copy de la sección en los 7 idiomas |
+| `src/pages/Landing.tsx` | Insertar franja de reseñas en hero (debajo CTAs) + eliminar sección testimonios actual + importar `StarHalf` |
 
-No se toca el hero, ni los CTAs, ni ninguna otra sección, ni ningún otro fichero de la app.
+Un solo fichero modificado. Cero impacto en el resto de la app.
 
