@@ -571,6 +571,35 @@ export type Database = {
           },
         ]
       }
+      trip_pre_departure_reminders: {
+        Row: {
+          id: string
+          sent_at: string
+          trip_id: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          sent_at?: string
+          trip_id: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          sent_at?: string
+          trip_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_pre_departure_reminders_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trip_schedule: {
         Row: {
           address: string | null
