@@ -5,6 +5,8 @@ project_id = "oktrzxlwaflyirjfjlad"
     verify_jwt = false
   [functions.check-trip-debts]
     verify_jwt = false
+  [functions.check-trip-pre-departure]
+    verify_jwt = false
   [functions.handle-email-suppression]
     verify_jwt = false
   [functions.handle-email-unsubscribe]
