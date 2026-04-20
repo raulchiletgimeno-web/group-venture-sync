@@ -168,7 +168,7 @@ const Landing = () => {
 
         {/* Hero content */}
         <section className="relative">
-          <div className="max-w-5xl mx-auto px-5 py-16 md:py-24 lg:py-32">
+          <div className="max-w-5xl mx-auto px-5 py-10 md:py-14 lg:py-16">
             <div className="max-w-2xl mx-auto text-center">
               {/* Logo */}
               <BrandLogo size="xl" className="justify-center mb-6 text-white [text-shadow:_0_2px_8px_rgba(0,0,0,0.5)]" />
@@ -182,7 +182,7 @@ const Landing = () => {
                 {t.landingHeroDesc}
               </p>
               {/* Dual CTAs */}
-              <div className="flex flex-col sm:flex-row gap-3 mt-16 justify-center">
+              <div className="flex flex-col sm:flex-row gap-3 mt-10 justify-center">
                 <Button
                   size="lg"
                   onClick={() => navigate("/auth")}
@@ -208,16 +208,19 @@ const Landing = () => {
                 className="flex gap-4 overflow-x-auto sm:overflow-visible snap-x snap-mandatory sm:snap-none px-5 sm:px-0 pb-2 sm:pb-0 sm:grid sm:grid-cols-2 lg:grid-cols-3 sm:gap-4 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
               >
                 {[
-                  { quote: "Muy útil, completa e intuitiva. Organizar un viaje en grupo así es mucho más fácil.", name: "Juan Rodríguez", rating: 5 },
-                  { quote: "Gran herramienta para viajes en grupo. Facilita la organización, la comunicación y los gastos.", name: "Vicente Fresneda", rating: 5 },
+                  { quote: "Muy útil, completa e intuitiva. Realmente facilita tanto la organización como el desarrollo de todos los aspectos que intervienen en un viaje en grupo 👌🏻", name: "Juan Rodríguez", rating: 5 },
+                  { quote: "Gran herramienta para los viajes en grupo. Facilita la organización previa, la comunicación y compartir fotos durante el viaje, y la división de gastos al terminar.", name: "Vicente Fresneda", rating: 5 },
                   { quote: "Ideal para viajes en grupo.", name: "Javier Castelló", rating: 5 },
-                  { quote: "Varias funciones en una sola app. Muy práctica y muy útil.", name: "Javier Olmos", rating: 5 },
-                  { quote: "Muy útil y cómoda para viajar.", name: "Primitivo Murcia", rating: 4.5 },
-                  { quote: "Everything our group needed in one place. Simple, practical and really helpful.", name: "Emily Carter", rating: 5 },
+                  { quote: "La app es muy útil, varias funciones en una sola app.", name: "Javier Olmos", rating: 5 },
+                  { quote: "Es muy útil y cómoda para viajar.", name: "Primitivo Murcia", rating: 5 },
+                  { quote: "La app es muy intuitiva y cómoda para no tener caos en la organización del viaje.", name: "José Peiró", rating: 4.5 },
+                  { quote: "Muy práctica para tener todo el viaje organizado en un solo sitio y no depender de varios chats y notas.", name: "María López", rating: 5 },
+                  { quote: "Nos ayudó mucho con los gastos compartidos y con la coordinación del grupo durante todo el viaje.", name: "Carlos Navarro", rating: 5 },
+                  { quote: "Simple, helpful and perfect for keeping the whole trip organised in one place.", name: "Emma Wilson", rating: 5 },
                 ].map((r, i) => (
                   <div
                     key={i}
-                    className={`snap-start shrink-0 w-[78%] sm:w-auto flex flex-col p-5 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 shadow-card ${i >= 3 ? "lg:hidden" : ""}`}
+                    className="snap-start shrink-0 w-[78%] sm:w-auto flex flex-col p-5 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 shadow-card"
                   >
                     <div className="flex gap-0.5 mb-3" aria-label={`${r.rating} stars`}>
                       {Array.from({ length: Math.floor(r.rating) }).map((_, s) => (
