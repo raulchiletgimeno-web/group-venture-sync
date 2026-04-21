@@ -459,7 +459,6 @@ const Chat = () => {
         ) : (
           <>
             <Input ref={inputRef} value={text} onChange={(e) => setText(e.target.value)} placeholder={t.writeMessage} className="flex-1 h-9 text-sm"
-              onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); if (imageFile) sendImage(imageFile); else sendText(); } }}
               disabled={sending}
             />
             {text.trim() || imageFile ? (
