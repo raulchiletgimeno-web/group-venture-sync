@@ -199,8 +199,38 @@ export async function searchPlaces(
   return { places: places.slice(0, 40), radius: usedRadius };
 }
 
-// Geocode a free-form address using Open-Meteo (same provider Weather already uses)
-export async function geocodeAddress(query: string): Promise<LatLon | null> {
+// Normalize a free-form address to improve geocoding hit rate
+function normalizeAddress(query: string): string {
+  return query
+    .replace(/n[ºo°]\s*/gi, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
+async function nominatimSearch(query: string): Promise<LatLon | null> {
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(
+      query,
+    )}`;
+    const res = await fetch(url, {
+      headers: {
+        "Accept-Language": "es,en",
+      },
+    });
+    if (!res.ok) return null;
+    const json = (await res.json()) as Array<{ lat: string; lon: string }>;
+    const first = json?.[0];
+    if (!first) return null;
+    const lat = parseFloat(first.lat);
+    const lon = parseFloat(first.lon);
+    if (Number.isNaN(lat) || Number.isNaN(lon)) return null;
+    return { lat, lon };
+  } catch {
+    return null;
+  }
+}
+
+async function openMeteoSearch(query: string): Promise<LatLon | null> {
   try {
     const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(
       query,
@@ -214,6 +244,47 @@ export async function geocodeAddress(query: string): Promise<LatLon | null> {
   } catch {
     return null;
   }
+}
+
+// Extract a likely city/locality token from a free-form address
+function extractCity(query: string): string | null {
+  // Match a 5-digit postal code followed by city words (e.g. "28012 Madrid")
+  const postalMatch = query.match(/\b\d{4,5}\s+([A-Za-zÀ-ÿ' .-]{2,})$/);
+  if (postalMatch) return postalMatch[1].trim();
+  // Fallback: last comma-separated chunk
+  const parts = query.split(",").map((p) => p.trim()).filter(Boolean);
+  if (parts.length > 1) return parts[parts.length - 1];
+  // Fallback: last word
+  const words = query.trim().split(/\s+/);
+  return words.length ? words[words.length - 1] : null;
+}
+
+// Geocode a free-form address with cascade fallbacks (Nominatim → normalized → city → Open-Meteo)
+export async function geocodeAddress(query: string): Promise<LatLon | null> {
+  const trimmed = query.trim();
+  if (!trimmed) return null;
+
+  // 1. Full address via Nominatim
+  const direct = await nominatimSearch(trimmed);
+  if (direct) return direct;
+
+  // 2. Normalized address via Nominatim
+  const normalized = normalizeAddress(trimmed);
+  if (normalized && normalized !== trimmed) {
+    const norm = await nominatimSearch(normalized);
+    if (norm) return norm;
+  }
+
+  // 3. City fallback via Nominatim
+  const city = extractCity(normalized || trimmed);
+  if (city) {
+    const cityHit = await nominatimSearch(city);
+    if (cityHit) return cityHit;
+  }
+
+  // 4. Last resort: Open-Meteo with city or full query
+  const openMeteoQuery = city || trimmed;
+  return openMeteoSearch(openMeteoQuery);
 }
 
 export function googleMapsUrlFor(place: Place): string {

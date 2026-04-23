@@ -109,8 +109,15 @@ const UsefulPlacesCategory = () => {
       return;
     }
 
-    const query = acc.address?.trim() || acc.name;
-    const coords = await geocodeAddress(query);
+    const rawAddress = acc.address?.trim();
+    const query = rawAddress
+      ? rawAddress.replace(/n[ºo°]\s*/gi, "").replace(/\s{2,}/g, " ").trim()
+      : acc.name;
+    let coords = await geocodeAddress(query);
+    // Extra fallback: try accommodation name if address-based geocoding failed
+    if (!coords && rawAddress && acc.name) {
+      coords = await geocodeAddress(acc.name);
+    }
     if (!coords) {
       setLoading(false);
       setError(t.placesNoAccommodation);
