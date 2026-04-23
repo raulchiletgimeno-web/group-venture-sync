@@ -28,18 +28,11 @@ if ("serviceWorker" in navigator) {
         .then((registration) => {
           setInterval(() => {
             registration.update().catch(() => {});
-          }, 60 * 1000);
+          }, 30 * 60 * 1000);
         })
         .catch((err) => {
           console.warn("SW registration failed:", err);
         });
-    });
-
-    let refreshing = false;
-    navigator.serviceWorker.addEventListener("controllerchange", () => {
-      if (refreshing) return;
-      refreshing = true;
-      window.location.reload();
     });
   }
 }
