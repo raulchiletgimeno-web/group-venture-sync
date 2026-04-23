@@ -103,13 +103,12 @@ function buildQuery(
     .filter(Boolean)
     .map((f) => `${f}(around:${radius},${center.lat},${center.lon});`)
     .join("");
-  return `[out:json][timeout:25];(${aroundFilter});out center tags 80;`;
+  return `[out:json][timeout:25];(${aroundFilter});out center tags 150;`;
 }
 
 function scorePlace(
   el: OverpassElement,
   category: PlaceCategory,
-  distance: number,
 ): number {
   const tags = el.tags ?? {};
   let score = 0;
@@ -118,10 +117,6 @@ function scorePlace(
   if (tags.opening_hours) score += 1;
   if (tags.cuisine || tags.brand) score += 1;
   if (category === "touristic" && (tags.wikidata || tags.wikipedia)) score += 2;
-
-  // Closer is better — bonus up to 2 points within ~500m fading to 0 at radius
-  const proximityBonus = Math.max(0, 2 - distance / 750);
-  score += proximityBonus;
   return score;
 }
 
