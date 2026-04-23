@@ -1,32 +1,42 @@
 
 
-## Eliminar la burbuja "Edit with Lovable"
+## Corrección: la pantalla de resultados de "Sitios útiles" se cierra sola
 
-### Qué es esa burbuja
-Es el **badge oficial de Lovable** que se inyecta automáticamente en los sitios publicados de proyectos creados con la plataforma. **No pertenece al código de YORMIT** — no está en ningún componente, ni en `index.html`, ni en estilos. Lovable la añade del lado del hosting al servir la versión publicada (`yormit.com`, `www.yormit.com` y `group-venture-sync.lovable.app`).
+### Qué estaba pasando
+El salto a la pantalla anterior **no es un cambio de ruta ni un bug en `UsefulPlacesCategory`**. Es una **recarga completa de la página** disparada por el Service Worker (PWA) en producción. Como el componente guarda la elección (`source`, `center`, `places`) en estado local de React, la recarga lo reinicia y el usuario aparece otra vez en el selector "Cerca de mi ubicación / Cerca del alojamiento".
 
-Por eso no se puede quitar editando archivos del proyecto: hay que desactivarla a nivel de configuración de publicación.
+Causa concreta, en `src/main.tsx` (solo en producción, p. ej. yormit.com):
 
-### Estado actual
-- `hide_badge`: **false** → el badge está visible en producción.
+1. Línea 29-31: cada **60 segundos** se llama a `registration.update()` para comprobar si hay un Service Worker nuevo.
+2. `public/custom-sw.js` usa `self.skipWaiting()` + `clientsClaim()` → el SW nuevo se activa de inmediato.
+3. Líneas 38-43 de `main.tsx`: al detectar `controllerchange`, se ejecuta `window.location.reload()` → recarga forzada → el usuario ve el selector de nuevo.
 
-### Cambio a realizar
-Una sola acción de configuración (no toca ningún archivo del código):
+Esto explica perfectamente que "a los pocos segundos" la pantalla se reinicie sin que nadie pulse atrás. Pasa en cualquier sección que mantenga estado local (no solo Sitios útiles), pero aquí se nota más porque la elección de origen vive solo en memoria.
 
-- Llamar a `publish_settings--set_badge_visibility` con `hide_badge: true`.
+### Corrección (mínima, quirúrgica)
 
-Esto oculta el badge en todas las URLs publicadas (`yormit.com`, `www.yormit.com`, `group-venture-sync.lovable.app`) de forma permanente. El cambio es inmediato tras aplicarse y no requiere republicar.
+Un único archivo: **`src/main.tsx`**.
 
-### Requisito
-Ocultar el badge requiere plan **Pro o superior** en Lovable. Si el workspace está en plan gratuito, la operación fallará y habrá que subir de plan antes. Si ya estás en Pro+, se aplicará sin problema.
+Cambios:
+
+1. **Quitar la recarga forzada al activarse un SW nuevo** (líneas 38-43). El SW nuevo se cargará de forma natural en la próxima navegación o cuando el usuario abra/cierre la app, sin interrumpir lo que está haciendo.
+2. **Espaciar mucho la comprobación de actualizaciones**: cambiar el intervalo de `60 * 1000` (1 min) a `30 * 60 * 1000` (30 min). Sigue habiendo refresco automático del SW pero sin saturar y sin acoplarse al uso activo.
+
+Resultado: la pantalla de resultados se mantiene estable. La PWA sigue actualizándose, solo que sin recargar la pestaña activa del usuario.
 
 ### Lo que NO se toca
-- Cero cambios en código (`src/`, `public/`, `index.html`, edge functions, BD).
-- Cero cambios en diseño, "Sitios útiles", o cualquier otra sección.
-- Cero cambios en el entorno de preview de Lovable (allí seguirás viendo el badge cuando edites, lo cual es normal y solo afecta a la vista de editor).
+- Cero cambios en `UsefulPlacesCategory.tsx`, `UsefulPlaces.tsx`, `usefulPlaces.ts`, `TripLayout`, navegación, traducciones, diseño, BD, RLS, edge functions, otras secciones.
+- Cero cambios en `custom-sw.js` (sigue gestionando push y notificaciones igual).
+- El registro del Service Worker se mantiene; solo cambia la frecuencia de comprobación y se elimina el `reload()` automático.
+
+### Ficheros afectados
+
+| Fichero | Cambio |
+|---------|--------|
+| `src/main.tsx` | Quitar bloque `controllerchange → reload`. Subir intervalo de `update()` de 60 s a 30 min. |
 
 ### Validación posterior
-1. Confirmar que `get_badge_visibility` devuelve `hide_badge: true`.
-2. Abrir `https://www.yormit.com` en una pestaña de incógnito y verificar que la burbuja negra ya no aparece.
-3. Confirmar que ninguna otra parte de la app ha cambiado.
+1. Abrir Sitios útiles → Cafés y bares → Cerca de mi ubicación → esperar 1-2 minutos viendo los resultados → confirmar que la pantalla NO vuelve sola al selector.
+2. Repetir con "Cerca del alojamiento" en el viaje "Fin de semana en Madrid".
+3. Confirmar que push notifications, instalación PWA y resto de la app siguen funcionando exactamente igual.
 
