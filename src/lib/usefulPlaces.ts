@@ -205,7 +205,7 @@ export async function searchPlaces(
     return d;
   });
 
-  return { places: filtered.slice(0, 60), radius: usedRadius };
+  return { places: filtered.slice(0, 80), radius: usedRadius };
 }
 
 // Normalize a free-form address to improve geocoding hit rate
