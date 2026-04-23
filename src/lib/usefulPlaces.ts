@@ -30,13 +30,17 @@ export interface LatLon {
   lon: number;
 }
 
-// Overpass filter for each category
+// Overpass filter for each category — multiple nwr clauses joined with ';' for broader coverage
 const CATEGORY_FILTERS: Record<PlaceCategory, string> = {
-  restaurants: 'nwr["amenity"="restaurant"]',
-  cafes: 'nwr["amenity"~"^(cafe|bar|pub)$"]',
-  supermarkets: 'nwr["shop"~"^(supermarket|convenience)$"]',
-  pharmacies: 'nwr["amenity"="pharmacy"]',
-  hotels: 'nwr["tourism"~"^(hotel|hostel|guest_house)$"]',
+  restaurants:
+    'nwr["amenity"~"^(restaurant|fast_food|food_court|bbq)$"]',
+  cafes:
+    'nwr["amenity"~"^(cafe|bar|pub|biergarten|nightclub)$"];nwr["shop"~"^(coffee|tea)$"]',
+  supermarkets:
+    'nwr["shop"~"^(supermarket|convenience|bakery|butcher|greengrocer|deli)$"];nwr["amenity"="marketplace"]',
+  pharmacies: 'nwr["amenity"="pharmacy"];nwr["shop"="chemist"]',
+  hotels:
+    'nwr["tourism"~"^(hotel|hostel|guest_house|motel|apartment|chalet)$"]',
   touristic:
     'nwr["tourism"~"^(attraction|museum|monument|viewpoint|artwork)$"];nwr["historic"]',
 };
@@ -152,7 +156,7 @@ export async function searchPlaces(
     const query = buildQuery(category, center, radius);
     elements = await overpassQuery(query);
     const named = elements.filter((e) => e.tags?.name);
-    if (named.length >= 8) {
+    if (named.length >= 12) {
       usedRadius = radius;
       break;
     }
@@ -201,7 +205,7 @@ export async function searchPlaces(
     return d;
   });
 
-  return { places: filtered.slice(0, 60), radius: usedRadius };
+  return { places: filtered.slice(0, 80), radius: usedRadius };
 }
 
 // Normalize a free-form address to improve geocoding hit rate

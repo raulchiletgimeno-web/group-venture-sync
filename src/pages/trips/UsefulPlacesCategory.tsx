@@ -77,15 +77,26 @@ const UsefulPlacesCategory = () => {
       return;
     }
     setLoading(true);
+
+    const onSuccess: PositionCallback = (pos) => {
+      setCenter({ lat: pos.coords.latitude, lon: pos.coords.longitude });
+    };
+
+    // Fast path: low accuracy (network/IP based) — much faster on mobile
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setCenter({ lat: pos.coords.latitude, lon: pos.coords.longitude });
-      },
+      onSuccess,
       () => {
-        setLoading(false);
-        setError(t.placesLocationDenied);
+        // Fallback: try high accuracy (GPS) once before giving up
+        navigator.geolocation.getCurrentPosition(
+          onSuccess,
+          () => {
+            setLoading(false);
+            setError(t.placesLocationDenied);
+          },
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 },
+        );
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 },
+      { enableHighAccuracy: false, timeout: 7000, maximumAge: 5 * 60 * 1000 },
     );
   };
 
@@ -130,7 +141,8 @@ const UsefulPlacesCategory = () => {
   useEffect(() => {
     if (!center) return;
     let cancelled = false;
-    setLoading(true);
+    // Note: loading is already true from the handler that set `center`,
+    // so we don't toggle it here to avoid spinner flicker.
     setError(null);
     searchPlaces(cat, center)
       .then(({ places }) => {
