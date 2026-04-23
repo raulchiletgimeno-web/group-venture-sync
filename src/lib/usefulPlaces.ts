@@ -103,13 +103,12 @@ function buildQuery(
     .filter(Boolean)
     .map((f) => `${f}(around:${radius},${center.lat},${center.lon});`)
     .join("");
-  return `[out:json][timeout:25];(${aroundFilter});out center tags 80;`;
+  return `[out:json][timeout:25];(${aroundFilter});out center tags 150;`;
 }
 
 function scorePlace(
   el: OverpassElement,
   category: PlaceCategory,
-  distance: number,
 ): number {
   const tags = el.tags ?? {};
   let score = 0;
@@ -118,10 +117,6 @@ function scorePlace(
   if (tags.opening_hours) score += 1;
   if (tags.cuisine || tags.brand) score += 1;
   if (category === "touristic" && (tags.wikidata || tags.wikipedia)) score += 2;
-
-  // Closer is better — bonus up to 2 points within ~500m fading to 0 at radius
-  const proximityBonus = Math.max(0, 2 - distance / 750);
-  score += proximityBonus;
   return score;
 }
 
@@ -184,7 +179,7 @@ export async function searchPlaces(
       lon: coords.lon,
       category,
       distance,
-      score: scorePlace(el, category, distance),
+      score: scorePlace(el, category),
       website: tags.website || tags["contact:website"],
       phone: tags.phone || tags["contact:phone"],
       openingHours: tags.opening_hours,
@@ -195,8 +190,18 @@ export async function searchPlaces(
     });
   }
 
-  places.sort((a, b) => b.score - a.score || a.distance - b.distance);
-  return { places: places.slice(0, 40), radius: usedRadius };
+  // Pre-filter: drop score=0 noise only when we have ≥15 quality candidates
+  const quality = places.filter((p) => p.score > 0);
+  const filtered = quality.length >= 15 ? quality : places;
+
+  // Sort by distance ascending; soft tie-breaker by quality when within 75m
+  filtered.sort((a, b) => {
+    const d = a.distance - b.distance;
+    if (Math.abs(d) < 75) return b.score - a.score;
+    return d;
+  });
+
+  return { places: filtered.slice(0, 60), radius: usedRadius };
 }
 
 // Normalize a free-form address to improve geocoding hit rate
