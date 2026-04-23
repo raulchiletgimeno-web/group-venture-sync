@@ -341,7 +341,7 @@ type TranslationKeys = {
   joinRequestSent: string;
   joinRequestSentDesc: string;
 
-  // Emergency phones
+  // Emergency phones (legacy, kept for backwards compatibility)
   emergencyPhones: string;
   phoneEmergencies: string;
   phonePolice: string;
@@ -353,6 +353,28 @@ type TranslationKeys = {
   phoneNonEmergency: string;
   phonePoison: string;
   phoneCarabinieri: string;
+
+  // Useful places
+  usefulPlaces: string;
+  usefulPlacesDesc: string;
+  placesRestaurants: string;
+  placesCafesBars: string;
+  placesSupermarkets: string;
+  placesPharmacies: string;
+  placesHotels: string;
+  placesTouristic: string;
+  placesChooseLocation: string;
+  placesNearMyLocation: string;
+  placesNearMyLocationDesc: string;
+  placesNearAccommodation: string;
+  placesNearAccommodationDesc: string;
+  placesNoAccommodation: string;
+  placesLocationDenied: string;
+  placesLoading: string;
+  placesNoResults: string;
+  placesViewOnMap: string;
+  placesUseMyLocationInstead: string;
+  back: string;
 
   // Edit / Delete trip
   editTrip: string;
