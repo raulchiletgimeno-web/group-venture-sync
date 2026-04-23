@@ -1,0 +1,227 @@
+// Useful Places helpers — Overpass (OSM) + Open-Meteo geocoding (no API keys)
+
+export type PlaceCategory =
+  | "restaurants"
+  | "cafes"
+  | "supermarkets"
+  | "pharmacies"
+  | "hotels"
+  | "touristic";
+
+export interface Place {
+  id: string;
+  name: string;
+  lat: number;
+  lon: number;
+  category: PlaceCategory;
+  distance: number; // meters
+  score: number;
+  website?: string;
+  phone?: string;
+  openingHours?: string;
+  cuisine?: string;
+  brand?: string;
+  address?: string;
+  wikidata?: string;
+}
+
+export interface LatLon {
+  lat: number;
+  lon: number;
+}
+
+// Overpass filter for each category
+const CATEGORY_FILTERS: Record<PlaceCategory, string> = {
+  restaurants: 'nwr["amenity"="restaurant"]',
+  cafes: 'nwr["amenity"~"^(cafe|bar|pub)$"]',
+  supermarkets: 'nwr["shop"~"^(supermarket|convenience)$"]',
+  pharmacies: 'nwr["amenity"="pharmacy"]',
+  hotels: 'nwr["tourism"~"^(hotel|hostel|guest_house)$"]',
+  touristic:
+    'nwr["tourism"~"^(attraction|museum|monument|viewpoint|artwork)$"];nwr["historic"]',
+};
+
+const OVERPASS_ENDPOINTS = [
+  "https://overpass-api.de/api/interpreter",
+  "https://overpass.kumi.systems/api/interpreter",
+];
+
+// Haversine distance in meters
+function distanceMeters(a: LatLon, b: LatLon): number {
+  const R = 6371000;
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const dLat = toRad(b.lat - a.lat);
+  const dLon = toRad(b.lon - a.lon);
+  const lat1 = toRad(a.lat);
+  const lat2 = toRad(b.lat);
+  const h =
+    Math.sin(dLat / 2) ** 2 +
+    Math.sin(dLon / 2) ** 2 * Math.cos(lat1) * Math.cos(lat2);
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+
+interface OverpassElement {
+  type: "node" | "way" | "relation";
+  id: number;
+  lat?: number;
+  lon?: number;
+  center?: { lat: number; lon: number };
+  tags?: Record<string, string>;
+}
+
+async function overpassQuery(query: string): Promise<OverpassElement[]> {
+  let lastErr: unknown = null;
+  for (const endpoint of OVERPASS_ENDPOINTS) {
+    try {
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: `data=${encodeURIComponent(query)}`,
+      });
+      if (!res.ok) {
+        lastErr = new Error(`Overpass ${res.status}`);
+        continue;
+      }
+      const json = await res.json();
+      return (json.elements ?? []) as OverpassElement[];
+    } catch (err) {
+      lastErr = err;
+    }
+  }
+  throw lastErr ?? new Error("Overpass error");
+}
+
+function buildQuery(
+  category: PlaceCategory,
+  center: LatLon,
+  radius: number,
+): string {
+  const filter = CATEGORY_FILTERS[category];
+  // Inject around clause into each nwr filter
+  const aroundFilter = filter
+    .split(";")
+    .filter(Boolean)
+    .map((f) => `${f}(around:${radius},${center.lat},${center.lon});`)
+    .join("");
+  return `[out:json][timeout:25];(${aroundFilter});out center tags 80;`;
+}
+
+function scorePlace(
+  el: OverpassElement,
+  category: PlaceCategory,
+  distance: number,
+): number {
+  const tags = el.tags ?? {};
+  let score = 0;
+  if (tags.website || tags["contact:website"]) score += 1;
+  if (tags.phone || tags["contact:phone"]) score += 1;
+  if (tags.opening_hours) score += 1;
+  if (tags.cuisine || tags.brand) score += 1;
+  if (category === "touristic" && (tags.wikidata || tags.wikipedia)) score += 2;
+
+  // Closer is better — bonus up to 2 points within ~500m fading to 0 at radius
+  const proximityBonus = Math.max(0, 2 - distance / 750);
+  score += proximityBonus;
+  return score;
+}
+
+function elementCoords(el: OverpassElement): LatLon | null {
+  if (typeof el.lat === "number" && typeof el.lon === "number") {
+    return { lat: el.lat, lon: el.lon };
+  }
+  if (el.center) return { lat: el.center.lat, lon: el.center.lon };
+  return null;
+}
+
+function buildAddress(tags: Record<string, string>): string | undefined {
+  const street = tags["addr:street"];
+  const num = tags["addr:housenumber"];
+  const city = tags["addr:city"];
+  if (!street && !city) return undefined;
+  const parts: string[] = [];
+  if (street) parts.push(num ? `${street} ${num}` : street);
+  if (city) parts.push(city);
+  return parts.join(", ");
+}
+
+const RADIUS_STEPS = [1500, 3000, 5000];
+
+export async function searchPlaces(
+  category: PlaceCategory,
+  center: LatLon,
+): Promise<{ places: Place[]; radius: number }> {
+  let elements: OverpassElement[] = [];
+  let usedRadius = RADIUS_STEPS[RADIUS_STEPS.length - 1];
+
+  for (const radius of RADIUS_STEPS) {
+    const query = buildQuery(category, center, radius);
+    elements = await overpassQuery(query);
+    const named = elements.filter((e) => e.tags?.name);
+    if (named.length >= 8) {
+      usedRadius = radius;
+      break;
+    }
+    usedRadius = radius;
+  }
+
+  const seen = new Set<string>();
+  const places: Place[] = [];
+  for (const el of elements) {
+    const tags = el.tags ?? {};
+    const name = tags.name;
+    if (!name) continue;
+    const coords = elementCoords(el);
+    if (!coords) continue;
+    const key = `${name}|${coords.lat.toFixed(5)}|${coords.lon.toFixed(5)}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    const distance = distanceMeters(center, coords);
+    places.push({
+      id: `${el.type}/${el.id}`,
+      name,
+      lat: coords.lat,
+      lon: coords.lon,
+      category,
+      distance,
+      score: scorePlace(el, category, distance),
+      website: tags.website || tags["contact:website"],
+      phone: tags.phone || tags["contact:phone"],
+      openingHours: tags.opening_hours,
+      cuisine: tags.cuisine,
+      brand: tags.brand,
+      address: buildAddress(tags),
+      wikidata: tags.wikidata,
+    });
+  }
+
+  places.sort((a, b) => b.score - a.score || a.distance - b.distance);
+  return { places: places.slice(0, 40), radius: usedRadius };
+}
+
+// Geocode a free-form address using Open-Meteo (same provider Weather already uses)
+export async function geocodeAddress(query: string): Promise<LatLon | null> {
+  try {
+    const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(
+      query,
+    )}&count=1&language=en&format=json`;
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const json = await res.json();
+    const first = json?.results?.[0];
+    if (!first) return null;
+    return { lat: first.latitude, lon: first.longitude };
+  } catch {
+    return null;
+  }
+}
+
+export function googleMapsUrlFor(place: Place): string {
+  const q = encodeURIComponent(`${place.name} ${place.address ?? ""}`.trim());
+  return `https://www.google.com/maps/search/?api=1&query=${q}&query_place_id=&center=${place.lat},${place.lon}`;
+}
+
+export function formatDistance(meters: number): string {
+  if (meters < 1000) return `${Math.round(meters)} m`;
+  return `${(meters / 1000).toFixed(1)} km`;
+}

@@ -341,7 +341,7 @@ type TranslationKeys = {
   joinRequestSent: string;
   joinRequestSentDesc: string;
 
-  // Emergency phones
+  // Emergency phones (legacy, kept for backwards compatibility)
   emergencyPhones: string;
   phoneEmergencies: string;
   phonePolice: string;
@@ -353,6 +353,28 @@ type TranslationKeys = {
   phoneNonEmergency: string;
   phonePoison: string;
   phoneCarabinieri: string;
+
+  // Useful places
+  usefulPlaces: string;
+  usefulPlacesDesc: string;
+  placesRestaurants: string;
+  placesCafesBars: string;
+  placesSupermarkets: string;
+  placesPharmacies: string;
+  placesHotels: string;
+  placesTouristic: string;
+  placesChooseLocation: string;
+  placesNearMyLocation: string;
+  placesNearMyLocationDesc: string;
+  placesNearAccommodation: string;
+  placesNearAccommodationDesc: string;
+  placesNoAccommodation: string;
+  placesLocationDenied: string;
+  placesLoading: string;
+  placesNoResults: string;
+  placesViewOnMap: string;
+  placesUseMyLocationInstead: string;
+  back: string;
 
   // Edit / Delete trip
   editTrip: string;
@@ -786,6 +808,26 @@ const translations: Record<Language, TranslationKeys> = {
     phoneNonEmergency: "Urgencias no graves",
     phonePoison: "Centro de intoxicaciones",
     phoneCarabinieri: "Carabinieri",
+    usefulPlaces: "Sitios útiles",
+    usefulPlacesDesc: "Encuentra los mejores lugares cerca de ti",
+    placesRestaurants: "Restaurantes",
+    placesCafesBars: "Cafés y bares",
+    placesSupermarkets: "Supermercados",
+    placesPharmacies: "Farmacias",
+    placesHotels: "Hoteles",
+    placesTouristic: "Sitios turísticos",
+    placesChooseLocation: "Elige un punto de referencia",
+    placesNearMyLocation: "Cerca de mi ubicación",
+    placesNearMyLocationDesc: "Usa tu ubicación actual",
+    placesNearAccommodation: "Cerca del alojamiento",
+    placesNearAccommodationDesc: "Usa el alojamiento guardado en el viaje",
+    placesNoAccommodation: "Todavía no hay un alojamiento guardado en este viaje para usarlo como referencia.",
+    placesLocationDenied: "Acceso a la ubicación denegado. Actívalo para usar esta función.",
+    placesLoading: "Cargando sitios cercanos…",
+    placesNoResults: "Se han encontrado pocos sitios en esta zona.",
+    placesViewOnMap: "Abrir en Google Maps",
+    placesUseMyLocationInstead: "Usar mi ubicación",
+    back: "Volver",
     editTrip: "Editar viaje",
     deleteTrip: "Eliminar viaje",
     deleteTripConfirm: "¿Eliminar este viaje?",
@@ -1206,6 +1248,26 @@ const translations: Record<Language, TranslationKeys> = {
     phoneNonEmergency: "Non-emergency",
     phonePoison: "Poison Control",
     phoneCarabinieri: "Carabinieri",
+    usefulPlaces: "Useful places",
+    usefulPlacesDesc: "Find the best spots near you",
+    placesRestaurants: "Restaurants",
+    placesCafesBars: "Cafés & bars",
+    placesSupermarkets: "Supermarkets",
+    placesPharmacies: "Pharmacies",
+    placesHotels: "Hotels",
+    placesTouristic: "Tourist spots",
+    placesChooseLocation: "Choose a reference point",
+    placesNearMyLocation: "Near my location",
+    placesNearMyLocationDesc: "Uses your current location",
+    placesNearAccommodation: "Near the accommodation",
+    placesNearAccommodationDesc: "Uses the accommodation saved in the trip",
+    placesNoAccommodation: "There is no accommodation saved in this trip yet to use as a reference.",
+    placesLocationDenied: "Location access denied. Enable it to use this feature.",
+    placesLoading: "Loading nearby places…",
+    placesNoResults: "Few places found in this area.",
+    placesViewOnMap: "Open in Google Maps",
+    placesUseMyLocationInstead: "Use my location instead",
+    back: "Back",
     editTrip: "Edit trip",
     deleteTrip: "Delete trip",
     deleteTripConfirm: "Delete this trip?",
@@ -1626,6 +1688,26 @@ const translations: Record<Language, TranslationKeys> = {
     phoneNonEmergency: "Urgences non graves",
     phonePoison: "Centre antipoison",
     phoneCarabinieri: "Carabinieri",
+    usefulPlaces: "Lieux utiles",
+    usefulPlacesDesc: "Trouvez les meilleurs endroits près de vous",
+    placesRestaurants: "Restaurants",
+    placesCafesBars: "Cafés et bars",
+    placesSupermarkets: "Supermarchés",
+    placesPharmacies: "Pharmacies",
+    placesHotels: "Hôtels",
+    placesTouristic: "Sites touristiques",
+    placesChooseLocation: "Choisissez un point de référence",
+    placesNearMyLocation: "Près de moi",
+    placesNearMyLocationDesc: "Utilise votre position actuelle",
+    placesNearAccommodation: "Près du logement",
+    placesNearAccommodationDesc: "Utilise le logement enregistré pour le voyage",
+    placesNoAccommodation: "Il n'y a pas encore de logement enregistré pour ce voyage à utiliser comme référence.",
+    placesLocationDenied: "Accès à la localisation refusé. Activez-le pour utiliser cette fonctionnalité.",
+    placesLoading: "Chargement des lieux à proximité…",
+    placesNoResults: "Peu de lieux trouvés dans cette zone.",
+    placesViewOnMap: "Ouvrir dans Google Maps",
+    placesUseMyLocationInstead: "Utiliser ma position",
+    back: "Retour",
     editTrip: "Modifier le voyage",
     deleteTrip: "Supprimer le voyage",
     deleteTripConfirm: "Supprimer ce voyage ?",
@@ -2046,6 +2128,26 @@ const translations: Record<Language, TranslationKeys> = {
     phoneNonEmergency: "Urgências não graves",
     phonePoison: "Centro de intoxicações",
     phoneCarabinieri: "Carabinieri",
+    usefulPlaces: "Locais úteis",
+    usefulPlacesDesc: "Encontre os melhores lugares perto de si",
+    placesRestaurants: "Restaurantes",
+    placesCafesBars: "Cafés e bares",
+    placesSupermarkets: "Supermercados",
+    placesPharmacies: "Farmácias",
+    placesHotels: "Hotéis",
+    placesTouristic: "Locais turísticos",
+    placesChooseLocation: "Escolha um ponto de referência",
+    placesNearMyLocation: "Perto de mim",
+    placesNearMyLocationDesc: "Usa a sua localização atual",
+    placesNearAccommodation: "Perto do alojamento",
+    placesNearAccommodationDesc: "Usa o alojamento guardado na viagem",
+    placesNoAccommodation: "Ainda não há um alojamento guardado nesta viagem para usar como referência.",
+    placesLocationDenied: "Acesso à localização negado. Ative-o para usar esta funcionalidade.",
+    placesLoading: "A carregar locais próximos…",
+    placesNoResults: "Poucos locais encontrados nesta zona.",
+    placesViewOnMap: "Abrir no Google Maps",
+    placesUseMyLocationInstead: "Usar a minha localização",
+    back: "Voltar",
     editTrip: "Editar viagem",
     deleteTrip: "Eliminar viagem",
     deleteTripConfirm: "Eliminar esta viagem?",
@@ -2466,6 +2568,26 @@ const translations: Record<Language, TranslationKeys> = {
     phoneNonEmergency: "Urgenze non gravi",
     phonePoison: "Centro antiveleni",
     phoneCarabinieri: "Carabinieri",
+    usefulPlaces: "Luoghi utili",
+    usefulPlacesDesc: "Trova i posti migliori vicino a te",
+    placesRestaurants: "Ristoranti",
+    placesCafesBars: "Caffè e bar",
+    placesSupermarkets: "Supermercati",
+    placesPharmacies: "Farmacie",
+    placesHotels: "Hotel",
+    placesTouristic: "Luoghi turistici",
+    placesChooseLocation: "Scegli un punto di riferimento",
+    placesNearMyLocation: "Vicino a me",
+    placesNearMyLocationDesc: "Usa la tua posizione attuale",
+    placesNearAccommodation: "Vicino all'alloggio",
+    placesNearAccommodationDesc: "Usa l'alloggio salvato nel viaggio",
+    placesNoAccommodation: "Non c'è ancora un alloggio salvato in questo viaggio da usare come riferimento.",
+    placesLocationDenied: "Accesso alla posizione negato. Abilitalo per usare questa funzione.",
+    placesLoading: "Caricamento luoghi vicini…",
+    placesNoResults: "Pochi luoghi trovati in questa zona.",
+    placesViewOnMap: "Apri in Google Maps",
+    placesUseMyLocationInstead: "Usa la mia posizione",
+    back: "Indietro",
     editTrip: "Modifica viaggio",
     deleteTrip: "Elimina viaggio",
     deleteTripConfirm: "Eliminare questo viaggio?",
@@ -2886,6 +3008,26 @@ const translations: Record<Language, TranslationKeys> = {
     phoneNonEmergency: "非紧急情况",
     phonePoison: "中毒控制中心",
     phoneCarabinieri: "宪兵",
+    usefulPlaces: "实用场所",
+    usefulPlacesDesc: "找到您附近最好的地方",
+    placesRestaurants: "餐厅",
+    placesCafesBars: "咖啡馆和酒吧",
+    placesSupermarkets: "超市",
+    placesPharmacies: "药店",
+    placesHotels: "酒店",
+    placesTouristic: "旅游景点",
+    placesChooseLocation: "选择参考点",
+    placesNearMyLocation: "在我附近",
+    placesNearMyLocationDesc: "使用您当前的位置",
+    placesNearAccommodation: "在住宿附近",
+    placesNearAccommodationDesc: "使用本次旅行保存的住宿",
+    placesNoAccommodation: "本次旅行尚未保存住宿,无法用作参考。",
+    placesLocationDenied: "位置访问被拒绝。请启用以使用此功能。",
+    placesLoading: "正在加载附近的地点…",
+    placesNoResults: "该区域找到的地点很少。",
+    placesViewOnMap: "在Google地图中打开",
+    placesUseMyLocationInstead: "使用我的位置",
+    back: "返回",
     editTrip: "编辑旅行",
     deleteTrip: "删除旅行",
     deleteTripConfirm: "删除此旅行？",
@@ -3306,6 +3448,26 @@ const translations: Record<Language, TranslationKeys> = {
     phoneNonEmergency: "Nicht-Notfall",
     phonePoison: "Giftnotruf",
     phoneCarabinieri: "Carabinieri",
+    usefulPlaces: "Nützliche Orte",
+    usefulPlacesDesc: "Finde die besten Orte in deiner Nähe",
+    placesRestaurants: "Restaurants",
+    placesCafesBars: "Cafés & Bars",
+    placesSupermarkets: "Supermärkte",
+    placesPharmacies: "Apotheken",
+    placesHotels: "Hotels",
+    placesTouristic: "Sehenswürdigkeiten",
+    placesChooseLocation: "Wähle einen Bezugspunkt",
+    placesNearMyLocation: "In meiner Nähe",
+    placesNearMyLocationDesc: "Verwendet deinen aktuellen Standort",
+    placesNearAccommodation: "In der Nähe der Unterkunft",
+    placesNearAccommodationDesc: "Verwendet die in der Reise gespeicherte Unterkunft",
+    placesNoAccommodation: "Es ist noch keine Unterkunft für diese Reise gespeichert, die als Bezugspunkt verwendet werden kann.",
+    placesLocationDenied: "Standortzugriff verweigert. Bitte aktiviere ihn, um diese Funktion zu nutzen.",
+    placesLoading: "Orte in der Nähe werden geladen…",
+    placesNoResults: "In dieser Gegend wurden nur wenige Orte gefunden.",
+    placesViewOnMap: "Auf Google Maps öffnen",
+    placesUseMyLocationInstead: "Meinen Standort verwenden",
+    back: "Zurück",
     editTrip: "Reise bearbeiten",
     deleteTrip: "Reise löschen",
     deleteTripConfirm: "Diese Reise löschen?",

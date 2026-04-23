@@ -24,7 +24,8 @@ const Photos = lazy(() => import("./pages/trips/Photos"));
 const Chat = lazy(() => import("./pages/trips/Chat"));
 const Weather = lazy(() => import("./pages/trips/Weather"));
 const Schedule = lazy(() => import("./pages/trips/Schedule"));
-const EmergencyPhones = lazy(() => import("./pages/trips/EmergencyPhones"));
+const UsefulPlaces = lazy(() => import("./pages/trips/UsefulPlaces"));
+const UsefulPlacesCategory = lazy(() => import("./pages/trips/UsefulPlacesCategory"));
 const LegalNotice = lazy(() => import("./pages/legal/LegalNotice"));
 const PrivacyPolicy = lazy(() => import("./pages/legal/PrivacyPolicy"));
 const CookiesPolicy = lazy(() => import("./pages/legal/CookiesPolicy"));
@@ -66,7 +67,8 @@ const App = () => (
                   <Route path="chat" element={<Chat />} />
                   <Route path="weather" element={<Weather />} />
                   <Route path="schedule" element={<Schedule />} />
-                  <Route path="phones" element={<EmergencyPhones />} />
+                  <Route path="places" element={<UsefulPlaces />} />
+                  <Route path="places/:category" element={<UsefulPlacesCategory />} />
                 </Route>
 
                 {/* Legal routes */}
