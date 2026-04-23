@@ -141,7 +141,8 @@ const UsefulPlacesCategory = () => {
   useEffect(() => {
     if (!center) return;
     let cancelled = false;
-    setLoading(true);
+    // Note: loading is already true from the handler that set `center`,
+    // so we don't toggle it here to avoid spinner flicker.
     setError(null);
     searchPlaces(cat, center)
       .then(({ places }) => {
