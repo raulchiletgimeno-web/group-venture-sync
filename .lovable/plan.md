@@ -1,42 +1,63 @@
 
 
-## Corrección: la pantalla de resultados de "Sitios útiles" se cierra sola
+## Mejorar "Sitios útiles": cobertura, búsquedas y velocidad
 
-### Qué estaba pasando
-El salto a la pantalla anterior **no es un cambio de ruta ni un bug en `UsefulPlacesCategory`**. Es una **recarga completa de la página** disparada por el Service Worker (PWA) en producción. Como el componente guarda la elección (`source`, `center`, `places`) en estado local de React, la recarga lo reinicia y el usuario aparece otra vez en el selector "Cerca de mi ubicación / Cerca del alojamiento".
+### Fuente de datos (sin cambios)
+Sigue siendo **Overpass API de OpenStreetMap** (gratis, sin API key). No se cambia el proveedor: el problema no es la fuente, es que las consultas eran demasiado estrechas y el flujo móvil hacía esperas innecesarias.
 
-Causa concreta, en `src/main.tsx` (solo en producción, p. ej. yormit.com):
+> Por qué no Google Places: requiere API key de pago + cumplir condiciones de uso/atribución comerciales. OSM bien consultado tiene cobertura comparable en las categorías que necesita YORMIT.
 
-1. Línea 29-31: cada **60 segundos** se llama a `registration.update()` para comprobar si hay un Service Worker nuevo.
-2. `public/custom-sw.js` usa `self.skipWaiting()` + `clientsClaim()` → el SW nuevo se activa de inmediato.
-3. Líneas 38-43 de `main.tsx`: al detectar `controllerchange`, se ejecuta `window.location.reload()` → recarga forzada → el usuario ve el selector de nuevo.
+### Cambios — solo en `src/lib/usefulPlaces.ts` y `src/pages/trips/UsefulPlacesCategory.tsx`
 
-Esto explica perfectamente que "a los pocos segundos" la pantalla se reinicie sin que nadie pulse atrás. Pasa en cualquier sección que mantenga estado local (no solo Sitios útiles), pero aquí se nota más porque la elección de origen vive solo en memoria.
+**1. Búsquedas mucho más amplias por categoría** (`CATEGORY_FILTERS` en `usefulPlaces.ts`)
 
-### Corrección (mínima, quirúrgica)
+| Categoría | Antes | Después |
+|---|---|---|
+| Restaurantes | `amenity=restaurant` | `restaurant` + `fast_food` + `food_court` + `bbq` |
+| Cafés y bares | `cafe\|bar\|pub` | `cafe` + `bar` + `pub` + `biergarten` + `nightclub` + `shop=coffee` + `shop=tea` |
+| Supermercados | `supermarket\|convenience` | `supermarket` + `convenience` + `bakery` + `butcher` + `greengrocer` + `deli` + `marketplace` |
+| Farmacias | `amenity=pharmacy` | `amenity=pharmacy` + `shop=chemist` |
+| Hoteles | `hotel\|hostel\|guest_house` | + `motel` + `apartment` + `chalet` |
+| Turísticos | igual | igual (ya es amplio) |
 
-Un único archivo: **`src/main.tsx`**.
+Resultado: la consulta a Overpass devuelve muchas más opciones reales sin perder relevancia.
 
-Cambios:
+**2. Más resultados visibles**
+- Subir el tope final de la lista de **60 → 80** sitios (mantiene fluidez en móvil sin abrumar).
+- Mantener `out center tags 150` y radios progresivos 1500 → 3000 → 5000 m.
 
-1. **Quitar la recarga forzada al activarse un SW nuevo** (líneas 38-43). El SW nuevo se cargará de forma natural en la próxima navegación o cuando el usuario abra/cierre la app, sin interrumpir lo que está haciendo.
-2. **Espaciar mucho la comprobación de actualizaciones**: cambiar el intervalo de `60 * 1000` (1 min) a `30 * 60 * 1000` (30 min). Sigue habiendo refresco automático del SW pero sin saturar y sin acoplarse al uso activo.
+**3. Orden por cercanía (sin cambios)**
+- Sigue ordenándose por **distancia haversine ascendente** al `center` elegido.
+- Desempate suave por calidad (`score`) cuando dos sitios están a <75 m.
+- Pre-filtro de ruido (`score=0`) solo si quedan ≥15 candidatos de calidad.
 
-Resultado: la pantalla de resultados se mantiene estable. La PWA sigue actualizándose, solo que sin recargar la pestaña activa del usuario.
+**4. Velocidad en móvil**
+
+a) **Quitar el doble `setLoading(true)`** en `UsefulPlacesCategory.tsx`: ahora mismo `handleNearMe` y `handleNearAccommodation` ponen `loading=true`, luego `setCenter` dispara el `useEffect` que vuelve a hacer `setLoading(true)` y lanza la búsqueda. No es lento por la red, pero el spinner parpadea y se sienten dos pasos. Se unifica.
+
+b) **Geolocalización más rápida**: cambiar `enableHighAccuracy: true` a `false` y bajar `maximumAge` aceptable a 5 min. En móvil, `enableHighAccuracy: true` activa GPS real y puede tardar 5-10 s; para "sitios cercanos" basta con la red/IP (precisión ~50-100 m, suficiente para Overpass). Se baja `timeout` a 7 s y, si falla, fallback automático a alta precisión.
+
+c) **Cortar búsqueda en cuanto haya resultados suficientes**: la lógica actual recorre los 3 radios solo si hay <8 resultados con nombre; se baja a `<12` para no saltar a 5 km cuando 1.5 km ya da suficiente — esto reduce el tiempo medio porque la primera consulta (1.5 km) suele bastar.
+
+d) **`scrollWheelZoom` ya está off** (bien, evita reflows). Mantener.
 
 ### Lo que NO se toca
-- Cero cambios en `UsefulPlacesCategory.tsx`, `UsefulPlaces.tsx`, `usefulPlaces.ts`, `TripLayout`, navegación, traducciones, diseño, BD, RLS, edge functions, otras secciones.
-- Cero cambios en `custom-sw.js` (sigue gestionando push y notificaciones igual).
-- El registro del Service Worker se mantiene; solo cambia la frecuencia de comprobación y se elimina el `reload()` automático.
+- Cero cambios en `UsefulPlaces.tsx`, `TripLayout`, navegación, traducciones, diseño, BD, RLS, edge functions, otras secciones.
+- Cero cambios en cómo se abre Google Maps al pulsar un sitio.
+- Cero cambios en geocoding del alojamiento.
+- Cero cambios en el Service Worker o `main.tsx`.
 
 ### Ficheros afectados
 
 | Fichero | Cambio |
 |---------|--------|
-| `src/main.tsx` | Quitar bloque `controllerchange → reload`. Subir intervalo de `update()` de 60 s a 30 min. |
+| `src/lib/usefulPlaces.ts` | Ampliar `CATEGORY_FILTERS` para 5 categorías; tope 60→80; corte de radio progresivo en 12 |
+| `src/pages/trips/UsefulPlacesCategory.tsx` | Geolocalización low-accuracy con fallback; eliminar doble loading |
 
 ### Validación posterior
-1. Abrir Sitios útiles → Cafés y bares → Cerca de mi ubicación → esperar 1-2 minutos viendo los resultados → confirmar que la pantalla NO vuelve sola al selector.
-2. Repetir con "Cerca del alojamiento" en el viaje "Fin de semana en Madrid".
-3. Confirmar que push notifications, instalación PWA y resto de la app siguen funcionando exactamente igual.
+1. Cafés y bares → Cerca de mi ubicación → confirmar más resultados que antes (cafés, bares, pubs, coffee shops…).
+2. Restaurantes → confirmar que aparecen también fast food y food courts.
+3. Supermercados → confirmar que aparecen panaderías, carnicerías, mercados.
+4. Confirmar que el primer resultado sigue siendo el más cercano.
+5. Confirmar que en móvil el tiempo desde "Cerca de mi ubicación" hasta ver la lista baja notablemente.
 
