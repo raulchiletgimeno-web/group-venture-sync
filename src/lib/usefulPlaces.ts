@@ -156,7 +156,7 @@ export async function searchPlaces(
     const query = buildQuery(category, center, radius);
     elements = await overpassQuery(query);
     const named = elements.filter((e) => e.tags?.name);
-    if (named.length >= 8) {
+    if (named.length >= 12) {
       usedRadius = radius;
       break;
     }
