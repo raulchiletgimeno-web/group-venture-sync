@@ -118,7 +118,7 @@ async function overpassQuery(query: string): Promise<OverpassElement[] | null> {
   });
 
   try {
-    const winner = await Promise.any(attempts);
+    const winner = await promiseAny(attempts);
     // Abort the losers to free resources
     controllers.forEach((c, i) => {
       if (!c.signal.aborted) c.abort();
@@ -408,7 +408,7 @@ export async function geocodeAddress(query: string): Promise<LatLon | null> {
 
   let result: LatLon | null = null;
   try {
-    result = await Promise.any(strategies);
+    result = await promiseAny(strategies);
   } catch {
     result = null;
   }
