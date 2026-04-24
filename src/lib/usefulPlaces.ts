@@ -52,6 +52,28 @@ const OVERPASS_ENDPOINTS = [
 
 const OVERPASS_TIMEOUT_MS = 8000;
 
+// Local polyfill of Promise.any so we don't need to bump tsconfig lib version.
+// Resolves with the first fulfilled promise, rejects only if ALL reject.
+function promiseAny<T>(promises: Promise<T>[]): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    if (promises.length === 0) {
+      reject(new Error("No promises"));
+      return;
+    }
+    let rejections = 0;
+    const errors: unknown[] = [];
+    promises.forEach((p, i) => {
+      Promise.resolve(p).then(resolve, (err) => {
+        errors[i] = err;
+        rejections++;
+        if (rejections === promises.length) {
+          reject(new Error("All promises were rejected"));
+        }
+      });
+    });
+  });
+}
+
 // Haversine distance in meters
 function distanceMeters(a: LatLon, b: LatLon): number {
   const R = 6371000;
