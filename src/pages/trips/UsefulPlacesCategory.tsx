@@ -23,7 +23,10 @@ import {
   geocodeAddress,
   googleMapsUrlFor,
   formatDistance,
+  getCachedPosition,
+  setCachedPosition,
 } from "@/lib/usefulPlaces";
+import { Skeleton } from "@/components/ui/skeleton";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -53,6 +56,26 @@ const CATEGORY_META: Record<
 
 type LocationSource = "me" | "accommodation";
 
+const PlacesSkeleton = () => (
+  <div className="space-y-3">
+    <Skeleton className="w-full rounded-xl" style={{ height: 240 }} />
+    <div className="space-y-2">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <div
+          key={i}
+          className="flex items-center gap-3 rounded-xl bg-card p-3 shadow-card"
+        >
+          <Skeleton className="h-9 w-9 rounded-lg flex-shrink-0" />
+          <div className="flex-1 space-y-2">
+            <Skeleton className="h-3 w-2/3" />
+            <Skeleton className="h-3 w-1/2" />
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
 const UsefulPlacesCategory = () => {
   const { tripId, category } = useParams<{ tripId: string; category: PlaceCategory }>();
   const navigate = useNavigate();
@@ -76,10 +99,27 @@ const UsefulPlacesCategory = () => {
       setError(t.placesLocationDenied);
       return;
     }
+
+    // INSTANT path: if we have a fresh cached position, use it immediately.
+    const cachedPos = getCachedPosition();
+    if (cachedPos) {
+      setLoading(true);
+      setCenter(cachedPos);
+      // Refresh in background, no UI blocking.
+      navigator.geolocation.getCurrentPosition(
+        (pos) => setCachedPosition({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
+        () => {},
+        { enableHighAccuracy: false, timeout: 7000, maximumAge: 5 * 60 * 1000 },
+      );
+      return;
+    }
+
     setLoading(true);
 
     const onSuccess: PositionCallback = (pos) => {
-      setCenter({ lat: pos.coords.latitude, lon: pos.coords.longitude });
+      const coords = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+      setCachedPosition(coords);
+      setCenter(coords);
     };
 
     // Fast path: low accuracy (network/IP based) — much faster on mobile
@@ -93,7 +133,7 @@ const UsefulPlacesCategory = () => {
             setLoading(false);
             setError(t.placesLocationDenied);
           },
-          { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 },
+          { enableHighAccuracy: true, timeout: 6000, maximumAge: 60000 },
         );
       },
       { enableHighAccuracy: false, timeout: 7000, maximumAge: 5 * 60 * 1000 },
@@ -141,8 +181,6 @@ const UsefulPlacesCategory = () => {
   useEffect(() => {
     if (!center) return;
     let cancelled = false;
-    // Note: loading is already true from the handler that set `center`,
-    // so we don't toggle it here to avoid spinner flicker.
     setError(null);
     searchPlaces(cat, center)
       .then(({ places }) => {
@@ -165,6 +203,12 @@ const UsefulPlacesCategory = () => {
   const mapKey = useMemo(
     () => (center ? `${center.lat.toFixed(4)}-${center.lon.toFixed(4)}` : "none"),
     [center],
+  );
+
+  // Pre-compute Google Maps URLs once per places change to avoid recalculation on each render
+  const placesWithUrl = useMemo(
+    () => places.map((p) => ({ place: p, url: googleMapsUrlFor(p) })),
+    [places],
   );
 
   const handleReset = () => {
@@ -247,11 +291,41 @@ const UsefulPlacesCategory = () => {
         </span>
       </div>
 
-      {loading && (
-        <div className="flex flex-col items-center justify-center py-10 gap-2">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-          <p className="text-xs text-muted-foreground">{t.placesLoading}</p>
-        </div>
+      {/* Loading: as soon as we have center, show the map; otherwise show full skeleton */}
+      {loading && !center && <PlacesSkeleton />}
+
+      {loading && center && (
+        <>
+          <div className="rounded-xl overflow-hidden shadow-card mb-3" style={{ height: 240 }}>
+            <MapContainer
+              key={mapKey}
+              center={[center.lat, center.lon]}
+              zoom={14}
+              scrollWheelZoom={false}
+              style={{ height: "100%", width: "100%" }}
+            >
+              <TileLayer
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              />
+              <Marker position={[center.lat, center.lon]} icon={markerIcon} />
+            </MapContainer>
+          </div>
+          <div className="space-y-2">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div
+                key={i}
+                className="flex items-center gap-3 rounded-xl bg-card p-3 shadow-card"
+              >
+                <Skeleton className="h-9 w-9 rounded-lg flex-shrink-0" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-3 w-2/3" />
+                  <Skeleton className="h-3 w-1/2" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
       )}
 
       {!loading && error && (
@@ -285,14 +359,14 @@ const UsefulPlacesCategory = () => {
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               />
-              {places.map((p) => (
+              {placesWithUrl.map(({ place: p, url }) => (
                 <Marker key={p.id} position={[p.lat, p.lon]} icon={markerIcon}>
                   <Popup>
                     <div className="text-xs">
                       <p className="font-semibold">{p.name}</p>
                       <p className="text-muted-foreground">{formatDistance(p.distance)}</p>
                       <a
-                        href={googleMapsUrlFor(p)}
+                        href={url}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-primary font-medium"
@@ -307,10 +381,10 @@ const UsefulPlacesCategory = () => {
           </div>
 
           <div className="space-y-2">
-            {places.map((p) => (
+            {placesWithUrl.map(({ place: p, url }) => (
               <a
                 key={p.id}
-                href={googleMapsUrlFor(p)}
+                href={url}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-3 rounded-xl bg-card p-3 shadow-card hover:shadow-card-hover transition-all duration-300 active:scale-[0.98]"
