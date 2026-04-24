@@ -50,7 +50,7 @@ const OVERPASS_ENDPOINTS = [
   "https://overpass.kumi.systems/api/interpreter",
 ];
 
-const OVERPASS_TIMEOUT_MS = 20000;
+const OVERPASS_TIMEOUT_MS = 8000;
 
 // Haversine distance in meters
 function distanceMeters(a: LatLon, b: LatLon): number {
@@ -75,30 +75,38 @@ interface OverpassElement {
   tags?: Record<string, string>;
 }
 
-// Try every endpoint with retry on both HTTP errors AND network exceptions/timeouts.
-// Returns null if every endpoint failed (caller decides whether to keep going).
+// Race the same query against ALL endpoints in parallel — first successful response wins.
+// Aborts the loser. Returns null if every endpoint failed/timed out.
 async function overpassQuery(query: string): Promise<OverpassElement[] | null> {
-  for (const endpoint of OVERPASS_ENDPOINTS) {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), OVERPASS_TIMEOUT_MS);
-    try {
-      const res = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: `data=${encodeURIComponent(query)}`,
-        signal: controller.signal,
-      });
-      clearTimeout(timer);
-      if (!res.ok) continue;
-      const json = await res.json();
-      return (json.elements ?? []) as OverpassElement[];
-    } catch {
-      clearTimeout(timer);
-      // network error / abort / parse error → try next endpoint
-      continue;
-    }
+  const controllers = OVERPASS_ENDPOINTS.map(() => new AbortController());
+  const timers = controllers.map((c) =>
+    setTimeout(() => c.abort(), OVERPASS_TIMEOUT_MS),
+  );
+
+  const attempts = OVERPASS_ENDPOINTS.map(async (endpoint, i) => {
+    const res = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: `data=${encodeURIComponent(query)}`,
+      signal: controllers[i].signal,
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const json = await res.json();
+    return (json.elements ?? []) as OverpassElement[];
+  });
+
+  try {
+    const winner = await Promise.any(attempts);
+    // Abort the losers to free resources
+    controllers.forEach((c, i) => {
+      if (!c.signal.aborted) c.abort();
+      clearTimeout(timers[i]);
+    });
+    return winner;
+  } catch {
+    timers.forEach(clearTimeout);
+    return null;
   }
-  return null;
 }
 
 function buildQuery(
@@ -173,28 +181,32 @@ function resolveName(tags: Record<string, string>): string | null {
 const RADIUS_STEPS = [800, 2000, 4000];
 const ENOUGH_RESULTS = 25;
 
-export async function searchPlaces(
-  category: PlaceCategory,
+// ---------------- In-memory caches ----------------
+// Search cache: keyed by category + ~110 m grid. TTL 10 min.
+const SEARCH_CACHE_TTL_MS = 10 * 60 * 1000;
+interface SearchCacheEntry {
+  ts: number;
+  data: { places: Place[]; radius: number };
+}
+const searchCache = new Map<string, SearchCacheEntry>();
+
+function searchCacheKey(category: PlaceCategory, center: LatLon): string {
+  return `${category}|${center.lat.toFixed(3)}|${center.lon.toFixed(3)}`;
+}
+
+// Geocoding cache: keyed by normalized query. TTL 1 hour.
+const GEOCODE_CACHE_TTL_MS = 60 * 60 * 1000;
+interface GeocodeCacheEntry {
+  ts: number;
+  data: LatLon | null;
+}
+const geocodeCache = new Map<string, GeocodeCacheEntry>();
+
+function buildPlacesFromElements(
+  elements: OverpassElement[],
   center: LatLon,
-): Promise<{ places: Place[]; radius: number }> {
-  let elements: OverpassElement[] = [];
-  let usedRadius = RADIUS_STEPS[RADIUS_STEPS.length - 1];
-
-  for (const radius of RADIUS_STEPS) {
-    const query = buildQuery(category, center, radius);
-    const result = await overpassQuery(query);
-    // If a radius fails entirely, don't abort the whole search — try the next one.
-    if (result === null) {
-      usedRadius = radius;
-      continue;
-    }
-    elements = result;
-    usedRadius = radius;
-    // Count usable POIs (those that will actually render)
-    const usable = elements.filter((e) => resolveName(e.tags ?? {}) !== null);
-    if (usable.length >= ENOUGH_RESULTS) break;
-  }
-
+  category: PlaceCategory,
+): Place[] {
   const seen = new Set<string>();
   const places: Place[] = [];
   for (const el of elements) {
@@ -237,7 +249,45 @@ export async function searchPlaces(
     return d;
   });
 
-  return { places: filtered.slice(0, 120), radius: usedRadius };
+  return filtered.slice(0, 120);
+}
+
+export async function searchPlaces(
+  category: PlaceCategory,
+  center: LatLon,
+): Promise<{ places: Place[]; radius: number }> {
+  // Cache hit: instant return, zero network.
+  const cacheKey = searchCacheKey(category, center);
+  const cached = searchCache.get(cacheKey);
+  if (cached && Date.now() - cached.ts < SEARCH_CACHE_TTL_MS) {
+    return cached.data;
+  }
+
+  // Launch all radii in parallel. We resolve as soon as the smallest radius
+  // returns enough usable results; otherwise we wait for the next one up.
+  const promises = RADIUS_STEPS.map((r) => overpassQuery(buildQuery(category, center, r)));
+
+  let bestElements: OverpassElement[] = [];
+  let bestRadius = RADIUS_STEPS[RADIUS_STEPS.length - 1];
+
+  for (let i = 0; i < promises.length; i++) {
+    const elements = await promises[i];
+    if (elements === null) continue;
+    bestElements = elements;
+    bestRadius = RADIUS_STEPS[i];
+    const usable = elements.filter((e) => resolveName(e.tags ?? {}) !== null);
+    if (usable.length >= ENOUGH_RESULTS) break;
+  }
+
+  const places = buildPlacesFromElements(bestElements, center, category);
+  const result = { places, radius: bestRadius };
+
+  // Only cache successful, non-empty results to avoid pinning failures.
+  if (places.length > 0) {
+    searchCache.set(cacheKey, { ts: Date.now(), data: result });
+  }
+
+  return result;
 }
 
 // Normalize a free-form address to improve geocoding hit rate
@@ -248,15 +298,14 @@ function normalizeAddress(query: string): string {
     .trim();
 }
 
-async function nominatimSearch(query: string): Promise<LatLon | null> {
+async function nominatimSearch(query: string, signal?: AbortSignal): Promise<LatLon | null> {
   try {
     const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(
       query,
     )}`;
     const res = await fetch(url, {
-      headers: {
-        "Accept-Language": "es,en",
-      },
+      headers: { "Accept-Language": "es,en" },
+      signal,
     });
     if (!res.ok) return null;
     const json = (await res.json()) as Array<{ lat: string; lon: string }>;
@@ -271,12 +320,12 @@ async function nominatimSearch(query: string): Promise<LatLon | null> {
   }
 }
 
-async function openMeteoSearch(query: string): Promise<LatLon | null> {
+async function openMeteoSearch(query: string, signal?: AbortSignal): Promise<LatLon | null> {
   try {
     const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(
       query,
     )}&count=1&language=en&format=json`;
-    const res = await fetch(url);
+    const res = await fetch(url, { signal });
     if (!res.ok) return null;
     const json = await res.json();
     const first = json?.results?.[0];
@@ -300,32 +349,50 @@ function extractCity(query: string): string | null {
   return words.length ? words[words.length - 1] : null;
 }
 
-// Geocode a free-form address with cascade fallbacks (Nominatim → normalized → city → Open-Meteo)
+// Geocode a free-form address — fires multiple strategies in PARALLEL,
+// returns the first non-null result.
 export async function geocodeAddress(query: string): Promise<LatLon | null> {
   const trimmed = query.trim();
   if (!trimmed) return null;
 
-  // 1. Full address via Nominatim
-  const direct = await nominatimSearch(trimmed);
-  if (direct) return direct;
+  // Cache hit
+  const cached = geocodeCache.get(trimmed);
+  if (cached && Date.now() - cached.ts < GEOCODE_CACHE_TTL_MS) {
+    return cached.data;
+  }
 
-  // 2. Normalized address via Nominatim
   const normalized = normalizeAddress(trimmed);
-  if (normalized && normalized !== trimmed) {
-    const norm = await nominatimSearch(normalized);
-    if (norm) return norm;
-  }
-
-  // 3. City fallback via Nominatim
   const city = extractCity(normalized || trimmed);
+
+  // Helper: a promise that resolves to a LatLon, REJECTS on null so Promise.any can pick a winner.
+  const tryStrategy = (p: Promise<LatLon | null>): Promise<LatLon> =>
+    p.then((r) => {
+      if (!r) throw new Error("no result");
+      return r;
+    });
+
+  const strategies: Promise<LatLon>[] = [
+    tryStrategy(nominatimSearch(trimmed)),
+  ];
+  if (normalized && normalized !== trimmed) {
+    strategies.push(tryStrategy(nominatimSearch(normalized)));
+  }
   if (city) {
-    const cityHit = await nominatimSearch(city);
-    if (cityHit) return cityHit;
+    strategies.push(tryStrategy(nominatimSearch(city)));
+    strategies.push(tryStrategy(openMeteoSearch(city)));
+  } else {
+    strategies.push(tryStrategy(openMeteoSearch(trimmed)));
   }
 
-  // 4. Last resort: Open-Meteo with city or full query
-  const openMeteoQuery = city || trimmed;
-  return openMeteoSearch(openMeteoQuery);
+  let result: LatLon | null = null;
+  try {
+    result = await Promise.any(strategies);
+  } catch {
+    result = null;
+  }
+
+  geocodeCache.set(trimmed, { ts: Date.now(), data: result });
+  return result;
 }
 
 export function googleMapsUrlFor(place: Place): string {
@@ -336,4 +403,18 @@ export function googleMapsUrlFor(place: Place): string {
 export function formatDistance(meters: number): string {
   if (meters < 1000) return `${Math.round(meters)} m`;
   return `${(meters / 1000).toFixed(1)} km`;
+}
+
+// ---------------- Geolocation cache (5 min) ----------------
+const POSITION_CACHE_TTL_MS = 5 * 60 * 1000;
+let cachedPosition: { ts: number; coords: LatLon } | null = null;
+
+export function getCachedPosition(): LatLon | null {
+  if (!cachedPosition) return null;
+  if (Date.now() - cachedPosition.ts > POSITION_CACHE_TTL_MS) return null;
+  return cachedPosition.coords;
+}
+
+export function setCachedPosition(coords: LatLon): void {
+  cachedPosition = { ts: Date.now(), coords };
 }
