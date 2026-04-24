@@ -33,9 +33,9 @@ export interface LatLon {
 // Overpass filter for each category — multiple nwr clauses joined with ';' for broader coverage
 const CATEGORY_FILTERS: Record<PlaceCategory, string> = {
   restaurants:
-    'nwr["amenity"~"^(restaurant|fast_food|food_court|bbq)$"]',
+    'nwr["amenity"~"^(restaurant|fast_food|food_court|bbq|ice_cream)$"]',
   cafes:
-    'nwr["amenity"~"^(cafe|bar|pub|biergarten|nightclub)$"];nwr["shop"~"^(coffee|tea)$"]',
+    'nwr["amenity"~"^(cafe|bar|pub|biergarten|nightclub)$"];nwr["shop"~"^(coffee|tea)$"];nwr["amenity"="restaurant"]["cuisine"~"spanish|tapas|wine_bar|wine"]',
   supermarkets:
     'nwr["shop"~"^(supermarket|convenience|bakery|butcher|greengrocer|deli)$"];nwr["amenity"="marketplace"]',
   pharmacies: 'nwr["amenity"="pharmacy"];nwr["shop"="chemist"]',
@@ -49,6 +49,8 @@ const OVERPASS_ENDPOINTS = [
   "https://overpass-api.de/api/interpreter",
   "https://overpass.kumi.systems/api/interpreter",
 ];
+
+const OVERPASS_TIMEOUT_MS = 20000;
 
 // Haversine distance in meters
 function distanceMeters(a: LatLon, b: LatLon): number {
@@ -73,26 +75,30 @@ interface OverpassElement {
   tags?: Record<string, string>;
 }
 
-async function overpassQuery(query: string): Promise<OverpassElement[]> {
-  let lastErr: unknown = null;
+// Try every endpoint with retry on both HTTP errors AND network exceptions/timeouts.
+// Returns null if every endpoint failed (caller decides whether to keep going).
+async function overpassQuery(query: string): Promise<OverpassElement[] | null> {
   for (const endpoint of OVERPASS_ENDPOINTS) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), OVERPASS_TIMEOUT_MS);
     try {
       const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: `data=${encodeURIComponent(query)}`,
+        signal: controller.signal,
       });
-      if (!res.ok) {
-        lastErr = new Error(`Overpass ${res.status}`);
-        continue;
-      }
+      clearTimeout(timer);
+      if (!res.ok) continue;
       const json = await res.json();
       return (json.elements ?? []) as OverpassElement[];
-    } catch (err) {
-      lastErr = err;
+    } catch {
+      clearTimeout(timer);
+      // network error / abort / parse error → try next endpoint
+      continue;
     }
   }
-  throw lastErr ?? new Error("Overpass error");
+  return null;
 }
 
 function buildQuery(
@@ -143,7 +149,29 @@ function buildAddress(tags: Record<string, string>): string | undefined {
   return parts.join(", ");
 }
 
-const RADIUS_STEPS = [1500, 3000, 5000];
+// Fallback name builder: if the POI has no `name` tag, try brand → operator → cuisine.
+// Returns null if nothing usable is available.
+function resolveName(tags: Record<string, string>): string | null {
+  if (tags.name) return tags.name;
+  if (tags.brand) return tags.brand;
+  if (tags.operator) return tags.operator;
+  if (tags.cuisine) {
+    // "spanish;tapas" → "Spanish, Tapas"
+    const pretty = tags.cuisine
+      .split(/[;,]/)
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
+      .join(", ");
+    return pretty || null;
+  }
+  return null;
+}
+
+// Aggressive radii: start tight, reach mid-density quickly, only escalate to 4 km
+// when the area is genuinely sparse.
+const RADIUS_STEPS = [800, 2000, 4000];
+const ENOUGH_RESULTS = 25;
 
 export async function searchPlaces(
   category: PlaceCategory,
@@ -154,20 +182,24 @@ export async function searchPlaces(
 
   for (const radius of RADIUS_STEPS) {
     const query = buildQuery(category, center, radius);
-    elements = await overpassQuery(query);
-    const named = elements.filter((e) => e.tags?.name);
-    if (named.length >= 12) {
+    const result = await overpassQuery(query);
+    // If a radius fails entirely, don't abort the whole search — try the next one.
+    if (result === null) {
       usedRadius = radius;
-      break;
+      continue;
     }
+    elements = result;
     usedRadius = radius;
+    // Count usable POIs (those that will actually render)
+    const usable = elements.filter((e) => resolveName(e.tags ?? {}) !== null);
+    if (usable.length >= ENOUGH_RESULTS) break;
   }
 
   const seen = new Set<string>();
   const places: Place[] = [];
   for (const el of elements) {
     const tags = el.tags ?? {};
-    const name = tags.name;
+    const name = resolveName(tags);
     if (!name) continue;
     const coords = elementCoords(el);
     if (!coords) continue;
@@ -194,9 +226,9 @@ export async function searchPlaces(
     });
   }
 
-  // Pre-filter: drop score=0 noise only when we have ≥15 quality candidates
+  // Pre-filter: drop score=0 noise only when we have ≥25 quality candidates
   const quality = places.filter((p) => p.score > 0);
-  const filtered = quality.length >= 15 ? quality : places;
+  const filtered = quality.length >= 25 ? quality : places;
 
   // Sort by distance ascending; soft tie-breaker by quality when within 75m
   filtered.sort((a, b) => {
@@ -205,7 +237,7 @@ export async function searchPlaces(
     return d;
   });
 
-  return { places: filtered.slice(0, 80), radius: usedRadius };
+  return { places: filtered.slice(0, 120), radius: usedRadius };
 }
 
 // Normalize a free-form address to improve geocoding hit rate

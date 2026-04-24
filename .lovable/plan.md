@@ -1,63 +1,79 @@
+## Mejorar la cantidad de resultados en "Sitios útiles"
 
+### Diagnóstico real del problema
 
-## Mejorar "Sitios útiles": cobertura, búsquedas y velocidad
+YORMIT usa **OpenStreetMap (Overpass API)** como fuente. No es la fuente la que falla — Madrid está extremadamente bien mapeado en OSM, con miles de cafés y bares. El problema está en **cómo se está consultando y filtrando**:
 
-### Fuente de datos (sin cambios)
-Sigue siendo **Overpass API de OpenStreetMap** (gratis, sin API key). No se cambia el proveedor: el problema no es la fuente, es que las consultas eran demasiado estrechas y el flujo móvil hacía esperas innecesarias.
+**Causa 1 — Radio inicial demasiado pequeño en zonas densas.**
+Hoy se empieza con 1.500 m y solo se amplía si hay <12 resultados con nombre. Pero si el alojamiento está, por ejemplo, en un barrio menos turístico de Madrid, 1.500 m puede dar 8-10 resultados con nombre y NO se amplía a 3.000 m. Resultado: el usuario ve poco.
 
-> Por qué no Google Places: requiere API key de pago + cumplir condiciones de uso/atribución comerciales. OSM bien consultado tiene cobertura comparable en las categorías que necesita YORMIT.
+**Causa 2 — Se descartan sitios sin `name`.**
+En OSM hay muchísimos bares pequeños sin tag `name` (pero con `cuisine`, `brand` o `addr:street`). Hoy se filtran de la lista *y* del conteo para decidir si ampliar el radio. Eso infla artificialmente la sensación de "pocos resultados".
 
-### Cambios — solo en `src/lib/usefulPlaces.ts` y `src/pages/trips/UsefulPlacesCategory.tsx`
+**Causa 3 — Tope de 80 + corte temprano.**
+Se corta en cuanto hay 12 con nombre en 1.500 m, aunque a 3.000 m hubiera 200. La lista debería ser claramente más amplia en ciudades.
 
-**1. Búsquedas mucho más amplias por categoría** (`CATEGORY_FILTERS` en `usefulPlaces.ts`)
+**Causa 4 — "No hay resultados" se dispara con un solo Overpass error.**
+Si Overpass devuelve un timeout (común en horas pico) o el primer endpoint falla a mitad de petición, hoy cae directamente al mensaje `No hay resultados`. El segundo endpoint solo se prueba si el primero responde con HTTP no-OK, NO si lanza excepción de red. Y un solo radio fallido tira la búsqueda entera.
 
-| Categoría | Antes | Después |
-|---|---|---|
-| Restaurantes | `amenity=restaurant` | `restaurant` + `fast_food` + `food_court` + `bbq` |
-| Cafés y bares | `cafe\|bar\|pub` | `cafe` + `bar` + `pub` + `biergarten` + `nightclub` + `shop=coffee` + `shop=tea` |
-| Supermercados | `supermarket\|convenience` | `supermarket` + `convenience` + `bakery` + `butcher` + `greengrocer` + `deli` + `marketplace` |
-| Farmacias | `amenity=pharmacy` | `amenity=pharmacy` + `shop=chemist` |
-| Hoteles | `hotel\|hostel\|guest_house` | + `motel` + `apartment` + `chalet` |
-| Turísticos | igual | igual (ya es amplio) |
+**Causa 5 — Falta categoría intermedia.**
+"Cafés y bares" en Madrid debería incluir también `restaurant` con `cuisine=spanish/tapas` (tabernas) que la gente percibe como bares. Pero es un cambio menor.
 
-Resultado: la consulta a Overpass devuelve muchas más opciones reales sin perder relevancia.
+### Cambios — solo en `src/lib/usefulPlaces.ts`
 
-**2. Más resultados visibles**
-- Subir el tope final de la lista de **60 → 80** sitios (mantiene fluidez en móvil sin abrumar).
-- Mantener `out center tags 150` y radios progresivos 1500 → 3000 → 5000 m.
+**1. Estrategia de radios mucho más agresiva**
 
-**3. Orden por cercanía (sin cambios)**
-- Sigue ordenándose por **distancia haversine ascendente** al `center` elegido.
-- Desempate suave por calidad (`score`) cuando dos sitios están a <75 m.
-- Pre-filtro de ruido (`score=0`) solo si quedan ≥15 candidatos de calidad.
+| Antes | Después |
+|---|---|
+| Radios `[1500, 3000, 5000]`, corta en cuanto haya ≥12 con nombre | Radios `[800, 2000, 4000]`, **siempre lanza la consulta de 2000 m** (no se corta antes), y solo escala a 4000 m si el resultado total queda <25 |
 
-**4. Velocidad en móvil**
+Razón: en zonas urbanas densas, 2 km es lo natural; saltar a 4 km solo cuando de verdad hace falta. En zonas rurales/periféricas escalará al máximo.
 
-a) **Quitar el doble `setLoading(true)`** en `UsefulPlacesCategory.tsx`: ahora mismo `handleNearMe` y `handleNearAccommodation` ponen `loading=true`, luego `setCenter` dispara el `useEffect` que vuelve a hacer `setLoading(true)` y lanza la búsqueda. No es lento por la red, pero el spinner parpadea y se sienten dos pasos. Se unifica.
+**2. Aceptar sitios sin `name` con fallback razonable**
 
-b) **Geolocalización más rápida**: cambiar `enableHighAccuracy: true` a `false` y bajar `maximumAge` aceptable a 5 min. En móvil, `enableHighAccuracy: true` activa GPS real y puede tardar 5-10 s; para "sitios cercanos" basta con la red/IP (precisión ~50-100 m, suficiente para Overpass). Se baja `timeout` a 7 s y, si falla, fallback automático a alta precisión.
+Si un POI no tiene `name` pero tiene `brand`, `operator` o `cuisine`, se usa eso como nombre. Si no tiene ni `name` ni `brand`, se descarta (igual que hoy). Esto recupera bares de barrio, cadenas pequeñas y supermercados sin nombre puesto.
 
-c) **Cortar búsqueda en cuanto haya resultados suficientes**: la lógica actual recorre los 3 radios solo si hay <8 resultados con nombre; se baja a `<12` para no saltar a 5 km cuando 1.5 km ya da suficiente — esto reduce el tiempo medio porque la primera consulta (1.5 km) suele bastar.
+**3. Tope de la lista de 80 → 120**
 
-d) **`scrollWheelZoom` ya está off** (bien, evita reflows). Mantener.
+La UI ya lista verticalmente con scroll suave; 120 cabe sin afectar rendimiento (cada item es un `<a>` ligero, no hay imágenes).
+
+**4. Robustez de red en Overpass**
+
+- Reintentar **cada radio** en los 2 endpoints (hoy se cambia de endpoint solo en errores HTTP, no en `fetch` rejection / timeout).
+- Añadir `AbortController` con timeout de 20 s por petición para no colgar la UI.
+- Si los **dos** endpoints fallan en un radio, pasar al siguiente radio en lugar de tirar toda la búsqueda.
+- Solo devolver "no hay resultados" si TODOS los radios + TODOS los endpoints han fallado o han devuelto vacío.
+
+**5. Ampliar 2 categorías que se quedan cortas**
+
+| Categoría | Añadir |
+|---|---|
+| Cafes/bares | `amenity=restaurant` con `cuisine~"spanish\|tapas\|wine_bar"` (tabernas que en España son percibidas como bares) |
+| Restaurantes | `amenity=ice_cream` (heladerías, que el usuario espera ver al buscar comida casual) |
+
+El resto de categorías ya quedaron amplias en la iteración anterior.
+
+**6. Mantener el orden por cercanía**
+
+Sin cambios: haversine ascendente, desempate suave por `score` cuando dos sitios están a <75 m.
 
 ### Lo que NO se toca
-- Cero cambios en `UsefulPlaces.tsx`, `TripLayout`, navegación, traducciones, diseño, BD, RLS, edge functions, otras secciones.
+
+- `UsefulPlacesCategory.tsx`: cero cambios (la lógica de loading, geolocalización y "Cerca del alojamiento" ya quedó bien en la iteración anterior).
+- Cero cambios en navegación, traducciones, diseño, BD, RLS, edge functions, otras secciones, Service Worker, `main.tsx`, `UsefulPlaces.tsx`, `TripLayout`.
 - Cero cambios en cómo se abre Google Maps al pulsar un sitio.
-- Cero cambios en geocoding del alojamiento.
-- Cero cambios en el Service Worker o `main.tsx`.
+- Cero cambios en el geocoding del alojamiento.
 
 ### Ficheros afectados
 
 | Fichero | Cambio |
 |---------|--------|
-| `src/lib/usefulPlaces.ts` | Ampliar `CATEGORY_FILTERS` para 5 categorías; tope 60→80; corte de radio progresivo en 12 |
-| `src/pages/trips/UsefulPlacesCategory.tsx` | Geolocalización low-accuracy con fallback; eliminar doble loading |
+| `src/lib/usefulPlaces.ts` | Radios 800/2000/4000 con escalado solo si <25 resultados; aceptar `brand`/`operator`/`cuisine` como nombre; tope 80→120; robustez Overpass (retry endpoints en errores de red, `AbortController` 20 s, no abortar búsqueda si un radio falla); +tabernas en cafés/bares; +heladerías en restaurantes |
 
 ### Validación posterior
-1. Cafés y bares → Cerca de mi ubicación → confirmar más resultados que antes (cafés, bares, pubs, coffee shops…).
-2. Restaurantes → confirmar que aparecen también fast food y food courts.
-3. Supermercados → confirmar que aparecen panaderías, carnicerías, mercados.
-4. Confirmar que el primer resultado sigue siendo el más cercano.
-5. Confirmar que en móvil el tiempo desde "Cerca de mi ubicación" hasta ver la lista baja notablemente.
 
+1. Madrid · Cafés y bares · Cerca del alojamiento → confirmar lista mucho más larga (decenas de sitios).
+2. Restaurantes en cualquier ciudad → confirmar que aparecen también heladerías y bares de tapas.
+3. Confirmar que el primer resultado sigue siendo el más cercano.
+4. Forzar (en DevTools) un fallo de red al primer endpoint Overpass → confirmar que los resultados llegan igual desde el segundo.
+5. Confirmar que el resto de la app sigue exactamente igual.
