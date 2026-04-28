@@ -510,26 +510,26 @@ const Photos = () => {
               >
                 <CheckSquare className="h-6 w-6" />
               </Button>
-              <span className="text-[11px] font-medium text-foreground tracking-tight">Selección</span>
+              <span className="text-[13px] font-semibold text-foreground tracking-tight">Selección</span>
             </div>
           )}
           <div className="flex flex-col items-center gap-1">
             <Button size="icon" className="gradient-hero text-primary-foreground border-0 h-11 w-11" disabled={uploading || selectionMode} onClick={() => galleryInputRef.current?.click()} title={t.uploadFromGallery}>
               {uploading ? <Loader2 className="h-6 w-6 animate-spin" /> : <Image className="h-6 w-6" />}
             </Button>
-            <span className="text-[11px] font-medium text-foreground tracking-tight">Galería</span>
+            <span className="text-[13px] font-semibold text-foreground tracking-tight">Galería</span>
           </div>
           <div className="flex flex-col items-center gap-1">
             <Button size="icon" className="gradient-hero text-primary-foreground border-0 h-11 w-11" disabled={uploading || selectionMode} onClick={() => videoInputRef.current?.click()} title={t.recordVideoBtn}>
               {uploading ? <Loader2 className="h-6 w-6 animate-spin" /> : <Video className="h-6 w-6" />}
             </Button>
-            <span className="text-[11px] font-medium text-foreground tracking-tight">Vídeo</span>
+            <span className="text-[13px] font-semibold text-foreground tracking-tight">Vídeo</span>
           </div>
           <div className="flex flex-col items-center gap-1">
             <Button size="icon" className="gradient-hero text-primary-foreground border-0 h-11 w-11" disabled={uploading || selectionMode} onClick={() => cameraInputRef.current?.click()} title={t.takePhotoBtn}>
               {uploading ? <Loader2 className="h-6 w-6 animate-spin" /> : <Camera className="h-6 w-6" />}
             </Button>
-            <span className="text-[11px] font-medium text-foreground tracking-tight">Foto</span>
+            <span className="text-[13px] font-semibold text-foreground tracking-tight">Foto</span>
           </div>
         </div>
         <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFileUpload} />
