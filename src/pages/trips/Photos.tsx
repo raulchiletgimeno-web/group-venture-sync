@@ -502,8 +502,7 @@ const Photos = () => {
           {photos.length > 0 && !selectionMode && (
             <Button
               size="icon"
-              variant="outline"
-              className="h-11 w-11"
+              className="gradient-hero text-primary-foreground border-0 h-11 w-11"
               onClick={() => setSelectionMode(true)}
               title="Seleccionar varias"
               disabled={uploading}
