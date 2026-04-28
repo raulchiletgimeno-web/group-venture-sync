@@ -626,7 +626,7 @@ const Photos = () => {
       {/* Bulk action bar */}
       {selectionMode && (
         <div
-          className="fixed left-0 right-0 bottom-0 z-40 animate-slide-in-up"
+          className="fixed left-0 right-0 bottom-0 z-40 animate-slide-up"
           style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
         >
           <div className="mx-auto max-w-3xl m-3 rounded-2xl bg-background/85 backdrop-blur-xl border border-border shadow-2xl">
