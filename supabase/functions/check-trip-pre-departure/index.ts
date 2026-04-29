@@ -71,6 +71,7 @@ Deno.serve(async (req) => {
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!
   const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+  const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!
   const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
   try {
@@ -181,17 +182,27 @@ Deno.serve(async (req) => {
             forecast: forecast ?? undefined,
           }
 
-          const { error: sendError } = await supabase.functions.invoke(
-            'send-transactional-email',
+          const sendRes = await fetch(
+            `${supabaseUrl}/functions/v1/send-transactional-email`,
             {
-              body: {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${supabaseAnonKey}`,
+                apikey: supabaseAnonKey,
+              },
+              body: JSON.stringify({
                 templateName: 'trip-pre-departure',
                 recipientEmail: recipient.email,
                 idempotencyKey: `pre-departure-${trip.id}-${recipient.id}`,
                 templateData,
-              },
+              }),
             }
           )
+
+          const sendError = sendRes.ok
+            ? null
+            : { message: `HTTP ${sendRes.status}: ${await sendRes.text()}` }
 
           if (sendError) {
             console.error('send-transactional-email error', {
