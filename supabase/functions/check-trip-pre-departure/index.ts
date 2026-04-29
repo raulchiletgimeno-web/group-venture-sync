@@ -184,6 +184,9 @@ Deno.serve(async (req) => {
           const { error: sendError } = await supabase.functions.invoke(
             'send-transactional-email',
             {
+              headers: {
+                Authorization: `Bearer ${supabaseServiceKey}`,
+              },
               body: {
                 templateName: 'trip-pre-departure',
                 recipientEmail: recipient.email,
