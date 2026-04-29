@@ -181,20 +181,27 @@ Deno.serve(async (req) => {
             forecast: forecast ?? undefined,
           }
 
-          const { error: sendError } = await supabase.functions.invoke(
-            'send-transactional-email',
+          const sendRes = await fetch(
+            `${supabaseUrl}/functions/v1/send-transactional-email`,
             {
+              method: 'POST',
               headers: {
+                'Content-Type': 'application/json',
                 Authorization: `Bearer ${supabaseServiceKey}`,
+                apikey: supabaseServiceKey,
               },
-              body: {
+              body: JSON.stringify({
                 templateName: 'trip-pre-departure',
                 recipientEmail: recipient.email,
                 idempotencyKey: `pre-departure-${trip.id}-${recipient.id}`,
                 templateData,
-              },
+              }),
             }
           )
+
+          const sendError = sendRes.ok
+            ? null
+            : { message: `HTTP ${sendRes.status}: ${await sendRes.text()}` }
 
           if (sendError) {
             console.error('send-transactional-email error', {
