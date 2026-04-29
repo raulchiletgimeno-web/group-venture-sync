@@ -1,4 +1,4 @@
-import { createClient } from 'npm:@supabase/supabase-js@2'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -71,19 +71,43 @@ Deno.serve(async (req) => {
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!
   const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+  const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!
   const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
   try {
-    // Window: trips starting between 36h and 60h from now
-    const now = new Date()
-    const windowStart = new Date(now.getTime() + 36 * 60 * 60 * 1000)
-    const windowEnd = new Date(now.getTime() + 60 * 60 * 60 * 1000)
+    // Optional: force a single trip (manual catch-up)
+    let forceTripId: string | null = null
+    if (req.method === 'POST') {
+      try {
+        const body = await req.json()
+        if (body && typeof body.force_trip_id === 'string') {
+          forceTripId = body.force_trip_id
+        }
+      } catch {
+        // no body / invalid JSON — ignore
+      }
+    }
 
-    const { data: trips, error: tripsError } = await supabase
+    const now = new Date()
+    // Catch-up window: today through today+3 days. Combined with the
+    // trip_pre_departure_reminders UNIQUE constraint this means a missed
+    // hourly cron run is recovered by the next one — no trip is lost.
+    const today = now.toISOString().slice(0, 10)
+    const inThreeDays = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000)
+      .toISOString()
+      .slice(0, 10)
+
+    let query = supabase
       .from('trips')
       .select('id, title, destination, start_date, end_date')
-      .gte('start_date', windowStart.toISOString().slice(0, 10))
-      .lte('start_date', windowEnd.toISOString().slice(0, 10))
+
+    if (forceTripId) {
+      query = query.eq('id', forceTripId)
+    } else {
+      query = query.gte('start_date', today).lte('start_date', inThreeDays)
+    }
+
+    const { data: trips, error: tripsError } = await query
 
     if (tripsError) throw tripsError
     if (!trips || trips.length === 0) {
@@ -97,10 +121,15 @@ Deno.serve(async (req) => {
     const details: Array<Record<string, unknown>> = []
 
     for (const trip of trips) {
-      // Refine window: trip start within ~36-60h based on actual datetime
-      const tripStart = new Date(trip.start_date + 'T00:00:00Z')
-      const hoursAway = (tripStart.getTime() - now.getTime()) / (1000 * 60 * 60)
-      if (hoursAway < 36 || hoursAway > 60) continue
+      // Catch-up window: send any time from ~60h before start until the
+      // trip's end day. The UNIQUE (trip_id, user_id) constraint on
+      // trip_pre_departure_reminders prevents duplicate sends.
+      // In force mode (manual catch-up), bypass the window check entirely.
+      if (!forceTripId) {
+        const tripStart = new Date(trip.start_date + 'T00:00:00Z')
+        const hoursAway = (tripStart.getTime() - now.getTime()) / (1000 * 60 * 60)
+        if (hoursAway < -24 || hoursAway > 60) continue
+      }
 
       // Get approved members
       const { data: members, error: membersError } = await supabase
@@ -153,17 +182,27 @@ Deno.serve(async (req) => {
             forecast: forecast ?? undefined,
           }
 
-          const { error: sendError } = await supabase.functions.invoke(
-            'send-transactional-email',
+          const sendRes = await fetch(
+            `${supabaseUrl}/functions/v1/send-transactional-email`,
             {
-              body: {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${supabaseAnonKey}`,
+                apikey: supabaseAnonKey,
+              },
+              body: JSON.stringify({
                 templateName: 'trip-pre-departure',
                 recipientEmail: recipient.email,
                 idempotencyKey: `pre-departure-${trip.id}-${recipient.id}`,
                 templateData,
-              },
+              }),
             }
           )
+
+          const sendError = sendRes.ok
+            ? null
+            : { message: `HTTP ${sendRes.status}: ${await sendRes.text()}` }
 
           if (sendError) {
             console.error('send-transactional-email error', {
