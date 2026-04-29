@@ -1,77 +1,73 @@
-## Multiselección en Sitios > Fotos
 
-Mejora aislada en `src/pages/trips/Photos.tsx`. No se toca ninguna otra parte de la app.
+## Diagnóstico — qué ha fallado
 
-### Cómo entra el usuario en modo selección
+El viaje **"Fin de semana en Madrid"** (start_date `2026-04-30`) tiene **10 miembros aprobados** con email válido, pero **nunca entró** en la lógica de envío. No hay ninguna fila en `trip_pre_departure_reminders` para este viaje.
 
-- **Pulsación larga** (~500ms) sobre cualquier miniatura activa el modo selección y marca esa foto como seleccionada.
-- En desktop, también un botón "Seleccionar" discreto aparecerá en la cabecera junto a los botones de subida (mismo estilo `gradient-hero`, icono `CheckSquare`).
-- Salir del modo: botón ✕ en la barra de acciones, o tecla `Escape`, o cuando la selección queda vacía tras deseleccionar todo manualmente con "Cancelar".
+**Causa raíz: ventana de 48h demasiado estrecha y mal alineada.**
 
-### Cómo selecciona varias imágenes
+En `supabase/functions/check-trip-pre-departure/index.ts`:
 
-- Una vez en modo selección, **un toque normal** alterna selección/deselección de cada foto (no abre el visor a pantalla completa).
-- Cada foto seleccionada muestra:
-  - Un **check circular** arriba a la izquierda (icono `Check` dentro de un círculo `bg-primary text-primary-foreground`, mismo lenguaje visual de YORMIT).
-  - Un **anillo** `ring-2 ring-primary` y ligero `scale-[0.97]` para feedback premium.
-  - Un velo sutil `bg-primary/10` sobre la imagen.
-- El botón de borrar individual se oculta mientras está activo el modo selección (evita conflictos).
+1. **Query SQL inicial**: filtra `start_date BETWEEN now+36h AND now+60h`. Como `start_date` es sólo fecha (sin hora), el viaje sólo "cae" dentro del rango durante unas horas concretas del día anterior (~D-2). Si el cron de esa hora concreta tiene cualquier hipo (deploy, rate-limit, error transitorio), el viaje desaparece para siempre.
+2. **Filtro adicional en código**: `tripStart = new Date(start_date + 'T00:00:00Z')` y exige `36 <= hoursAway <= 60`. Asume que el viaje empieza a las 00:00 UTC, lo cual reduce aún más la ventana real. Hoy mismo (29-abr 08:49 UTC), para el viaje del 30-abr `hoursAway = 15.18h` → fuera de rango, ya no se envía nunca aunque el cron se ejecute.
+3. **Sin "catch-up"**: una vez que `hoursAway < 36`, el viaje no se reintenta, aunque no exista fila en `trip_pre_departure_reminders`.
 
-### Barra de acciones masivas
+El cron (`check-trip-pre-departure-hourly`, cada hora) está **activo** y dispara correctamente. La función pre-renderiza vía `send-transactional-email` (que sí funciona — vemos envíos correctos para otros templates). El problema es **puramente de selección de viajes**.
 
-Barra **fija inferior** (sticky, safe-area iOS), con blur premium (`bg-background/85 backdrop-blur-xl border-t`), animación slide-up. Contiene:
+---
 
-- Izquierda: contador "**N seleccionadas**" + enlace "Seleccionar todo" / "Quitar selección".
-- Derecha: tres botones icono (`gradient-hero` para coherencia):
-  - **Descargar** (`Download`)
-  - **Compartir** (`Share2`)
-  - **Copiar** (`Copy`)
-- Botón ✕ a la izquierda para salir del modo.
+## Acciones (en este orden, sólo tocando `check-trip-pre-departure`)
 
-### Acciones disponibles sobre varias fotos
+### 1. Envío inmediato manual a "Fin de semana en Madrid"
 
-1. **Descargar varias**
-   - Si hay 1 sola foto → descarga directa del archivo.
-   - Si hay varias → se descargan **una a una** automáticamente (descargas secuenciales con pequeño delay), creando un `<a download>` por archivo. Es la forma fiable sin añadir dependencias (no metemos JSZip para no inflar el bundle).
-   - Toast de progreso "Descargando 3/8…" y toast final.
+Invocar `check-trip-pre-departure` con un parámetro nuevo `force_trip_id` (o equivalente) que:
+- Salte los filtros de ventana 36–60h.
+- Procese el viaje indicado y envíe a todos los miembros aprobados que aún no estén en `trip_pre_departure_reminders`.
+- Registre cada envío en esa tabla para evitar duplicados.
 
-2. **Compartir varias**
-   - Si el navegador soporta `navigator.canShare({ files: [...] })` con varios archivos (Android Chrome, iOS Safari recientes) → se comparten todas en un único share sheet nativo.
-   - Si solo soporta 1 archivo → fallback: compartir secuencialmente (abre el share sheet por cada foto, con confirmación visual).
-   - Si no hay Web Share API → fallback automático a **descargar todas** + toast: "Tu navegador no permite compartir varias a la vez. Se han descargado para que las compartas manualmente."
+Resultado esperado: 10 emails enviados (uno por miembro aprobado), con previsión meteorológica para Madrid 30-abr → 03-may.
 
-3. **Copiar varias**
-   - El portapapeles del navegador **solo permite 1 imagen a la vez** (limitación real del Clipboard API).
-   - Implementación: si hay 1 seleccionada → copia al portapapeles con `ClipboardItem`. Si hay varias → toast informativo: "Solo se puede copiar 1 imagen al portapapeles. Se ha copiado la primera. Usa Descargar o Compartir para varias." y se copia la primera.
-   - Esta limitación es de la plataforma, no del código; la UX explica claramente la alternativa.
+### 2. Corregir la lógica para futuros viajes
 
-4. **Vídeos**
-   - Descargar y compartir funcionan igual con vídeos.
-   - Copiar al portapapeles no aplica a vídeos → si la selección incluye vídeos, el botón Copiar los ignora y muestra toast "Los vídeos no se pueden copiar al portapapeles".
+Reescribir la selección dentro de `check-trip-pre-departure/index.ts`:
 
-### Detalles técnicos
+- **Ampliar ventana**: seleccionar todos los viajes con `start_date` entre `today` y `today + 3 días`.
+- **Eliminar el filtro estrecho `36 <= hoursAway <= 60`**. En su lugar, aplicar la regla de negocio:
+  - "Enviar cuando falten ≤ 60h y ≥ 0h para el inicio del viaje" (D-2 hasta el propio día de salida).
+- **Idempotencia robusta**: la tabla `trip_pre_departure_reminders` con UNIQUE `(trip_id, user_id)` ya garantiza un único email por usuario/viaje. Esto convierte la ventana en un "catch-up": si un cron falla, el siguiente lo recupera mientras el viaje siga en el rango.
+- Mantener todo lo demás igual (template, weather fetch, registro en `email_send_log`).
 
-- Estado nuevo en `Photos.tsx`:
-  - `selectionMode: boolean`
-  - `selectedIds: Set<string>`
-  - `longPressTimer: ref` para detectar pulsación larga sin romper el scroll vertical.
-- Long-press: `onPointerDown` arranca timer 500ms; `onPointerMove` con desplazamiento >10px lo cancela (no interfiere con scroll); `onPointerUp` antes de 500ms ejecuta el comportamiento normal (abrir visor o toggle si ya está en modo selección).
-- En modo selección, el click en miniatura **no abre el visor**; solo toggle.
-- Auto-salida del modo selección tras ejecutar una acción masiva con éxito.
-- Las descargas usan `fetch` del `publicUrl` → `blob` → `URL.createObjectURL` → `<a download>` para forzar descarga real (no abrir en nueva pestaña).
-- i18n: nuevas claves se añadirán inline en el componente con textos en español (consistente con el resto: la app ya tiene mezcla y los labels críticos vienen de `t`); para no tocar `src/i18n/translations.ts` y respetar "no tocar nada más", los textos de la barra masiva irán **directamente en el componente** (decisión consciente para aislar el cambio).
+### 3. Verificación
 
-### Lo que NO se cambia
+- Consultar `trip_pre_departure_reminders` y `email_send_log` para confirmar 10 envíos a "Fin de semana en Madrid".
+- Confirmar que el cron horario sigue activo (no se toca su configuración).
 
-- Visor a pantalla completa, swipe, navegación, subida, borrado individual, query, RLS, estilos globales: intactos.
-- Solo se edita `src/pages/trips/Photos.tsx`.
+---
 
-### Validación post-implementación
+## Detalles técnicos
 
-1. Long-press en una foto → entra en modo selección, esa foto queda marcada.
-2. Tap en otras fotos las añade/quita; contador actualiza.
-3. Botón Descargar baja todas las fotos seleccionadas.
-4. Botón Compartir abre share nativo con todas (o fallback claro).
-5. Botón Copiar copia 1 al portapapeles e informa si hay más.
-6. Salir con ✕ vuelve al estado normal; tap normal vuelve a abrir el visor.
-7. Subida, borrado individual, swipe en visor: siguen funcionando igual.
+**Archivo único modificado**: `supabase/functions/check-trip-pre-departure/index.ts`
+
+Cambios concretos:
+- Aceptar body opcional `{ force_trip_id?: string }`. Si viene, saltar filtros de ventana para ese trip.
+- Sustituir la query por `start_date >= today AND start_date <= today + 3 days`.
+- Reemplazar el filtro `if (hoursAway < 36 || hoursAway > 60) continue` por `if (hoursAway < 0 || hoursAway > 60) continue` (sólo en modo automático; en modo `force_trip_id` no se aplica).
+- Mantener la inserción en `trip_pre_departure_reminders` como mecanismo anti-duplicado (UNIQUE constraint protege contra cualquier carrera).
+- Después de editar: `deploy_edge_functions(["check-trip-pre-departure"])` y luego `curl_edge_functions` con `force_trip_id = 09b47dd6-4700-4a72-846e-743752b2181b` para enviar ya.
+
+**No se toca**:
+- El template `trip-pre-departure.tsx`.
+- `send-transactional-email`.
+- El cron job (sigue cada hora).
+- Ninguna otra parte de la app.
+
+---
+
+## Validación final
+
+Tras ejecutar, confirmaré:
+1. Causa exacta del fallo (ventana mal calculada / filtro demasiado estrecho).
+2. Cambios aplicados (un único archivo de edge function).
+3. Confirmación de envío inmediato a los 10 miembros aprobados de "Fin de semana en Madrid".
+4. Conteo real desde `email_send_log` y `trip_pre_departure_reminders`.
+5. La automatización futura queda en modo "catch-up" robusto (ventana 0–60h, idempotente).
+6. No se ha tocado ninguna otra parte de la app.

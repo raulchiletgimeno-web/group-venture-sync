@@ -74,16 +74,39 @@ Deno.serve(async (req) => {
   const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
   try {
-    // Window: trips starting between 36h and 60h from now
-    const now = new Date()
-    const windowStart = new Date(now.getTime() + 36 * 60 * 60 * 1000)
-    const windowEnd = new Date(now.getTime() + 60 * 60 * 60 * 1000)
+    // Optional: force a single trip (manual catch-up)
+    let forceTripId: string | null = null
+    if (req.method === 'POST') {
+      try {
+        const body = await req.json()
+        if (body && typeof body.force_trip_id === 'string') {
+          forceTripId = body.force_trip_id
+        }
+      } catch {
+        // no body / invalid JSON — ignore
+      }
+    }
 
-    const { data: trips, error: tripsError } = await supabase
+    const now = new Date()
+    // Catch-up window: today through today+3 days. Combined with the
+    // trip_pre_departure_reminders UNIQUE constraint this means a missed
+    // hourly cron run is recovered by the next one — no trip is lost.
+    const today = now.toISOString().slice(0, 10)
+    const inThreeDays = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000)
+      .toISOString()
+      .slice(0, 10)
+
+    let query = supabase
       .from('trips')
       .select('id, title, destination, start_date, end_date')
-      .gte('start_date', windowStart.toISOString().slice(0, 10))
-      .lte('start_date', windowEnd.toISOString().slice(0, 10))
+
+    if (forceTripId) {
+      query = query.eq('id', forceTripId)
+    } else {
+      query = query.gte('start_date', today).lte('start_date', inThreeDays)
+    }
+
+    const { data: trips, error: tripsError } = await query
 
     if (tripsError) throw tripsError
     if (!trips || trips.length === 0) {
