@@ -1,4 +1,4 @@
-import { createClient } from 'npm:@supabase/supabase-js@2'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -181,27 +181,17 @@ Deno.serve(async (req) => {
             forecast: forecast ?? undefined,
           }
 
-          const sendRes = await fetch(
-            `${supabaseUrl}/functions/v1/send-transactional-email`,
+          const { error: sendError } = await supabase.functions.invoke(
+            'send-transactional-email',
             {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${supabaseServiceKey}`,
-                apikey: supabaseServiceKey,
-              },
-              body: JSON.stringify({
+              body: {
                 templateName: 'trip-pre-departure',
                 recipientEmail: recipient.email,
                 idempotencyKey: `pre-departure-${trip.id}-${recipient.id}`,
                 templateData,
-              }),
+              },
             }
           )
-
-          const sendError = sendRes.ok
-            ? null
-            : { message: `HTTP ${sendRes.status}: ${await sendRes.text()}` }
 
           if (sendError) {
             console.error('send-transactional-email error', {
