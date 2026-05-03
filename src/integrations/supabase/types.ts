@@ -400,6 +400,90 @@ export type Database = {
           },
         ]
       }
+      trip_feedback: {
+        Row: {
+          created_at: string
+          free_comment: string | null
+          id: string
+          missing_feature: string | null
+          most_useful_section: string | null
+          profile_age: number | null
+          profile_first_name: string | null
+          profile_last_name: string | null
+          profile_residence: string | null
+          profile_travels_with: string | null
+          rating: number
+          section_to_improve: string | null
+          sections_used: Json | null
+          trip_id: string
+          user_id: string
+          what_to_change: string | null
+          would_use_again: string | null
+        }
+        Insert: {
+          created_at?: string
+          free_comment?: string | null
+          id?: string
+          missing_feature?: string | null
+          most_useful_section?: string | null
+          profile_age?: number | null
+          profile_first_name?: string | null
+          profile_last_name?: string | null
+          profile_residence?: string | null
+          profile_travels_with?: string | null
+          rating: number
+          section_to_improve?: string | null
+          sections_used?: Json | null
+          trip_id: string
+          user_id: string
+          what_to_change?: string | null
+          would_use_again?: string | null
+        }
+        Update: {
+          created_at?: string
+          free_comment?: string | null
+          id?: string
+          missing_feature?: string | null
+          most_useful_section?: string | null
+          profile_age?: number | null
+          profile_first_name?: string | null
+          profile_last_name?: string | null
+          profile_residence?: string | null
+          profile_travels_with?: string | null
+          rating?: number
+          section_to_improve?: string | null
+          sections_used?: Json | null
+          trip_id?: string
+          user_id?: string
+          what_to_change?: string | null
+          would_use_again?: string | null
+        }
+        Relationships: []
+      }
+      trip_feedback_tokens: {
+        Row: {
+          created_at: string
+          token: string
+          trip_id: string
+          used_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          token: string
+          trip_id: string
+          used_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          token?: string
+          trip_id?: string
+          used_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       trip_last_seen: {
         Row: {
           id: string
@@ -570,6 +654,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      trip_post_departure_reminders: {
+        Row: {
+          id: string
+          sent_at: string
+          trip_id: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          sent_at?: string
+          trip_id: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          sent_at?: string
+          trip_id?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       trip_pre_departure_reminders: {
         Row: {
