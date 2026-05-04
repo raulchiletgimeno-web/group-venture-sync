@@ -227,14 +227,26 @@ const Expenses = () => {
   };
 
   const toggleMember = (uid: string) => {
-    setSelectedMembers((prev) =>
-      prev.includes(uid) ? prev.filter((id) => id !== uid) : [...prev, uid]
-    );
+    setSelectedMembers((prev) => {
+      const next = prev.includes(uid) ? prev.filter((id) => id !== uid) : [...prev, uid];
+      if (next.length > 0) setSplitsError(false);
+      return next;
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!tripId || !paidBy || selectedMembers.length === 0) return;
+    if (!tripId || !paidBy) return;
+
+    if (selectedMembers.length === 0) {
+      setSplitsError(true);
+      toast({
+        title: t.error,
+        description: t.expenseNeedsAtLeastOneMember,
+        variant: "destructive",
+      });
+      return;
+    }
 
     const parsedAmount = parseFloat(amount2);
     if (isNaN(parsedAmount) || parsedAmount <= 0) {
