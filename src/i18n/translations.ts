@@ -271,7 +271,6 @@ type TranslationKeys = {
   pollVote: string;
   noVotesYet: string;
   pollMaxOptionsReached: string;
-  cancel: string;
   today: string;
   yesterday: string;
   errorSending: string;
