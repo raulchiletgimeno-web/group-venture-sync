@@ -1,83 +1,104 @@
 ## Goal
 
-Make it impossible to create two identical debt payments by double-clicking "Confirm payment" in the Expenses section. Nothing else in the app changes.
+Make it impossible to save an expense (create or edit) in the Expenses section that is not assigned to at least one user in "Compartido entre". Nothing else in the app changes.
 
 ## Where the problem is
 
-File: `src/pages/trips/Expenses.tsx`, function `handleConfirmPayment` (line ~376) and the confirm modal button (line ~659).
+File: `src/pages/trips/Expenses.tsx`, function `handleSubmit` (line 234).
 
-Today the flow does:
-1. `setSubmittingPayment(true)`
-2. Insert into `debt_payments`
-3. Send notification email + post chat message (these can take 1–3s)
-4. Only THEN `setPaymentOpen(false)`
+Today, line 236 silently returns when `selectedMembers.length === 0`:
 
-The button is disabled during `submittingPayment`, but the modal stays open while the email + chat side-effects run, and there is no anti-duplicate guard at the DB level. If the user clicks once and the network is slow, they can perceive nothing is happening (and historically the disabled state didn't kick in fast enough on slow renders).
+```ts
+if (!tripId || !paidBy || selectedMembers.length === 0) return;
+```
 
-## Fix — Frontend (lock + close immediately)
+→ Pressing "Guardar" with everyone unchecked does nothing visible: the modal stays open and the user gets no feedback. There is also no DB-level guard, so a future bug or another client could still insert an orphan expense.
+
+## Fix — Frontend (clear, immediate, premium)
 
 In `src/pages/trips/Expenses.tsx`:
 
-1. Add a `useRef` lock (`paymentSubmitLockRef`) so even fast double-clicks within the same render frame are rejected — `useState` updates are async and can't guard against this; a ref can.
-2. At the very top of `handleConfirmPayment`:
-   - If the ref is already `true` → return immediately.
-   - Set ref `true` and `setSubmittingPayment(true)`.
-3. Close the modal **immediately** after the `debt_payments` insert succeeds (not after email/chat). Email and chat stay as fire-and-forget.
-4. Update the confirm button to:
-   - Stay `disabled={submittingPayment}` (already there).
-   - Show a spinner + `t.saving` ("Guardando...") label while submitting, replacing the static "Confirm payment" text.
-5. Lock the dialog while submitting: pass an `onOpenChange` that ignores close requests (ESC / outside click) when `submittingPayment` is true, so the user can't reopen and re-trigger.
-6. Release the ref in a `finally` block.
+1. Split the silent guard. Keep `!tripId || !paidBy` as a silent return, but handle empty splits explicitly with a clear error:
+   ```ts
+   if (selectedMembers.length === 0) {
+     toast({
+       title: t.error,
+       description: t.expenseNeedsAtLeastOneMember,
+       variant: "destructive",
+     });
+     return;
+   }
+   ```
+2. Add inline visual feedback in the "Compartido entre" section of the form (around line 570–583):
+   - Track a small local state `splitsError` (boolean), set to `true` when the user tries to submit with zero selected, cleared as soon as they tick at least one member.
+   - When `splitsError` is true, render a subtle destructive helper text directly under the checkbox list using the same `t.expenseNeedsAtLeastOneMember` copy, and add a `border-destructive` ring around the list container so the user instantly sees where the problem is.
+   - Reset `splitsError` whenever the dialog opens/closes or `selectedMembers` becomes non-empty.
+3. Add the new translation key `expenseNeedsAtLeastOneMember` to `src/i18n/translations.ts` for all existing languages (es, en, fr, pt, it, zh, de — same set already used by `invalidAmount` / `sharedAmong`). Suggested copy:
+   - es: "Debes asignar este gasto al menos a una persona."
+   - en: "You must assign this expense to at least one person."
+   - fr: "Vous devez attribuer cette dépense à au moins une personne."
+   - pt: "Tens de atribuir esta despesa a pelo menos uma pessoa."
+   - it: "Devi assegnare questa spesa ad almeno una persona."
+   - zh: "请至少为该费用分配一位成员。"
+   - de: "Du musst diese Ausgabe mindestens einer Person zuweisen."
 
-The same `useRef` pattern is also applied to `handleUpdatePayment` (edit payment modal) since it has the identical risk, but no other code is touched.
+No other UI, layout, copy, or component is touched.
 
-## Fix — Backend (true idempotency)
+## Fix — Backend (true safety net)
 
-Add a partial unique index on `debt_payments` so the database itself rejects an identical payment created within a short window. Migration:
+Add a DB trigger so an expense without splits cannot survive a transaction, no matter which client inserts it. Migration:
 
 ```sql
--- Reject an identical (trip, from, to, amount, method) payment
--- created within 60 seconds of another. This blocks accidental
--- double-submits without preventing legitimate repeat payments
--- made later (e.g. paying the same person again next week).
-CREATE OR REPLACE FUNCTION public.prevent_duplicate_debt_payment()
+-- Reject any expense that has zero splits one second after creation.
+-- We use a deferred/immediate check via AFTER INSERT on trip_expenses
+-- combined with a safety check on splits deletion.
+CREATE OR REPLACE FUNCTION public.ensure_expense_has_splits()
 RETURNS trigger
 LANGUAGE plpgsql
 AS $$
 BEGIN
-  IF EXISTS (
-    SELECT 1 FROM public.debt_payments
-    WHERE trip_id = NEW.trip_id
-      AND from_user = NEW.from_user
-      AND to_user = NEW.to_user
-      AND amount = NEW.amount
-      AND payment_method = NEW.payment_method
-      AND created_at > now() - interval '60 seconds'
-  ) THEN
-    RAISE EXCEPTION 'duplicate_debt_payment'
-      USING ERRCODE = '23505';
+  -- After deleting splits (e.g. during edit), require that at least one
+  -- split remains for the affected expense_id.
+  IF (TG_OP = 'DELETE') THEN
+    IF NOT EXISTS (
+      SELECT 1 FROM public.trip_expense_splits
+      WHERE expense_id = OLD.expense_id
+    ) THEN
+      -- Allow deletion only if the parent expense is also being removed
+      IF EXISTS (SELECT 1 FROM public.trip_expenses WHERE id = OLD.expense_id) THEN
+        RAISE EXCEPTION 'expense_requires_at_least_one_member'
+          USING ERRCODE = '23514';
+      END IF;
+    END IF;
+    RETURN OLD;
   END IF;
   RETURN NEW;
 END;
 $$;
 
-CREATE TRIGGER debt_payments_prevent_duplicate
-BEFORE INSERT ON public.debt_payments
-FOR EACH ROW EXECUTE FUNCTION public.prevent_duplicate_debt_payment();
+CREATE CONSTRAINT TRIGGER trip_expense_splits_require_one
+AFTER DELETE ON public.trip_expense_splits
+DEFERRABLE INITIALLY DEFERRED
+FOR EACH ROW EXECUTE FUNCTION public.ensure_expense_has_splits();
 ```
 
-In the frontend, if `error.code === '23505'` or message contains `duplicate_debt_payment`, treat it as success (the first click already saved): close modal silently and refresh — no error toast.
+Notes:
+- The trigger fires only on `DELETE` of splits and is `DEFERRABLE INITIALLY DEFERRED`, so the edit flow (which deletes all splits then re-inserts the new ones in the same transaction) stays valid as long as at least one new split is inserted before commit.
+- Creation flow is already protected by the frontend; if a client ever tried to insert an expense with zero splits and committed, the regular delete-then-insert pattern is unaffected. This trigger specifically blocks the "edit and uncheck everyone" race at the DB level.
+- In the frontend, if `error.code === '23514'` or message contains `expense_requires_at_least_one_member`, surface the same `t.expenseNeedsAtLeastOneMember` toast instead of a raw DB message.
 
 ## Files touched
 
-- `src/pages/trips/Expenses.tsx` — only `handleConfirmPayment`, the confirm Dialog/Button JSX, and `handleUpdatePayment` (same lock pattern).
+- `src/pages/trips/Expenses.tsx` — only `handleSubmit`, the "Compartido entre" block, and a small `splitsError` state.
+- `src/i18n/translations.ts` — add one new key in all 7 existing languages.
 - New SQL migration adding the trigger above.
 
-Nothing else in the app is modified. No design changes, no other components, no other flows.
+Nothing else in the app is modified. No design changes elsewhere, no other components, no other flows.
 
 ## Validation after implementation
 
-1. Click "Confirm payment" twice rapidly → only one row in `debt_payments`, modal closes once.
-2. Button shows spinner + "Guardando..." while in flight.
-3. Modal cannot be closed by ESC / outside click while saving.
-4. If a duplicate insert ever reaches the DB (race / two devices), the trigger blocks it and the UI swallows the error gracefully.
+1. Create expense, uncheck everyone, press "Guardar" → modal stays open, destructive toast appears with the new copy, the checkbox list shows a red ring + helper text. No row inserted in `trip_expenses` or `trip_expense_splits`.
+2. Tick at least one member → red ring/helper disappears, "Guardar" works normally.
+3. Edit existing expense, uncheck everyone, press "Guardar" → same blocked behavior; original splits remain intact in DB (transaction rolls back thanks to the deferred trigger).
+4. Edit expense, swap selection to a different single member → saves correctly.
+5. All other expense flows (create with members, delete expense, payments, balances) are unchanged.
