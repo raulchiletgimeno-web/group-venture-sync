@@ -191,6 +191,7 @@ const Expenses = () => {
     setReceiptFile(null);
     setReceiptPreview(null);
     setExistingReceiptPath(exp.receipt_path);
+    setSplitsError(false);
     setOpen(true);
   };
 
