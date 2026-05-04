@@ -237,15 +237,22 @@ const Chat = () => {
           trip_id: tripId, user_id: user.id, type: "location",
           content, reply_to_id: replySnap?.id ?? null,
         });
-        if (error) toast({ title: t.errorSending, variant: "destructive" });
-        else notifyTripEvent(tripId, "chat", user.id);
+        if (error) {
+          toast({ title: t.errorSending, description: error.message, variant: "destructive" });
+        } else {
+          notifyTripEvent(tripId, "chat", user.id);
+        }
         setReplyTo(null); setSending(false);
       },
-      () => {
-        toast({ title: t.locationDenied, variant: "destructive" });
+      (err) => {
+        const title =
+          err.code === err.PERMISSION_DENIED ? t.locationDenied :
+          err.code === err.TIMEOUT ? t.locationTimeout :
+          t.locationUnavailable;
+        toast({ title, variant: "destructive" });
         setSending(false);
       },
-      { enableHighAccuracy: true, timeout: 10000 }
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
   };
 
