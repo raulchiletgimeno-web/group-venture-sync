@@ -647,7 +647,7 @@ const Expenses = () => {
       </div>
 
       {/* Payment confirmation modal */}
-      <Dialog open={paymentOpen} onOpenChange={setPaymentOpen}>
+      <Dialog open={paymentOpen} onOpenChange={(v) => { if (submittingPayment) return; setPaymentOpen(v); }}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle>{t.confirmPayment}</DialogTitle>
