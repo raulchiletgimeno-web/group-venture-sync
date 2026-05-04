@@ -166,6 +166,7 @@ const Chat = () => {
     if (msg.type === "image") return t.imageMsg;
     if (msg.type === "audio") return t.audioMsg;
     if (msg.type === "location") return t.locationMsg;
+    if (msg.type === "poll") return t.pollMsg;
     return msg.content || "";
   };
 
