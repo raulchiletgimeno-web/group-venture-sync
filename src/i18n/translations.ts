@@ -217,6 +217,7 @@ type TranslationKeys = {
   delete: string;
   error: string;
   invalidAmount: string;
+  expenseNeedsAtLeastOneMember: string;
   errorUploading: string;
 
   // Photos
