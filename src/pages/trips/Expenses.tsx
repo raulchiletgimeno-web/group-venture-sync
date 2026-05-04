@@ -75,6 +75,7 @@ const Expenses = () => {
   const [amount2, setAmount2] = useState("");
   const [paidBy, setPaidBy] = useState("");
   const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
+  const [splitsError, setSplitsError] = useState(false);
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
   const [existingReceiptPath, setExistingReceiptPath] = useState<string | null>(null);
