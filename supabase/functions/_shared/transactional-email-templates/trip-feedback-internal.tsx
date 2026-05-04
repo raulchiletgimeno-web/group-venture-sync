@@ -41,11 +41,39 @@ const Row = ({ label, value }: { label: string; value?: React.ReactNode }) => {
   )
 }
 
+const HighlightRow = ({
+  label,
+  value,
+}: {
+  label: string
+  value?: React.ReactNode
+}) => {
+  if (value === undefined || value === null || value === '') return null
+  return (
+    <div style={highlightItem}>
+      <Text style={highlightLabel}>{label}</Text>
+      <Text style={highlightValue}>{value}</Text>
+    </div>
+  )
+}
+
 const InternalFeedbackEmail = (props: FeedbackInternalProps) => {
   const stars =
     typeof props.rating === 'number'
       ? '⭐'.repeat(Math.max(1, Math.min(5, props.rating)))
       : ''
+
+  const hasProfile =
+    !!props.profileFirstName ||
+    !!props.profileLastName ||
+    typeof props.profileAge === 'number' ||
+    !!props.profileResidence ||
+    !!props.profileTravelsWith
+
+  const hasHighlights =
+    !!props.sectionToImprove ||
+    !!props.whatToChange ||
+    !!props.missingFeature
 
   return (
     <Html lang="es" dir="ltr">
@@ -64,6 +92,22 @@ const InternalFeedbackEmail = (props: FeedbackInternalProps) => {
             </Text>
           </Section>
 
+          {/* Bloque DESTACADO con lo más accionable */}
+          {hasHighlights && (
+            <Section style={highlightCard}>
+              <Text style={highlightTitle}>🎯 Lo más accionable</Text>
+              <HighlightRow
+                label="Sección a mejorar"
+                value={props.sectionToImprove}
+              />
+              <HighlightRow label="Qué cambiaría" value={props.whatToChange} />
+              <HighlightRow
+                label="Funcionalidad que echa de menos"
+                value={props.missingFeature}
+              />
+            </Section>
+          )}
+
           <Section style={card}>
             <Text style={cardTitle}>Viaje</Text>
             <Row label="Nombre del viaje" value={props.tripName} />
@@ -77,8 +121,8 @@ const InternalFeedbackEmail = (props: FeedbackInternalProps) => {
             <Row label="Enviado" value={props.submittedAt} />
           </Section>
 
-          <Section style={card}>
-            <Text style={cardTitle}>Respuestas</Text>
+          <Section style={cardSecondary}>
+            <Text style={cardTitleSecondary}>Otras respuestas</Text>
             <Row
               label="Secciones más usadas"
               value={
@@ -88,19 +132,15 @@ const InternalFeedbackEmail = (props: FeedbackInternalProps) => {
               }
             />
             <Row label="Sección más útil" value={props.mostUsefulSection} />
-            <Row label="Sección a mejorar" value={props.sectionToImprove} />
-            <Row label="Funcionalidad que echa de menos" value={props.missingFeature} />
-            <Row label="Qué cambiaría" value={props.whatToChange} />
             <Row label="¿Volvería a usar YORMIT?" value={props.wouldUseAgain} />
             <Row label="Comentario libre" value={props.freeComment} />
           </Section>
 
-          {(props.profileFirstName ||
-            props.profileLastName ||
-            props.profileAge ||
-            props.profileResidence ||
-            props.profileTravelsWith) && (
-            <Section style={card}>
+          {hasProfile && (
+            <Section style={profileCard}>
+              <div style={badgeRow}>
+                <span style={badge}>✅ Datos opcionales rellenados</span>
+              </div>
               <Text style={cardTitle}>Perfil opcional</Text>
               <Row label="Nombre" value={props.profileFirstName} />
               <Row label="Primer apellido" value={props.profileLastName} />
@@ -171,8 +211,41 @@ const h1 = {
 }
 const ratingBig = {
   color: '#0099dd',
-  fontSize: '22px',
+  fontSize: '26px',
   fontWeight: 'bold' as const,
+  margin: '0',
+}
+const highlightCard = {
+  backgroundColor: '#fffbeb',
+  border: '2px solid #fbbf24',
+  borderRadius: '12px',
+  padding: '18px 22px',
+  margin: '8px 28px 16px',
+}
+const highlightTitle = {
+  color: '#92400e',
+  fontSize: '13px',
+  fontWeight: 'bold' as const,
+  textTransform: 'uppercase' as const,
+  letterSpacing: '1px',
+  margin: '0 0 12px',
+}
+const highlightItem = {
+  marginBottom: '12px',
+}
+const highlightLabel = {
+  color: '#78350f',
+  fontSize: '12px',
+  fontWeight: 'bold' as const,
+  textTransform: 'uppercase' as const,
+  letterSpacing: '0.5px',
+  margin: '0 0 2px',
+}
+const highlightValue = {
+  color: '#1a1a1a',
+  fontSize: '15px',
+  fontWeight: '600' as const,
+  lineHeight: '1.5',
   margin: '0',
 }
 const card = {
@@ -182,6 +255,13 @@ const card = {
   padding: '16px 20px',
   margin: '8px 28px 12px',
 }
+const cardSecondary = {
+  backgroundColor: '#ffffff',
+  border: '1px solid #f1f5f9',
+  borderRadius: '10px',
+  padding: '14px 20px',
+  margin: '8px 28px 12px',
+}
 const cardTitle = {
   color: '#0369a1',
   fontSize: '12px',
@@ -189,6 +269,32 @@ const cardTitle = {
   textTransform: 'uppercase' as const,
   letterSpacing: '1px',
   margin: '0 0 10px',
+}
+const cardTitleSecondary = {
+  color: '#94a3b8',
+  fontSize: '11px',
+  fontWeight: 'bold' as const,
+  textTransform: 'uppercase' as const,
+  letterSpacing: '1px',
+  margin: '0 0 8px',
+}
+const profileCard = {
+  backgroundColor: '#f0fdf4',
+  border: '1px solid #bbf7d0',
+  borderRadius: '10px',
+  padding: '14px 20px',
+  margin: '8px 28px 16px',
+}
+const badgeRow = { marginBottom: '8px' }
+const badge = {
+  display: 'inline-block',
+  backgroundColor: '#16a34a',
+  color: '#ffffff',
+  fontSize: '11px',
+  fontWeight: 'bold' as const,
+  padding: '3px 10px',
+  borderRadius: '999px',
+  letterSpacing: '0.3px',
 }
 const row = {
   color: '#1a1a1a',

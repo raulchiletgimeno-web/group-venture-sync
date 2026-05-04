@@ -24,10 +24,10 @@ interface TripPostDepartureProps {
 }
 
 const SUBJECT_VARIANTS: Array<(d: Record<string, any>) => string> = [
-  (d) => `✨ ¿Qué tal ha ido tu experiencia con YORMIT en ${d.tripName ?? 'tu viaje'}?`,
-  (d) => `💬 Cuéntanos cómo ha sido ${d.tripName ?? 'tu viaje'} con YORMIT`,
-  (_d) => `⭐ Tu opinión nos ayuda a mejorar YORMIT`,
-  (_d) => `🙌 Gracias por viajar con YORMIT, ¿nos cuentas tu experiencia?`,
+  (_d) => `✨ Valóranos en 10 segundos`,
+  (d) => `💬 ¿Qué tal ${d.tripName ?? 'tu viaje'}? Cuéntanoslo en 10s`,
+  (_d) => `⭐ Tu opinión sobre YORMIT (10 segundos)`,
+  (d) => `🙌 ¿Cómo ha ido ${d.tripName ?? 'tu viaje'}? Tu opinión cuenta`,
 ]
 
 function pickSubject(data: Record<string, any>): string {
@@ -45,13 +45,16 @@ const TripPostDepartureEmail = ({
 }: TripPostDepartureProps) => {
   const greetingName = userName && userName.trim() ? userName : 'viajero'
   const tName = tripName ?? 'tu viaje'
-  const dest = destination ?? ''
   const url = feedbackUrl ?? 'https://www.yormit.com'
+
+  const tripChip = [destination, [startDate, endDate].filter(Boolean).join(' – ')]
+    .filter(Boolean)
+    .join(' · ')
 
   return (
     <Html lang="es" dir="ltr">
       <Head />
-      <Preview>{`¿Qué tal ha ido ${tName}? Cuéntanos en 2 minutos`}</Preview>
+      <Preview>{`Valóranos en 10 segundos · ${tName}`}</Preview>
       <Body style={main}>
         <Container style={container}>
           <Section style={header}>
@@ -61,60 +64,26 @@ const TripPostDepartureEmail = ({
           <Section style={contentSection}>
             <Heading style={h1}>¡Hola, {greetingName}! 👋</Heading>
             <Text style={lead}>
-              Esperamos que hayas disfrutado mucho de <strong>{tName}</strong> 😊
-            </Text>
-            <Text style={text}>
-              Ahora que el viaje ya ha terminado, nos encantaría conocer tu
-              experiencia con {SITE_NAME} para seguir mejorando la app y hacer
-              que cada viaje en grupo sea todavía más fácil, cómodo y útil.
-            </Text>
-          </Section>
-
-          {(dest || startDate || endDate) && (
-            <Section style={card}>
-              <Text style={cardTitle}>Tu viaje</Text>
-              {dest && (
-                <Text style={cardRow}>
-                  <span style={cardLabel}>📍 Destino:</span> {dest}
-                </Text>
-              )}
-              {(startDate || endDate) && (
-                <Text style={cardRow}>
-                  <span style={cardLabel}>📅 Fechas:</span>{' '}
-                  {startDate ?? ''}
-                  {startDate && endDate ? ' – ' : ''}
-                  {endDate ?? ''}
-                </Text>
-              )}
-            </Section>
-          )}
-
-          <Section style={contentSection}>
-            <Heading style={h2}>⭐ Tu opinión nos importa</Heading>
-            <Text style={text}>
-              Solo te llevará un par de minutos. Cuéntanos qué tal ha ido,
-              qué te ha gustado, qué mejorarías y qué te ha faltado.
+              ¿Qué tal ha ido <strong>{tName}</strong>? Tu opinión nos ayuda a
+              mejorar {SITE_NAME} ✨
             </Text>
           </Section>
 
           <Section style={ctaSection}>
             <Button href={url} style={cta}>
-              Compartir mi experiencia ✨
+              Valorar en 10 segundos →
             </Button>
-            <Text style={ctaFallback}>
-              O abre este enlace:{' '}
-              <span style={ctaUrl}>{url}</span>
-            </Text>
+            <Text style={ctaMicro}>Solo 10 segundos. Prometido.</Text>
           </Section>
 
+          {tripChip && (
+            <Section style={chipSection}>
+              <Text style={chip}>📍 {tripChip}</Text>
+            </Section>
+          )}
+
           <Section style={contentSection}>
-            <Text style={closing}>
-              Gracias por formar parte de {SITE_NAME} y por ayudarnos a seguir
-              mejorando. Tu opinión nos importa de verdad. 🙌
-            </Text>
-            <Text style={tagline}>
-              Seguimos mejorando viaje a viaje ✈️
-            </Text>
+            <Text style={closing}>Gracias por viajar con {SITE_NAME} 🙌</Text>
           </Section>
         </Container>
       </Body>
@@ -127,7 +96,7 @@ export const template = {
   subject: pickSubject,
   displayName: 'Feedback al día siguiente del viaje',
   previewData: {
-    userName: 'Juan Ga.',
+    userName: 'Juan',
     tripName: 'Escapada a Lisboa',
     destination: 'Lisboa',
     startDate: '22 nov 2025',
@@ -136,103 +105,76 @@ export const template = {
   },
 } satisfies TemplateEntry
 
-// Styles — consistentes con trip-pre-departure
+// Styles — premium, ligero, mobile-first
 const main = {
   backgroundColor: '#ffffff',
   fontFamily:
     "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif",
 }
-const container = { margin: '0 auto', maxWidth: '600px', padding: '0' }
+const container = { margin: '0 auto', maxWidth: '560px', padding: '0' }
 const header = {
   backgroundColor: '#0099dd',
-  padding: '28px 24px',
+  padding: '24px 24px',
   textAlign: 'center' as const,
   borderRadius: '8px 8px 0 0',
 }
 const brand = {
   color: '#ffffff',
-  fontSize: '26px',
+  fontSize: '24px',
   fontWeight: 'bold' as const,
   letterSpacing: '2px',
   margin: '0',
 }
-const contentSection = { padding: '24px 28px' }
+const contentSection = { padding: '24px 28px 8px' }
 const h1 = {
   color: '#1a1a1a',
   fontSize: '22px',
   fontWeight: 'bold' as const,
-  margin: '0 0 12px',
-}
-const h2 = {
-  color: '#1a1a1a',
-  fontSize: '18px',
-  fontWeight: 'bold' as const,
-  margin: '0 0 14px',
+  margin: '0 0 10px',
 }
 const lead = {
   color: '#1a1a1a',
   fontSize: '17px',
   lineHeight: '1.5',
-  margin: '0 0 12px',
+  margin: '0',
 }
-const text = {
-  color: '#4a4a4a',
-  fontSize: '15px',
-  lineHeight: '1.6',
-  margin: '0 0 12px',
-}
-const card = {
-  backgroundColor: '#f0f9ff',
-  border: '1px solid #bae6fd',
-  borderRadius: '10px',
-  padding: '18px 22px',
-  margin: '8px 28px 16px',
-}
-const cardTitle = {
-  color: '#0369a1',
-  fontSize: '13px',
-  fontWeight: 'bold' as const,
-  textTransform: 'uppercase' as const,
-  letterSpacing: '1px',
-  margin: '0 0 10px',
-}
-const cardRow = {
-  color: '#1a1a1a',
-  fontSize: '15px',
-  lineHeight: '1.6',
-  margin: '0 0 6px',
-}
-const cardLabel = { color: '#475569', fontWeight: 'bold' as const }
 const ctaSection = {
-  padding: '8px 28px 24px',
+  padding: '20px 28px 8px',
   textAlign: 'center' as const,
 }
 const cta = {
   backgroundColor: '#0099dd',
   color: '#ffffff',
-  fontSize: '16px',
+  fontSize: '17px',
   fontWeight: 'bold' as const,
   textDecoration: 'none',
-  padding: '14px 28px',
-  borderRadius: '10px',
+  padding: '16px 32px',
+  borderRadius: '12px',
   display: 'inline-block',
+  boxShadow: '0 6px 16px rgba(0, 153, 221, 0.25)',
 }
-const ctaFallback = {
+const ctaMicro = {
   color: '#6b7280',
-  fontSize: '12px',
-  margin: '14px 0 0',
-  wordBreak: 'break-all' as const,
+  fontSize: '13px',
+  margin: '12px 0 0',
 }
-const ctaUrl = { color: '#0099dd' }
+const chipSection = {
+  padding: '4px 28px 8px',
+  textAlign: 'center' as const,
+}
+const chip = {
+  display: 'inline-block',
+  backgroundColor: '#f0f9ff',
+  border: '1px solid #bae6fd',
+  borderRadius: '999px',
+  color: '#0369a1',
+  fontSize: '13px',
+  padding: '6px 14px',
+  margin: '0',
+}
 const closing = {
   color: '#1a1a1a',
-  fontSize: '15px',
-  fontWeight: 'bold' as const,
-  margin: '14px 0 6px',
-}
-const tagline = {
-  color: '#0099dd',
   fontSize: '14px',
-  fontStyle: 'italic' as const,
-  margin: '0',
+  margin: '8px 0 0',
+  textAlign: 'center' as const,
 }
