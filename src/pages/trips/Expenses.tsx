@@ -603,7 +603,11 @@ const Expenses = () => {
               </div>
               <div>
                 <Label className="mb-2 block">{t.sharedAmong}</Label>
-                <div className="space-y-2 max-h-40 overflow-y-auto">
+                <div
+                  className={`space-y-2 max-h-40 overflow-y-auto rounded-md p-2 border transition-colors ${
+                    splitsError ? "border-destructive bg-destructive/5" : "border-transparent"
+                  }`}
+                >
                   {members.map((m) => (
                     <label key={m.user_id} className="flex items-center gap-2 cursor-pointer">
                       <Checkbox
@@ -614,6 +618,11 @@ const Expenses = () => {
                     </label>
                   ))}
                 </div>
+                {splitsError && (
+                  <p className="text-sm font-medium text-destructive mt-1.5">
+                    {t.expenseNeedsAtLeastOneMember}
+                  </p>
+                )}
               </div>
               <div>
                 <Label className="mb-2 block">{t.ticketPhoto}</Label>
