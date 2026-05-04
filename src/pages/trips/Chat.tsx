@@ -56,6 +56,7 @@ const Chat = () => {
   const [replyTo, setReplyTo] = useState<Message | null>(null);
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
   const [attachOpen, setAttachOpen] = useState(false);
+  const [pollDialogOpen, setPollDialogOpen] = useState(false);
 
   // undefined = not yet fetched, null = no record (first visit)
   const [lastSeenAt, setLastSeenAt] = useState<string | null | undefined>(undefined);
