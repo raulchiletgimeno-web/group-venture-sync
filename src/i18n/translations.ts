@@ -248,7 +248,6 @@ type TranslationKeys = {
   audioMsg: string;
   locationMsg: string;
   attach: string;
-  takePhoto: string;
   chooseFromGallery: string;
   sendCurrentLocation: string;
   sharedLocation: string;
