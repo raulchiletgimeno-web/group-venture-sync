@@ -251,6 +251,8 @@ type TranslationKeys = {
   chooseFromGallery: string;
   sendCurrentLocation: string;
   sharedLocation: string;
+  sharedCurrentLocationBy: string;
+  viewOnMap: string;
   openInMaps: string;
   locationUnavailable: string;
   locationDenied: string;
@@ -731,6 +733,8 @@ const translations: Record<Language, TranslationKeys> = {
     chooseFromGallery: "Elegir de galería",
     sendCurrentLocation: "Enviar mi ubicación actual",
     sharedLocation: "Ubicación compartida",
+    sharedCurrentLocationBy: "ha compartido su ubicación actual",
+    viewOnMap: "Ver en el mapa",
     openInMaps: "Abrir en Google Maps",
     locationUnavailable: "Geolocalización no disponible",
     locationDenied: "Permiso de ubicación denegado",
@@ -1180,6 +1184,8 @@ const translations: Record<Language, TranslationKeys> = {
     chooseFromGallery: "Choose from gallery",
     sendCurrentLocation: "Send my current location",
     sharedLocation: "Shared location",
+    sharedCurrentLocationBy: "shared their current location",
+    viewOnMap: "View on map",
     openInMaps: "Open in Google Maps",
     locationUnavailable: "Geolocation unavailable",
     locationDenied: "Location permission denied",
@@ -1629,6 +1635,8 @@ const translations: Record<Language, TranslationKeys> = {
     chooseFromGallery: "Choisir dans la galerie",
     sendCurrentLocation: "Envoyer ma position actuelle",
     sharedLocation: "Position partagée",
+    sharedCurrentLocationBy: "a partagé sa position actuelle",
+    viewOnMap: "Voir sur la carte",
     openInMaps: "Ouvrir dans Google Maps",
     locationUnavailable: "Géolocalisation indisponible",
     locationDenied: "Autorisation de localisation refusée",
@@ -2078,6 +2086,8 @@ const translations: Record<Language, TranslationKeys> = {
     chooseFromGallery: "Escolher da galeria",
     sendCurrentLocation: "Enviar a minha localização atual",
     sharedLocation: "Localização partilhada",
+    sharedCurrentLocationBy: "partilhou a sua localização atual",
+    viewOnMap: "Ver no mapa",
     openInMaps: "Abrir no Google Maps",
     locationUnavailable: "Geolocalização indisponível",
     locationDenied: "Permissão de localização negada",
@@ -2527,6 +2537,8 @@ const translations: Record<Language, TranslationKeys> = {
     chooseFromGallery: "Scegli dalla galleria",
     sendCurrentLocation: "Invia la mia posizione attuale",
     sharedLocation: "Posizione condivisa",
+    sharedCurrentLocationBy: "ha condiviso la sua posizione attuale",
+    viewOnMap: "Vedi sulla mappa",
     openInMaps: "Apri in Google Maps",
     locationUnavailable: "Geolocalizzazione non disponibile",
     locationDenied: "Permesso di localizzazione negato",
@@ -2976,6 +2988,8 @@ const translations: Record<Language, TranslationKeys> = {
     chooseFromGallery: "从相册选择",
     sendCurrentLocation: "发送我的当前位置",
     sharedLocation: "已分享位置",
+    sharedCurrentLocationBy: "分享了当前位置",
+    viewOnMap: "在地图上查看",
     openInMaps: "在 Google 地图中打开",
     locationUnavailable: "无法使用定位服务",
     locationDenied: "定位权限被拒绝",
@@ -3425,6 +3439,8 @@ const translations: Record<Language, TranslationKeys> = {
     chooseFromGallery: "Aus Galerie wählen",
     sendCurrentLocation: "Meinen aktuellen Standort senden",
     sharedLocation: "Geteilter Standort",
+    sharedCurrentLocationBy: "hat den aktuellen Standort geteilt",
+    viewOnMap: "Auf Karte ansehen",
     openInMaps: "In Google Maps öffnen",
     locationUnavailable: "Standortdienst nicht verfügbar",
     locationDenied: "Standortberechtigung verweigert",
