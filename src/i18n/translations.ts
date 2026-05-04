@@ -3339,6 +3339,7 @@ const translations: Record<Language, TranslationKeys> = {
     delete: "Löschen",
     error: "Fehler",
     invalidAmount: "Gib einen gültigen Betrag ein",
+    expenseNeedsAtLeastOneMember: "Du musst diese Ausgabe mindestens einer Person zuweisen.",
     errorUploading: "Fehler beim Hochladen des Fotos",
     photosTitle: "Fotos",
     uploadFromGallery: "Aus Galerie hochladen",
