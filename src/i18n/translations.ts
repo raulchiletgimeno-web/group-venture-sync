@@ -252,10 +252,12 @@ type TranslationKeys = {
   sendCurrentLocation: string;
   sharedLocation: string;
   sharedCurrentLocationBy: string;
+  youSharedYourLocation: string;
   viewOnMap: string;
   openInMaps: string;
   locationUnavailable: string;
   locationDenied: string;
+  locationTimeout: string;
   today: string;
   yesterday: string;
   errorSending: string;
@@ -734,10 +736,12 @@ const translations: Record<Language, TranslationKeys> = {
     sendCurrentLocation: "Enviar mi ubicación actual",
     sharedLocation: "Ubicación compartida",
     sharedCurrentLocationBy: "ha compartido su ubicación actual",
+    youSharedYourLocation: "Has compartido tu ubicación actual",
     viewOnMap: "Ver en el mapa",
     openInMaps: "Abrir en Google Maps",
     locationUnavailable: "Geolocalización no disponible",
     locationDenied: "Permiso de ubicación denegado",
+    locationTimeout: "No se pudo obtener tu ubicación a tiempo",
     today: "Hoy",
     yesterday: "Ayer",
     errorSending: "Error al enviar",
@@ -1185,10 +1189,12 @@ const translations: Record<Language, TranslationKeys> = {
     sendCurrentLocation: "Send my current location",
     sharedLocation: "Shared location",
     sharedCurrentLocationBy: "shared their current location",
+    youSharedYourLocation: "You shared your current location",
     viewOnMap: "View on map",
     openInMaps: "Open in Google Maps",
     locationUnavailable: "Geolocation unavailable",
     locationDenied: "Location permission denied",
+    locationTimeout: "Couldn't get your location in time",
     today: "Today",
     yesterday: "Yesterday",
     errorSending: "Error sending",
@@ -1636,10 +1642,12 @@ const translations: Record<Language, TranslationKeys> = {
     sendCurrentLocation: "Envoyer ma position actuelle",
     sharedLocation: "Position partagée",
     sharedCurrentLocationBy: "a partagé sa position actuelle",
+    youSharedYourLocation: "Vous avez partagé votre position actuelle",
     viewOnMap: "Voir sur la carte",
     openInMaps: "Ouvrir dans Google Maps",
     locationUnavailable: "Géolocalisation indisponible",
     locationDenied: "Autorisation de localisation refusée",
+    locationTimeout: "Impossible d'obtenir votre position à temps",
     today: "Aujourd'hui",
     yesterday: "Hier",
     errorSending: "Erreur d'envoi",
@@ -2087,10 +2095,12 @@ const translations: Record<Language, TranslationKeys> = {
     sendCurrentLocation: "Enviar a minha localização atual",
     sharedLocation: "Localização partilhada",
     sharedCurrentLocationBy: "partilhou a sua localização atual",
+    youSharedYourLocation: "Partilhou a sua localização atual",
     viewOnMap: "Ver no mapa",
     openInMaps: "Abrir no Google Maps",
     locationUnavailable: "Geolocalização indisponível",
     locationDenied: "Permissão de localização negada",
+    locationTimeout: "Não foi possível obter a sua localização a tempo",
     today: "Hoje",
     yesterday: "Ontem",
     errorSending: "Erro ao enviar",
@@ -2538,10 +2548,12 @@ const translations: Record<Language, TranslationKeys> = {
     sendCurrentLocation: "Invia la mia posizione attuale",
     sharedLocation: "Posizione condivisa",
     sharedCurrentLocationBy: "ha condiviso la sua posizione attuale",
+    youSharedYourLocation: "Hai condiviso la tua posizione attuale",
     viewOnMap: "Vedi sulla mappa",
     openInMaps: "Apri in Google Maps",
     locationUnavailable: "Geolocalizzazione non disponibile",
     locationDenied: "Permesso di localizzazione negato",
+    locationTimeout: "Impossibile ottenere la tua posizione in tempo",
     today: "Oggi",
     yesterday: "Ieri",
     errorSending: "Errore nell'invio",
@@ -2989,10 +3001,12 @@ const translations: Record<Language, TranslationKeys> = {
     sendCurrentLocation: "发送我的当前位置",
     sharedLocation: "已分享位置",
     sharedCurrentLocationBy: "分享了当前位置",
+    youSharedYourLocation: "您分享了当前位置",
     viewOnMap: "在地图上查看",
     openInMaps: "在 Google 地图中打开",
     locationUnavailable: "无法使用定位服务",
     locationDenied: "定位权限被拒绝",
+    locationTimeout: "无法及时获取您的位置",
     today: "今天",
     yesterday: "昨天",
     errorSending: "发送出错",
@@ -3440,10 +3454,12 @@ const translations: Record<Language, TranslationKeys> = {
     sendCurrentLocation: "Meinen aktuellen Standort senden",
     sharedLocation: "Geteilter Standort",
     sharedCurrentLocationBy: "hat den aktuellen Standort geteilt",
+    youSharedYourLocation: "Du hast deinen aktuellen Standort geteilt",
     viewOnMap: "Auf Karte ansehen",
     openInMaps: "In Google Maps öffnen",
     locationUnavailable: "Standortdienst nicht verfügbar",
     locationDenied: "Standortberechtigung verweigert",
+    locationTimeout: "Standort konnte nicht rechtzeitig ermittelt werden",
     today: "Heute",
     yesterday: "Gestern",
     errorSending: "Fehler beim Senden",

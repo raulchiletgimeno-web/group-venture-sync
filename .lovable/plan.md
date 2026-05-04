@@ -1,89 +1,85 @@
-## Objetivo
+## Causa raíz del "Error al enviar"
 
-Mejorar solo cómo se visualiza el mensaje de **ubicación compartida** dentro del chat para que quede claro quién la ha enviado y se sienta más natural y premium. Sin tocar nada más de la app.
+El insert en `trip_messages` con `type: "location"` está siendo **rechazado por la base de datos**. La tabla tiene un CHECK constraint:
+
+```
+trip_messages_type_check  CHECK (type = ANY (ARRAY['text','audio','image']))
+```
+
+Es decir: cuando se añadió el tipo `'location'` en el cliente, **nunca se actualizó la restricción de la base de datos**, así que cualquier intento de guardar una ubicación falla con error 23514. La geolocalización del navegador, los permisos, el JSON de coordenadas y RLS funcionan bien — el único punto roto es el constraint. Esto explica por qué falla siempre (no es específico del viaje "Estrasburgo": es global, simplemente lo has probado allí).
 
 ## Cambios
 
-### 1. `src/pages/trips/Chat.tsx` (líneas 409–432)
+### 1. Migración SQL — desbloquear el tipo `location`
 
-Reescribir el bloque de render del mensaje `type === "location"` para que la tarjeta dentro de la burbuja muestre:
+Reemplazar el CHECK constraint para incluir `'location'`:
 
-- Una **frase clara y humana** en la parte superior: *"Raúl ha compartido su ubicación actual"* (con el nombre real del autor obtenido vía `getMemberName(msg.user_id)`, que ya respeta el formato YORMIT "Nombre + 2 letras").
-- El **bloque visual de mapa** con icono `MapPin` en círculo teal y un CTA claro **"Ver en el mapa"** en lugar del genérico "Abrir en Google Maps".
-- Toda la tarjeta sigue siendo un enlace clickable que abre `https://www.google.com/maps?q=lat,lng` en una pestaña nueva.
+```sql
+ALTER TABLE public.trip_messages
+  DROP CONSTRAINT IF EXISTS trip_messages_type_check;
 
-Estructura propuesta dentro de la burbuja existente (sin cambiar la burbuja ni el header de autor que ya existe):
-
-```tsx
-{msg.type === "location" && msg.content && (() => {
-  try {
-    const { lat, lng } = JSON.parse(msg.content);
-    const mapsUrl = `https://www.google.com/maps?q=${lat},${lng}`;
-    const authorName = isOwn ? t.you : getMemberName(msg.user_id);
-    return (
-      <div className="space-y-2">
-        <p className="text-[15px] text-foreground/80 leading-snug">
-          <span className="font-semibold text-foreground">{authorName}</span>{" "}
-          {t.sharedCurrentLocationBy}
-        </p>
-        <a
-          href={mapsUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-3 p-3 rounded-xl bg-primary/5 hover:bg-primary/10 transition-colors border border-primary/20"
-        >
-          <div className="h-11 w-11 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
-            <MapPin className="h-5 w-5 text-primary" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold text-foreground">{t.sharedLocation}</p>
-            <p className="text-xs text-primary font-medium">{t.viewOnMap} →</p>
-          </div>
-        </a>
-      </div>
-    );
-  } catch {
-    return null;
-  }
-})()}
+ALTER TABLE public.trip_messages
+  ADD CONSTRAINT trip_messages_type_check
+  CHECK (type = ANY (ARRAY['text','audio','image','location']));
 ```
 
-Nota sobre la frase: como la cabecera de la burbuja ya muestra el nombre del autor (líneas 399–401), la frase dentro de la tarjeta refuerza el contexto en lenguaje natural ("ha compartido su ubicación actual") sin sentirse redundante: el header es el remitente del mensaje, la frase es el verbo de la acción que da sentido a la tarjeta.
+Sin tocar RLS, columnas, ni datos existentes. Los 514 mensajes `text`, 24 `image` y 8 `audio` siguen siendo válidos.
 
-### 2. `src/i18n/translations.ts`
+### 2. `src/pages/trips/Chat.tsx` — mensajes de error más claros y redacción "Tú"
 
-Reemplazar el uso textual y añadir dos claves nuevas en los 7 idiomas (es, en, fr, pt, it, zh, de), justo después de `sharedLocation`:
+a) Mejorar el feedback del usuario en `sendLocation` (líneas 225–250) para que el toast no sea genérico cuando se puede detectar la causa real (denegado, timeout, no disponible, error de guardado), usando `error.code` de `GeolocationPositionError` y mostrando `error.message` de Supabase si lo hay:
 
-- `sharedCurrentLocationBy` — la frase **sin** el nombre (el nombre se renderiza en `<span>` aparte para poder destacarlo en negrita):
-  - es: "ha compartido su ubicación actual"
-  - en: "shared their current location"
-  - fr: "a partagé sa position actuelle"
-  - pt: "partilhou a sua localização atual"
-  - it: "ha condiviso la sua posizione attuale"
-  - zh: "分享了当前位置"
-  - de: "hat den aktuellen Standort geteilt"
-- `viewOnMap` — CTA dentro de la tarjeta:
-  - es: "Ver en el mapa"
-  - en: "View on map"
-  - fr: "Voir sur la carte"
-  - pt: "Ver no mapa"
-  - it: "Vedi sulla mappa"
-  - zh: "在地图上查看"
-  - de: "Auf Karte ansehen"
+- `PERMISSION_DENIED` (1) → `t.locationDenied`
+- `POSITION_UNAVAILABLE` (2) → `t.locationUnavailable`
+- `TIMEOUT` (3) → nuevo `t.locationTimeout`
+- error en insert → `t.errorSending` con `description: error.message`
 
-`sharedLocation` y `openInMaps` se mantienen (la primera se sigue usando como subtítulo de la tarjeta; la segunda queda intacta por si se usa en otros sitios). `locationMsg` ("📍 Ubicación") sigue como snippet en respuestas citadas.
+b) Corregir la redacción del mensaje de ubicación cuando el autor es el propio usuario (líneas 413–419). En lugar de `"Tú ha compartido su ubicación actual"`, renderizar dos variantes:
 
-## Lo que NO se toca
+```tsx
+{isOwn ? (
+  <p className="text-[15px] text-foreground/80 leading-snug">
+    {t.youSharedYourLocation}
+  </p>
+) : (
+  <p className="text-[15px] text-foreground/80 leading-snug">
+    <span className="font-semibold text-foreground">{getMemberName(msg.user_id)}</span>{" "}
+    {t.sharedCurrentLocationBy}
+  </p>
+)}
+```
 
-- Lógica de envío de ubicación (`sendLocation`), permisos, geolocalización, JSON guardado en `content`.
-- Header del autor en la burbuja, swipe-to-reply, replies, eliminado, audio, imagen, texto, scroll, realtime, notificaciones.
-- Barra inferior, popover de adjuntar, micrófono, send.
-- Cualquier otro fichero del proyecto.
+`sharedCurrentLocationBy` se sigue usando tal cual para terceros (ya está bien traducido en los 7 idiomas). La nueva clave `youSharedYourLocation` es una frase completa porque en muchos idiomas no es un simple "Tú + verbo".
+
+### 3. `src/i18n/translations.ts` — añadir 2 claves en 7 idiomas
+
+- `youSharedYourLocation`:
+  - es: "Has compartido tu ubicación actual"
+  - en: "You shared your current location"
+  - fr: "Vous avez partagé votre position actuelle"
+  - pt: "Partilhou a sua localização atual"
+  - it: "Hai condiviso la tua posizione attuale"
+  - zh: "您分享了当前位置"
+  - de: "Du hast deinen aktuellen Standort geteilt"
+- `locationTimeout`:
+  - es: "No se pudo obtener tu ubicación a tiempo"
+  - en: "Couldn't get your location in time"
+  - fr: "Impossible d'obtenir votre position à temps"
+  - pt: "Não foi possível obter a sua localização a tempo"
+  - it: "Impossibile ottenere la tua posizione in tempo"
+  - zh: "无法及时获取您的位置"
+  - de: "Standort konnte nicht rechtzeitig ermittelt werden"
+
+`sharedCurrentLocationBy`, `sharedLocation`, `viewOnMap`, `locationDenied`, `locationUnavailable` quedan intactos.
 
 ## Validación tras implementar
 
-1. Enviar ubicación → en el chat aparece la burbuja con: cabecera "Tú/Nombre", frase "**Nombre** ha compartido su ubicación actual", y debajo la tarjeta MapPin + "Ubicación compartida" + "Ver en el mapa →".
-2. Pulsar la tarjeta abre Google Maps en pestaña nueva.
-3. El destinatario ve "**Raúl Ga.** ha compartido su ubicación actual" (formato display name de YORMIT respetado).
-4. Cambio de idioma actualiza la frase y el CTA correctamente en los 7 idiomas.
-5. Resto del chat (texto, audio, imagen, replies, swipe, scroll) sin cambios.
+1. En el chat del viaje "Estrasburgo" (o cualquier otro), pulsar **+ → Enviar mi ubicación actual** → se concede el permiso → aparece la burbuja con el mapa, sin "Error al enviar".
+2. La burbuja propia muestra **"Has compartido tu ubicación actual"** (no "Tú ha compartido…").
+3. Para otros, sigue mostrando **"Raúl Ga. ha compartido su ubicación actual"**.
+4. La tarjeta abre Google Maps al pulsarla.
+5. Si el usuario deniega permisos → toast claro "Permiso de ubicación denegado". Si tarda más de 10s → "No se pudo obtener tu ubicación a tiempo".
+
+## Lo que NO se toca
+
+Fotos, audio, texto, replies, swipe, scroll, realtime, notificaciones, micrófono, popover de adjuntar, header de burbuja, RLS, otros ficheros del proyecto.

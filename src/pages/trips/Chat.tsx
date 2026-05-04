@@ -237,15 +237,22 @@ const Chat = () => {
           trip_id: tripId, user_id: user.id, type: "location",
           content, reply_to_id: replySnap?.id ?? null,
         });
-        if (error) toast({ title: t.errorSending, variant: "destructive" });
-        else notifyTripEvent(tripId, "chat", user.id);
+        if (error) {
+          toast({ title: t.errorSending, description: error.message, variant: "destructive" });
+        } else {
+          notifyTripEvent(tripId, "chat", user.id);
+        }
         setReplyTo(null); setSending(false);
       },
-      () => {
-        toast({ title: t.locationDenied, variant: "destructive" });
+      (err) => {
+        const title =
+          err.code === err.PERMISSION_DENIED ? t.locationDenied :
+          err.code === err.TIMEOUT ? t.locationTimeout :
+          t.locationUnavailable;
+        toast({ title, variant: "destructive" });
         setSending(false);
       },
-      { enableHighAccuracy: true, timeout: 10000 }
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
   };
 
@@ -410,13 +417,18 @@ const Chat = () => {
                         try {
                           const { lat, lng } = JSON.parse(msg.content);
                           const mapsUrl = `https://www.google.com/maps?q=${lat},${lng}`;
-                          const authorName = isOwn ? t.you : getMemberName(msg.user_id);
                           return (
                             <div className="space-y-2">
-                              <p className="text-[15px] text-foreground/80 leading-snug">
-                                <span className="font-semibold text-foreground">{authorName}</span>{" "}
-                                {t.sharedCurrentLocationBy}
-                              </p>
+                              {isOwn ? (
+                                <p className="text-[15px] text-foreground/80 leading-snug">
+                                  {t.youSharedYourLocation}
+                                </p>
+                              ) : (
+                                <p className="text-[15px] text-foreground/80 leading-snug">
+                                  <span className="font-semibold text-foreground">{getMemberName(msg.user_id)}</span>{" "}
+                                  {t.sharedCurrentLocationBy}
+                                </p>
+                              )}
                               <a
                                 href={mapsUrl}
                                 target="_blank"
