@@ -246,6 +246,15 @@ type TranslationKeys = {
   messageUnavailable: string;
   imageMsg: string;
   audioMsg: string;
+  locationMsg: string;
+  attach: string;
+  takePhoto: string;
+  chooseFromGallery: string;
+  sendCurrentLocation: string;
+  sharedLocation: string;
+  openInMaps: string;
+  locationUnavailable: string;
+  locationDenied: string;
   today: string;
   yesterday: string;
   errorSending: string;
