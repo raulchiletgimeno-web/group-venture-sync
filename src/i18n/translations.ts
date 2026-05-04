@@ -2457,6 +2457,7 @@ const translations: Record<Language, TranslationKeys> = {
     delete: "Elimina",
     error: "Errore",
     invalidAmount: "Inserisci un importo valido",
+    expenseNeedsAtLeastOneMember: "Devi assegnare questa spesa ad almeno una persona.",
     errorUploading: "Errore nel caricamento della foto",
     photosTitle: "Foto",
     uploadFromGallery: "Dalla galleria",
