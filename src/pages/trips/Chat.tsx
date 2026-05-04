@@ -417,13 +417,18 @@ const Chat = () => {
                         try {
                           const { lat, lng } = JSON.parse(msg.content);
                           const mapsUrl = `https://www.google.com/maps?q=${lat},${lng}`;
-                          const authorName = isOwn ? t.you : getMemberName(msg.user_id);
                           return (
                             <div className="space-y-2">
-                              <p className="text-[15px] text-foreground/80 leading-snug">
-                                <span className="font-semibold text-foreground">{authorName}</span>{" "}
-                                {t.sharedCurrentLocationBy}
-                              </p>
+                              {isOwn ? (
+                                <p className="text-[15px] text-foreground/80 leading-snug">
+                                  {t.youSharedYourLocation}
+                                </p>
+                              ) : (
+                                <p className="text-[15px] text-foreground/80 leading-snug">
+                                  <span className="font-semibold text-foreground">{getMemberName(msg.user_id)}</span>{" "}
+                                  {t.sharedCurrentLocationBy}
+                                </p>
+                              )}
                               <a
                                 href={mapsUrl}
                                 target="_blank"
