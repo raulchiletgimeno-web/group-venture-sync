@@ -2016,6 +2016,7 @@ const translations: Record<Language, TranslationKeys> = {
     delete: "Eliminar",
     error: "Erro",
     invalidAmount: "Insira um valor válido",
+    expenseNeedsAtLeastOneMember: "Tens de atribuir esta despesa a pelo menos uma pessoa.",
     errorUploading: "Erro ao carregar foto",
     photosTitle: "Fotos",
     uploadFromGallery: "Da galeria",
