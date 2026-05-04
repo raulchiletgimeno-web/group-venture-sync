@@ -612,6 +612,16 @@ const Chat = () => {
               </div>
               <span className="text-sm font-medium text-foreground">{t.sendCurrentLocation}</span>
             </button>
+            <button
+              type="button"
+              onClick={() => { setAttachOpen(false); setPollDialogOpen(true); }}
+              className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-muted transition-colors text-left"
+            >
+              <div className="h-10 w-10 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                <BarChart3 className="h-5 w-5" />
+              </div>
+              <span className="text-sm font-medium text-foreground">{t.createPoll}</span>
+            </button>
           </PopoverContent>
         </Popover>
 
