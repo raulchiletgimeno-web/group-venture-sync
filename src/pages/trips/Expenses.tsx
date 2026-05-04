@@ -178,6 +178,7 @@ const Expenses = () => {
     setReceiptFile(null);
     setReceiptPreview(null);
     setExistingReceiptPath(null);
+    setSplitsError(false);
     setOpen(true);
   };
 
