@@ -217,6 +217,7 @@ type TranslationKeys = {
   delete: string;
   error: string;
   invalidAmount: string;
+  expenseNeedsAtLeastOneMember: string;
   errorUploading: string;
 
   // Photos
@@ -692,6 +693,7 @@ const translations: Record<Language, TranslationKeys> = {
     delete: "Eliminar",
     error: "Error",
     invalidAmount: "Introduce una cantidad válida",
+    expenseNeedsAtLeastOneMember: "Debes asignar este gasto al menos a una persona.",
     errorUploading: "Error subiendo foto",
     photosTitle: "Fotos",
     uploadFromGallery: "Subir desde galería",
@@ -1132,6 +1134,7 @@ const translations: Record<Language, TranslationKeys> = {
     delete: "Delete",
     error: "Error",
     invalidAmount: "Enter a valid amount",
+    expenseNeedsAtLeastOneMember: "You must assign this expense to at least one person.",
     errorUploading: "Error uploading photo",
     photosTitle: "Photos",
     uploadFromGallery: "Upload from gallery",
@@ -1572,6 +1575,7 @@ const translations: Record<Language, TranslationKeys> = {
     delete: "Supprimer",
     error: "Erreur",
     invalidAmount: "Entrez un montant valide",
+    expenseNeedsAtLeastOneMember: "Vous devez attribuer cette dépense à au moins une personne.",
     errorUploading: "Erreur lors du téléchargement de la photo",
     photosTitle: "Photos",
     uploadFromGallery: "Depuis la galerie",
@@ -2012,6 +2016,7 @@ const translations: Record<Language, TranslationKeys> = {
     delete: "Eliminar",
     error: "Erro",
     invalidAmount: "Insira um valor válido",
+    expenseNeedsAtLeastOneMember: "Tens de atribuir esta despesa a pelo menos uma pessoa.",
     errorUploading: "Erro ao carregar foto",
     photosTitle: "Fotos",
     uploadFromGallery: "Da galeria",
@@ -2452,6 +2457,7 @@ const translations: Record<Language, TranslationKeys> = {
     delete: "Elimina",
     error: "Errore",
     invalidAmount: "Inserisci un importo valido",
+    expenseNeedsAtLeastOneMember: "Devi assegnare questa spesa ad almeno una persona.",
     errorUploading: "Errore nel caricamento della foto",
     photosTitle: "Foto",
     uploadFromGallery: "Dalla galleria",
@@ -2892,6 +2898,7 @@ const translations: Record<Language, TranslationKeys> = {
     delete: "删除",
     error: "错误",
     invalidAmount: "请输入有效金额",
+    expenseNeedsAtLeastOneMember: "请至少为该费用分配一位成员。",
     errorUploading: "上传照片出错",
     photosTitle: "照片",
     uploadFromGallery: "从相册上传",
@@ -3332,6 +3339,7 @@ const translations: Record<Language, TranslationKeys> = {
     delete: "Löschen",
     error: "Fehler",
     invalidAmount: "Gib einen gültigen Betrag ein",
+    expenseNeedsAtLeastOneMember: "Du musst diese Ausgabe mindestens einer Person zuweisen.",
     errorUploading: "Fehler beim Hochladen des Fotos",
     photosTitle: "Fotos",
     uploadFromGallery: "Aus Galerie hochladen",

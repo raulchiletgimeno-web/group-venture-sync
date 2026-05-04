@@ -75,6 +75,7 @@ const Expenses = () => {
   const [amount2, setAmount2] = useState("");
   const [paidBy, setPaidBy] = useState("");
   const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
+  const [splitsError, setSplitsError] = useState(false);
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
   const [existingReceiptPath, setExistingReceiptPath] = useState<string | null>(null);
@@ -177,6 +178,7 @@ const Expenses = () => {
     setReceiptFile(null);
     setReceiptPreview(null);
     setExistingReceiptPath(null);
+    setSplitsError(false);
     setOpen(true);
   };
 
@@ -189,6 +191,7 @@ const Expenses = () => {
     setReceiptFile(null);
     setReceiptPreview(null);
     setExistingReceiptPath(exp.receipt_path);
+    setSplitsError(false);
     setOpen(true);
   };
 
@@ -226,14 +229,26 @@ const Expenses = () => {
   };
 
   const toggleMember = (uid: string) => {
-    setSelectedMembers((prev) =>
-      prev.includes(uid) ? prev.filter((id) => id !== uid) : [...prev, uid]
-    );
+    setSelectedMembers((prev) => {
+      const next = prev.includes(uid) ? prev.filter((id) => id !== uid) : [...prev, uid];
+      if (next.length > 0) setSplitsError(false);
+      return next;
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!tripId || !paidBy || selectedMembers.length === 0) return;
+    if (!tripId || !paidBy) return;
+
+    if (selectedMembers.length === 0) {
+      setSplitsError(true);
+      toast({
+        title: t.error,
+        description: t.expenseNeedsAtLeastOneMember,
+        variant: "destructive",
+      });
+      return;
+    }
 
     const parsedAmount = parseFloat(amount2);
     if (isNaN(parsedAmount) || parsedAmount <= 0) {
@@ -253,9 +268,30 @@ const Expenses = () => {
         return;
       }
 
-      await supabase.from("trip_expense_splits").delete().eq("expense_id", editingId);
-      const splits = selectedMembers.map((uid) => ({ expense_id: editingId, user_id: uid }));
-      await supabase.from("trip_expense_splits").insert(splits);
+      // Insert new splits first, then remove old ones not in the new set,
+      // so the expense never has zero splits (DB trigger guard).
+      const newSplitRows = selectedMembers.map((uid) => ({ expense_id: editingId, user_id: uid }));
+      const { error: insertSplitErr } = await supabase
+        .from("trip_expense_splits")
+        .upsert(newSplitRows, { onConflict: "expense_id,user_id", ignoreDuplicates: true });
+      if (insertSplitErr) {
+        toast({ title: t.error, description: insertSplitErr.message, variant: "destructive" });
+        return;
+      }
+      const { error: delSplitErr } = await supabase
+        .from("trip_expense_splits")
+        .delete()
+        .eq("expense_id", editingId)
+        .not("user_id", "in", `(${selectedMembers.join(",")})`);
+      if (delSplitErr) {
+        const msg = delSplitErr.message ?? "";
+        if (delSplitErr.code === "23514" || msg.includes("expense_requires_at_least_one_member")) {
+          toast({ title: t.error, description: t.expenseNeedsAtLeastOneMember, variant: "destructive" });
+          return;
+        }
+        toast({ title: t.error, description: msg, variant: "destructive" });
+        return;
+      }
 
       setOpen(false);
       setEditingId(null);
@@ -528,7 +564,7 @@ const Expenses = () => {
     <div className="animate-fade-in">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-bold text-foreground">{t.sharedExpenses}</h2>
-        <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setEditingId(null); }}>
+        <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setEditingId(null); setSplitsError(false); } }}>
           <DialogTrigger asChild>
             <Button size="sm" className="gradient-hero text-primary-foreground border-0" onClick={openCreate}>
               <Plus className="h-4 w-4 mr-1" /> {t.addExpense}
@@ -569,7 +605,11 @@ const Expenses = () => {
               </div>
               <div>
                 <Label className="mb-2 block">{t.sharedAmong}</Label>
-                <div className="space-y-2 max-h-40 overflow-y-auto">
+                <div
+                  className={`space-y-2 max-h-40 overflow-y-auto rounded-md p-2 border transition-colors ${
+                    splitsError ? "border-destructive bg-destructive/5" : "border-transparent"
+                  }`}
+                >
                   {members.map((m) => (
                     <label key={m.user_id} className="flex items-center gap-2 cursor-pointer">
                       <Checkbox
@@ -580,6 +620,11 @@ const Expenses = () => {
                     </label>
                   ))}
                 </div>
+                {splitsError && (
+                  <p className="text-sm font-medium text-destructive mt-1.5">
+                    {t.expenseNeedsAtLeastOneMember}
+                  </p>
+                )}
               </div>
               <div>
                 <Label className="mb-2 block">{t.ticketPhoto}</Label>
