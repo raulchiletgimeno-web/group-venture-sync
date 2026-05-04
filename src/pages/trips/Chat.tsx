@@ -219,9 +219,6 @@ const Chat = () => {
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
     setImageFile(file); setImagePreview(URL.createObjectURL(file)); e.target.value = "";
   };
 
