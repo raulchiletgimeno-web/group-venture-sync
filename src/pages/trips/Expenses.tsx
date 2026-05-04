@@ -690,10 +690,20 @@ const Expenses = () => {
               <Button
                 onClick={handleConfirmPayment}
                 disabled={submittingPayment}
+                aria-busy={submittingPayment}
                 className="w-full gradient-hero text-primary-foreground border-0"
               >
-                <CheckCircle2 className="h-4 w-4 mr-2" />
-                {t.confirmPayment}
+                {submittingPayment ? (
+                  <>
+                    <span className="h-4 w-4 mr-2 inline-block animate-spin rounded-full border-2 border-primary-foreground/40 border-t-primary-foreground" />
+                    {t.saving}
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="h-4 w-4 mr-2" />
+                    {t.confirmPayment}
+                  </>
+                )}
               </Button>
             </div>
           )}
