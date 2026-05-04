@@ -410,21 +410,28 @@ const Chat = () => {
                         try {
                           const { lat, lng } = JSON.parse(msg.content);
                           const mapsUrl = `https://www.google.com/maps?q=${lat},${lng}`;
+                          const authorName = isOwn ? t.you : getMemberName(msg.user_id);
                           return (
-                            <a
-                              href={mapsUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex items-center gap-3 p-3 rounded-xl bg-primary/5 hover:bg-primary/10 transition-colors border border-primary/20 max-w-[260px]"
-                            >
-                              <div className="h-10 w-10 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
-                                <MapPin className="h-5 w-5 text-primary" />
-                              </div>
-                              <div className="min-w-0">
-                                <p className="text-sm font-semibold text-foreground">{t.sharedLocation}</p>
-                                <p className="text-xs text-muted-foreground truncate">{t.openInMaps}</p>
-                              </div>
-                            </a>
+                            <div className="space-y-2">
+                              <p className="text-[15px] text-foreground/80 leading-snug">
+                                <span className="font-semibold text-foreground">{authorName}</span>{" "}
+                                {t.sharedCurrentLocationBy}
+                              </p>
+                              <a
+                                href={mapsUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-3 p-3 rounded-xl bg-primary/5 hover:bg-primary/10 transition-colors border border-primary/20"
+                              >
+                                <div className="h-11 w-11 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
+                                  <MapPin className="h-5 w-5 text-primary" />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-sm font-semibold text-foreground">{t.sharedLocation}</p>
+                                  <p className="text-xs text-primary font-medium">{t.viewOnMap} →</p>
+                                </div>
+                              </a>
+                            </div>
                           );
                         } catch {
                           return null;
