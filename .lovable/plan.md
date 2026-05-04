@@ -1,97 +1,83 @@
-# Mejoras experiencia post-viaje YORMIT
+## Goal
 
-Solo se tocarán 4 archivos relacionados con el feedback post-viaje. Ninguna otra parte de la app se modifica.
+Make it impossible to create two identical debt payments by double-clicking "Confirm payment" in the Expenses section. Nothing else in the app changes.
 
-## 1. Email al usuario — más corto, ligero y premium
+## Where the problem is
 
-Archivo: `supabase/functions/_shared/transactional-email-templates/trip-post-departure.tsx`
+File: `src/pages/trips/Expenses.tsx`, function `handleConfirmPayment` (line ~376) and the confirm modal button (line ~659).
 
-**Asunto** (rotación entre 4 variantes cortas):
-- "✨ Valóranos en 10 segundos"
-- "💬 ¿Qué tal {tripName}? Cuéntanoslo en 10s"
-- "⭐ Tu opinión sobre YORMIT (10 segundos)"
-- "🙌 ¿Cómo ha ido {tripName}? Tu opinión cuenta"
+Today the flow does:
+1. `setSubmittingPayment(true)`
+2. Insert into `debt_payments`
+3. Send notification email + post chat message (these can take 1–3s)
+4. Only THEN `setPaymentOpen(false)`
 
-**Estructura nueva** (mucho más corta, CTA arriba):
-- Header YORMIT (igual)
-- Saludo: "¡Hola, {nombre}! 👋"
-- Frase única: "¿Qué tal ha ido **{tripName}**? Tu opinión nos ayuda a mejorar ✨"
-- **Botón CTA grande**: "Valorar en 10 segundos →" (ya visible sin hacer scroll)
-- Microcopy bajo el botón: "Solo 10 segundos. Prometido."
-- Mini-bloque del viaje **discreto** (tipo chip, una línea): 📍 Lisboa · 22–26 nov
-- Cierre breve: "Gracias por viajar con YORMIT 🙌"
+The button is disabled during `submittingPayment`, but the modal stays open while the email + chat side-effects run, and there is no anti-duplicate guard at the DB level. If the user clicks once and the network is slow, they can perceive nothing is happening (and historically the disabled state didn't kick in fast enough on slow renders).
 
-Se elimina el bloque "⭐ Tu opinión nos importa" duplicado, los párrafos largos, el fallback de URL visible y la línea "Seguimos mejorando viaje a viaje". El email cabrá en una pantalla de móvil sin scroll.
+## Fix — Frontend (lock + close immediately)
 
-## 2. Formulario de feedback — sensación de rapidez
+In `src/pages/trips/Expenses.tsx`:
 
-Archivo: `src/pages/Feedback.tsx`
+1. Add a `useRef` lock (`paymentSubmitLockRef`) so even fast double-clicks within the same render frame are rejected — `useState` updates are async and can't guard against this; a ref can.
+2. At the very top of `handleConfirmPayment`:
+   - If the ref is already `true` → return immediately.
+   - Set ref `true` and `setSubmittingPayment(true)`.
+3. Close the modal **immediately** after the `debt_payments` insert succeeds (not after email/chat). Email and chat stay as fire-and-forget.
+4. Update the confirm button to:
+   - Stay `disabled={submittingPayment}` (already there).
+   - Show a spinner + `t.saving` ("Guardando...") label while submitting, replacing the static "Confirm payment" text.
+5. Lock the dialog while submitting: pass an `onOpenChange` that ignores close requests (ESC / outside click) when `submittingPayment` is true, so the user can't reopen and re-trigger.
+6. Release the ref in a `finally` block.
 
-Reorganización visual (sin tocar lógica de envío ni payload):
+The same `useRef` pattern is also applied to `handleUpdatePayment` (edit payment modal) since it has the identical risk, but no other code is touched.
 
-- **Header reducido**: cabecera más fina, título más corto: "Valora tu experiencia ✨"
-- Subtítulo: "Solo 10 segundos. Si quieres contarnos más, tienes espacio abajo."
-- **Bloque destacado arriba (lo único obligatorio)**:
-  1. ⭐ Estrellas 1-5 (más grandes, centradas)
-  2. ¿Volverías a usar YORMIT? (Sí / Tal vez / No, chips grandes)
-  3. Botón **"Enviar valoración ✨"** visible justo después
-- **Separador visual** "¿Quieres contarnos algo más? (opcional)" que agrupa el resto en un acordeón abierto pero claramente marcado como opcional, con tipografía y color más suaves:
-  - Secciones usadas
-  - Sección más útil / a mejorar
-  - Funcionalidad que echas de menos
-  - Qué cambiarías
-  - Comentario libre
-- El bloque "Cuéntanos sobre ti" sigue colapsado como ahora.
-- Segundo botón de envío al final (mismo handler) para quien rellene todo.
+## Fix — Backend (true idempotency)
 
-Resultado: al abrir, el usuario ve estrellas + 1 pregunta + botón. Puede enviar en 10 segundos o ampliar si quiere.
+Add a partial unique index on `debt_payments` so the database itself rejects an identical payment created within a short window. Migration:
 
-## 3. Email interno a info@yormit.com — pequeños retoques
+```sql
+-- Reject an identical (trip, from, to, amount, method) payment
+-- created within 60 seconds of another. This blocks accidental
+-- double-submits without preventing legitimate repeat payments
+-- made later (e.g. paying the same person again next week).
+CREATE OR REPLACE FUNCTION public.prevent_duplicate_debt_payment()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM public.debt_payments
+    WHERE trip_id = NEW.trip_id
+      AND from_user = NEW.from_user
+      AND to_user = NEW.to_user
+      AND amount = NEW.amount
+      AND payment_method = NEW.payment_method
+      AND created_at > now() - interval '60 seconds'
+  ) THEN
+    RAISE EXCEPTION 'duplicate_debt_payment'
+      USING ERRCODE = '23505';
+  END IF;
+  RETURN NEW;
+END;
+$$;
 
-Archivo: `supabase/functions/_shared/transactional-email-templates/trip-feedback-internal.tsx`
-
-- **Bloque "Destacado" arriba** con fondo suave y borde acento que agrupa lo más accionable:
-  - ⭐ Valoración (grande, ya existente, se mantiene)
-  - Sección a mejorar
-  - Qué cambiaría
-  - Funcionalidad que echa de menos
-- El resto de respuestas (secciones usadas, más útil, volvería a usar, comentario libre) en un bloque secundario más discreto.
-- **Bloque "Perfil opcional"** con badge "Datos opcionales rellenados" cuando hay datos, para que se vea de un vistazo si el usuario completó esta parte.
-- Sin cambios estructurales mayores: mismo header, mismo asunto, misma información.
-
-## 4. Envío fijo: día siguiente a las 10:00
-
-Archivo: `supabase/functions/check-trip-post-departure/index.ts` + reprogramación del cron.
-
-**Lógica nueva en la edge function** (sin tocar nada más):
-
-```text
-- Cron pasa a ejecutarse 1 vez al día a las 10:00 Europe/Madrid
-  (= 09:00 UTC en horario de verano CEST, 09:00 UTC ≈ 10:00 local)
-- Para gestionar correctamente verano/invierno usamos un cron que dispara
-  a las 08:00 y 09:00 UTC y la función decide si "ahora" es 10:00 en
-  Europe/Madrid usando Intl.DateTimeFormat('Europe/Madrid'); si no, sale.
-- Selección de viajes: end_date = ayer (en Europe/Madrid).
-- Se elimina la ventana 24-96h y el chequeo por horas; se sustituye por
-  "fecha local Madrid de hoy menos 1 día == end_date".
-- Catch-up: si por algún motivo no se ejecutó ayer, también se incluye
-  end_date = hace 2 días si no hay registro previo en
-  trip_post_departure_reminders (idempotencia ya existente lo protege).
-- force_trip_id sigue funcionando para envíos manuales.
+CREATE TRIGGER debt_payments_prevent_duplicate
+BEFORE INSERT ON public.debt_payments
+FOR EACH ROW EXECUTE FUNCTION public.prevent_duplicate_debt_payment();
 ```
 
-**Cron**: se reprograma `check-trip-post-departure-hourly` → `check-trip-post-departure-daily-10` con schedule `0 8,9 * * *` (UTC) — la función internamente confirma que en Europe/Madrid son las 10:00 antes de procesar. Esto da una hora exacta y estable todo el año.
+In the frontend, if `error.code === '23505'` or message contains `duplicate_debt_payment`, treat it as success (the first click already saved): close modal silently and refresh — no error toast.
 
-## Validación tras desplegar
+## Files touched
 
-- Confirmaré: nuevo asunto elegido (rotación), texto final del email, mejoras del formulario, retoques internos y la regla "día siguiente a las 10:00 Europe/Madrid".
-- Confirmaré que **solo** se han modificado estos 4 archivos y la programación del cron, y nada más de la app.
+- `src/pages/trips/Expenses.tsx` — only `handleConfirmPayment`, the confirm Dialog/Button JSX, and `handleUpdatePayment` (same lock pattern).
+- New SQL migration adding the trigger above.
 
-## Archivos que se tocan
+Nothing else in the app is modified. No design changes, no other components, no other flows.
 
-1. `supabase/functions/_shared/transactional-email-templates/trip-post-departure.tsx`
-2. `src/pages/Feedback.tsx`
-3. `supabase/functions/_shared/transactional-email-templates/trip-feedback-internal.tsx`
-4. `supabase/functions/check-trip-post-departure/index.ts` + reprogramación del cron job (vía SQL insert, sin migración pública).
+## Validation after implementation
 
-Nada más se modifica.
+1. Click "Confirm payment" twice rapidly → only one row in `debt_payments`, modal closes once.
+2. Button shows spinner + "Guardando..." while in flight.
+3. Modal cannot be closed by ESC / outside click while saving.
+4. If a duplicate insert ever reaches the DB (race / two devices), the trigger blocks it and the UI swallows the error gracefully.
