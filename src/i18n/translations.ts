@@ -1134,6 +1134,7 @@ const translations: Record<Language, TranslationKeys> = {
     delete: "Delete",
     error: "Error",
     invalidAmount: "Enter a valid amount",
+    expenseNeedsAtLeastOneMember: "You must assign this expense to at least one person.",
     errorUploading: "Error uploading photo",
     photosTitle: "Photos",
     uploadFromGallery: "Upload from gallery",
