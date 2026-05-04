@@ -2898,6 +2898,7 @@ const translations: Record<Language, TranslationKeys> = {
     delete: "删除",
     error: "错误",
     invalidAmount: "请输入有效金额",
+    expenseNeedsAtLeastOneMember: "请至少为该费用分配一位成员。",
     errorUploading: "上传照片出错",
     photosTitle: "照片",
     uploadFromGallery: "从相册上传",
