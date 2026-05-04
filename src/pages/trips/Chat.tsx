@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState, useMemo } from "react";
 import { useParams } from "react-router-dom";
-import { Send, Camera, Mic, Square, Image as ImageIcon, X, Trash2, Reply, Plus, MapPin } from "lucide-react";
+import { Send, Camera, Mic, Square, Image as ImageIcon, X, Trash2, Reply, Plus, MapPin, BarChart3, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -19,11 +20,20 @@ interface Message {
   id: string;
   user_id: string;
   content: string | null;
-  type: "text" | "audio" | "image" | "location";
+  type: "text" | "audio" | "image" | "location" | "poll";
   file_path: string | null;
   created_at: string;
   reply_to_id: string | null;
 }
+
+interface PollOption { id: string; text: string; }
+interface Poll {
+  id: string;
+  message_id: string;
+  question: string;
+  options: PollOption[];
+}
+interface PollVote { user_id: string; option_id: string; }
 
 interface Member {
   user_id: string;
@@ -46,6 +56,7 @@ const Chat = () => {
   const [replyTo, setReplyTo] = useState<Message | null>(null);
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
   const [attachOpen, setAttachOpen] = useState(false);
+  const [pollDialogOpen, setPollDialogOpen] = useState(false);
 
   // undefined = not yet fetched, null = no record (first visit)
   const [lastSeenAt, setLastSeenAt] = useState<string | null | undefined>(undefined);
@@ -156,6 +167,7 @@ const Chat = () => {
     if (msg.type === "image") return t.imageMsg;
     if (msg.type === "audio") return t.audioMsg;
     if (msg.type === "location") return t.locationMsg;
+    if (msg.type === "poll") return t.pollMsg;
     return msg.content || "";
   };
 
@@ -254,6 +266,46 @@ const Chat = () => {
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
+  };
+
+  const createPoll = async (question: string, options: string[]) => {
+    if (!user || !tripId) return;
+    setSending(true);
+    const replySnap = replyTo;
+    const cleanOptions = options.map((text, i) => ({
+      id: `opt_${Date.now()}_${i}_${Math.random().toString(36).slice(2, 8)}`,
+      text: text.trim(),
+    }));
+    // 1) Create the chat message of type 'poll'
+    const { data: msgRow, error: msgErr } = await supabase
+      .from("trip_messages")
+      .insert({
+        trip_id: tripId, user_id: user.id, type: "poll",
+        content: question.trim(), reply_to_id: replySnap?.id ?? null,
+      })
+      .select("id")
+      .single();
+    if (msgErr || !msgRow) {
+      toast({ title: t.errorSending, description: msgErr?.message, variant: "destructive" });
+      setSending(false);
+      return;
+    }
+    // 2) Create the poll record
+    const { error: pollErr } = await supabase.from("trip_polls").insert({
+      message_id: msgRow.id, trip_id: tripId, created_by: user.id,
+      question: question.trim(), options: cleanOptions,
+    });
+    if (pollErr) {
+      // rollback the message to avoid orphaned poll messages
+      await supabase.from("trip_messages").delete().eq("id", msgRow.id);
+      toast({ title: t.errorSending, description: pollErr.message, variant: "destructive" });
+      setSending(false);
+      return;
+    }
+    notifyTripEvent(tripId, "chat", user.id);
+    setReplyTo(null);
+    setPollDialogOpen(false);
+    setSending(false);
   };
 
   const startRecording = async () => {
@@ -449,6 +501,9 @@ const Chat = () => {
                           return null;
                         }
                       })()}
+                      {msg.type === "poll" && (
+                        <PollCard messageId={msg.id} currentUserId={user?.id ?? null} t={t} />
+                      )}
                       <div className={`flex items-center gap-1.5 mt-0.5 ${isOwn ? "justify-end" : ""}`}>
                         <p className="text-[13px] text-foreground/50">{formatTime(msg.created_at)}</p>
                         <button
@@ -560,6 +615,16 @@ const Chat = () => {
               </div>
               <span className="text-sm font-medium text-foreground">{t.sendCurrentLocation}</span>
             </button>
+            <button
+              type="button"
+              onClick={() => { setAttachOpen(false); setPollDialogOpen(true); }}
+              className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-muted transition-colors text-left"
+            >
+              <div className="h-10 w-10 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                <BarChart3 className="h-5 w-5" />
+              </div>
+              <span className="text-sm font-medium text-foreground">{t.createPoll}</span>
+            </button>
           </PopoverContent>
         </Popover>
 
@@ -590,6 +655,271 @@ const Chat = () => {
           </>
         )}
       </div>
+
+      <PollDialog
+        open={pollDialogOpen}
+        onOpenChange={setPollDialogOpen}
+        onPublish={createPoll}
+        sending={sending}
+        t={t}
+      />
+    </div>
+  );
+};
+
+// ============================================================
+// PollDialog — modal to create a new poll
+// ============================================================
+interface PollDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onPublish: (question: string, options: string[]) => Promise<void>;
+  sending: boolean;
+  t: any;
+}
+const PollDialog = ({ open, onOpenChange, onPublish, sending, t }: PollDialogProps) => {
+  const [question, setQuestion] = useState("");
+  const [options, setOptions] = useState<string[]>(["", ""]);
+
+  useEffect(() => {
+    if (!open) {
+      setQuestion("");
+      setOptions(["", ""]);
+    }
+  }, [open]);
+
+  const validOptions = options.map((o) => o.trim()).filter((o) => o.length > 0);
+  const canPublish = question.trim().length > 0 && validOptions.length >= 2 && !sending;
+
+  const updateOption = (i: number, value: string) => {
+    setOptions((prev) => prev.map((o, idx) => (idx === i ? value : o)));
+  };
+  const removeOption = (i: number) => {
+    if (options.length <= 2) return;
+    setOptions((prev) => prev.filter((_, idx) => idx !== i));
+  };
+  const addOption = () => {
+    if (options.length >= 10) return;
+    setOptions((prev) => [...prev, ""]);
+  };
+
+  const handlePublish = () => {
+    if (!canPublish) return;
+    onPublish(question, validOptions);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md p-0 gap-0 overflow-hidden">
+        <DialogHeader className="px-5 pt-5 pb-3 border-b border-border">
+          <DialogTitle className="flex items-center gap-2 text-lg">
+            <span className="h-9 w-9 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+              <BarChart3 className="h-5 w-5" />
+            </span>
+            {t.createPoll}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="px-5 py-4 space-y-4 max-h-[60vh] overflow-y-auto">
+          <div className="space-y-1.5">
+            <label className="text-sm font-semibold text-foreground/80">{t.pollQuestionLabel}</label>
+            <Input
+              autoFocus
+              maxLength={200}
+              value={question}
+              onChange={(e) => setQuestion(e.target.value)}
+              placeholder={t.pollQuestionPlaceholder}
+              className="h-11 text-base"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-semibold text-foreground/80">{t.pollOptionsLabel}</label>
+            {options.map((opt, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <Input
+                  maxLength={120}
+                  value={opt}
+                  onChange={(e) => updateOption(i, e.target.value)}
+                  placeholder={t.pollOptionPlaceholder.replace("{n}", String(i + 1))}
+                  className="h-11 text-base flex-1"
+                />
+                {options.length > 2 && (
+                  <button
+                    type="button"
+                    onClick={() => removeOption(i)}
+                    className="shrink-0 h-9 w-9 rounded-full hover:bg-destructive/10 text-muted-foreground hover:text-destructive flex items-center justify-center transition-colors"
+                    aria-label="Remove option"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={addOption}
+              disabled={options.length >= 10}
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-dashed border-primary/40 text-primary hover:bg-primary/5 transition-colors text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <Plus className="h-4 w-4" />
+              {options.length >= 10 ? t.pollMaxOptionsReached : t.addOption}
+            </button>
+          </div>
+        </div>
+        <div className="px-5 py-4 border-t border-border bg-muted/30">
+          <Button
+            className="w-full h-11"
+            onClick={handlePublish}
+            disabled={!canPublish}
+          >
+            {t.publishPoll}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+// ============================================================
+// PollCard — renders a poll inside a chat bubble
+// ============================================================
+interface PollCardProps {
+  messageId: string;
+  currentUserId: string | null;
+  t: any;
+}
+const PollCard = ({ messageId, currentUserId, t }: PollCardProps) => {
+  const [poll, setPoll] = useState<Poll | null>(null);
+  const [votes, setVotes] = useState<PollVote[]>([]);
+
+  // Load poll by message_id
+  useEffect(() => {
+    let cancelled = false;
+    supabase
+      .from("trip_polls")
+      .select("id, message_id, question, options")
+      .eq("message_id", messageId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (cancelled || !data) return;
+        setPoll({
+          id: data.id,
+          message_id: data.message_id,
+          question: data.question,
+          options: (data.options as any) as PollOption[],
+        });
+      });
+    return () => { cancelled = true; };
+  }, [messageId]);
+
+  // Load votes + realtime
+  useEffect(() => {
+    if (!poll) return;
+    let cancelled = false;
+    const loadVotes = () => {
+      supabase
+        .from("trip_poll_votes")
+        .select("user_id, option_id")
+        .eq("poll_id", poll.id)
+        .then(({ data }) => {
+          if (!cancelled && data) setVotes(data as PollVote[]);
+        });
+    };
+    loadVotes();
+    const channel = supabase
+      .channel(`poll-votes-${poll.id}`)
+      .on("postgres_changes",
+        { event: "*", schema: "public", table: "trip_poll_votes", filter: `poll_id=eq.${poll.id}` },
+        () => loadVotes()
+      )
+      .subscribe();
+    return () => { cancelled = true; supabase.removeChannel(channel); };
+  }, [poll]);
+
+  if (!poll) {
+    return (
+      <div className="mt-1 h-20 rounded-xl bg-muted/40 animate-pulse" />
+    );
+  }
+
+  const totalVotes = votes.length;
+  const myVote = currentUserId ? votes.find((v) => v.user_id === currentUserId)?.option_id ?? null : null;
+  const countFor = (optId: string) => votes.filter((v) => v.option_id === optId).length;
+
+  const handleVote = async (optionId: string) => {
+    if (!currentUserId) return;
+    if (myVote === optionId) {
+      // toggle off — remove vote
+      setVotes((prev) => prev.filter((v) => v.user_id !== currentUserId));
+      await supabase.from("trip_poll_votes").delete()
+        .eq("poll_id", poll.id).eq("user_id", currentUserId);
+    } else {
+      // optimistic upsert
+      setVotes((prev) => {
+        const without = prev.filter((v) => v.user_id !== currentUserId);
+        return [...without, { user_id: currentUserId, option_id: optionId }];
+      });
+      await supabase.from("trip_poll_votes").upsert(
+        { poll_id: poll.id, user_id: currentUserId, option_id: optionId },
+        { onConflict: "poll_id,user_id" }
+      );
+    }
+  };
+
+  return (
+    <div className="mt-1 space-y-3">
+      <div className="flex items-center gap-1.5 text-primary">
+        <BarChart3 className="h-4 w-4" />
+        <span className="text-xs font-semibold uppercase tracking-wide">{t.poll}</span>
+      </div>
+      <p className="text-[16px] font-semibold text-foreground leading-snug" style={{ overflowWrap: "anywhere" }}>
+        {poll.question}
+      </p>
+      <div className="space-y-1.5">
+        {poll.options.map((opt) => {
+          const count = countFor(opt.id);
+          const pct = totalVotes > 0 ? Math.round((count / totalVotes) * 100) : 0;
+          const isMine = myVote === opt.id;
+          return (
+            <button
+              key={opt.id}
+              type="button"
+              onClick={() => handleVote(opt.id)}
+              className={`relative w-full text-left rounded-xl border transition-all overflow-hidden ${
+                isMine
+                  ? "border-primary bg-primary/5"
+                  : "border-border bg-background hover:border-primary/40 hover:bg-primary/5"
+              }`}
+            >
+              <div
+                className={`absolute inset-y-0 left-0 transition-all duration-500 ${isMine ? "bg-primary/15" : "bg-muted/60"}`}
+                style={{ width: `${pct}%` }}
+              />
+              <div className="relative flex items-center gap-2.5 px-3 py-2.5">
+                <span className={`shrink-0 h-5 w-5 rounded-full border-2 flex items-center justify-center transition-colors ${
+                  isMine ? "border-primary bg-primary" : "border-muted-foreground/40"
+                }`}>
+                  {isMine && <Check className="h-3 w-3 text-primary-foreground" />}
+                </span>
+                <span className={`flex-1 min-w-0 text-[15px] truncate ${isMine ? "font-semibold text-foreground" : "text-foreground/90"}`}
+                  style={{ overflowWrap: "anywhere" }}
+                >
+                  {opt.text}
+                </span>
+                <span className="shrink-0 text-xs font-semibold text-foreground/70 tabular-nums">
+                  {count} · {pct}%
+                </span>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+      <p className="text-xs text-foreground/50">
+        {totalVotes === 0
+          ? t.noVotesYet
+          : totalVotes === 1
+            ? t.pollVote
+            : t.pollVotes.replace("{n}", String(totalVotes))}
+      </p>
     </div>
   );
 };

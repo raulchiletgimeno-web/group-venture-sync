@@ -655,6 +655,76 @@ export type Database = {
           },
         ]
       }
+      trip_poll_votes: {
+        Row: {
+          id: string
+          option_id: string
+          poll_id: string
+          user_id: string
+          voted_at: string
+        }
+        Insert: {
+          id?: string
+          option_id: string
+          poll_id: string
+          user_id: string
+          voted_at?: string
+        }
+        Update: {
+          id?: string
+          option_id?: string
+          poll_id?: string
+          user_id?: string
+          voted_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_poll_votes_poll_id_fkey"
+            columns: ["poll_id"]
+            isOneToOne: false
+            referencedRelation: "trip_polls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trip_polls: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          message_id: string
+          options: Json
+          question: string
+          trip_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          message_id: string
+          options: Json
+          question: string
+          trip_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          message_id?: string
+          options?: Json
+          question?: string
+          trip_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_polls_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: true
+            referencedRelation: "trip_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trip_post_departure_reminders: {
         Row: {
           id: string
