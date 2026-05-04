@@ -268,7 +268,47 @@ const Chat = () => {
     );
   };
 
-  const startRecording = async () => {
+  const createPoll = async (question: string, options: string[]) => {
+    if (!user || !tripId) return;
+    setSending(true);
+    const replySnap = replyTo;
+    const cleanOptions = options.map((text, i) => ({
+      id: `opt_${Date.now()}_${i}_${Math.random().toString(36).slice(2, 8)}`,
+      text: text.trim(),
+    }));
+    // 1) Create the chat message of type 'poll'
+    const { data: msgRow, error: msgErr } = await supabase
+      .from("trip_messages")
+      .insert({
+        trip_id: tripId, user_id: user.id, type: "poll",
+        content: question.trim(), reply_to_id: replySnap?.id ?? null,
+      })
+      .select("id")
+      .single();
+    if (msgErr || !msgRow) {
+      toast({ title: t.errorSending, description: msgErr?.message, variant: "destructive" });
+      setSending(false);
+      return;
+    }
+    // 2) Create the poll record
+    const { error: pollErr } = await supabase.from("trip_polls").insert({
+      message_id: msgRow.id, trip_id: tripId, created_by: user.id,
+      question: question.trim(), options: cleanOptions,
+    });
+    if (pollErr) {
+      // rollback the message to avoid orphaned poll messages
+      await supabase.from("trip_messages").delete().eq("id", msgRow.id);
+      toast({ title: t.errorSending, description: pollErr.message, variant: "destructive" });
+      setSending(false);
+      return;
+    }
+    notifyTripEvent(tripId, "chat", user.id);
+    setReplyTo(null);
+    setPollDialogOpen(false);
+    setSending(false);
+  };
+
+
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const mediaRecorder = new MediaRecorder(stream);
