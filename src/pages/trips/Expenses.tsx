@@ -377,82 +377,105 @@ const Expenses = () => {
 
   const handleConfirmPayment = async () => {
     if (!paymentDebt || !tripId) return;
+    // Hard lock against double-clicks (ref is synchronous; useState is not).
+    if (paymentSubmitLockRef.current) return;
+    paymentSubmitLockRef.current = true;
     setSubmittingPayment(true);
 
-    const { error } = await supabase.from("debt_payments").insert({
-      trip_id: tripId,
-      from_user: paymentDebt.from,
-      to_user: paymentDebt.to,
-      amount: paymentDebt.amount,
-      payment_method: paymentMethod,
-    });
+    // Snapshot values before we close the modal.
+    const debt = paymentDebt;
+    const method = paymentMethod;
 
-    setSubmittingPayment(false);
-
-    if (error) {
-      toast({ title: t.error, description: error.message, variant: "destructive" });
-      return;
-    }
-
-    // Shared data for email and chat notifications
-    const creditorProfile = members.find(m => m.user_id === paymentDebt.to);
-    const debtorProfile = members.find(m => m.user_id === paymentDebt.from);
-
-    // Send email notification to the creditor (fire-and-forget)
     try {
-      const { data: tripData } = await supabase.from("trips").select("title").eq("id", tripId).single();
-      const { data: creditorData } = await supabase.from("profiles").select("email").eq("id", paymentDebt.to).single();
-
-      if (creditorData?.email) {
-        await supabase.functions.invoke('send-transactional-email', {
-          body: {
-            templateName: 'payment-notification',
-            recipientEmail: creditorData.email,
-            idempotencyKey: `payment-notif-${paymentDebt.from}-${paymentDebt.to}-${Date.now()}`,
-            templateData: {
-              debtorName: debtorProfile?.name || 'Tu compañero/a',
-              creditorName: creditorProfile?.name || 'amigo/a',
-              amount: paymentDebt.amount.toFixed(2),
-              tripName: tripData?.title || 'el viaje',
-              paymentMethod: paymentMethod,
-              paidAt: new Date().toISOString(),
-            },
-          },
-        });
-      }
-    } catch (emailErr) {
-      console.error('Failed to send payment notification email:', emailErr);
-    }
-
-    // Post automatic chat message (fire-and-forget)
-    try {
-      const debtorName = debtorProfile?.name || 'Alguien';
-      const credName = creditorProfile?.name || 'su compañero/a';
-      const formattedAmount = paymentDebt.amount.toFixed(2);
-
-      const chatMessages = [
-        `💸 ¡Cuentas claras! ${debtorName} ya ha pagado a ${credName} los ${formattedAmount} € pendientes.`,
-        `✅ Movimiento registrado: ${debtorName} ha saldado ${formattedAmount} € con ${credName}. ¡Así da gusto viajar!`,
-        `🎉 ${debtorName} ya está en paz con ${credName}: ${formattedAmount} € liquidados.`,
-        `🤝 Deuda saldada: ${debtorName} → ${credName} · ${formattedAmount} €. ¡Viaje sin dramas!`,
-        `💰 ${debtorName} ha pagado ${formattedAmount} € a ${credName}. Las cuentas del viaje van tomando forma.`,
-      ];
-      const msg = chatMessages[Math.floor(Math.random() * chatMessages.length)];
-
-      await supabase.from("trip_messages").insert({
+      const { error } = await supabase.from("debt_payments").insert({
         trip_id: tripId,
-        user_id: user.id,
-        content: msg,
-        type: "text",
+        from_user: debt.from,
+        to_user: debt.to,
+        amount: debt.amount,
+        payment_method: method,
       });
-    } catch (chatErr) {
-      console.error('Failed to post payment chat message:', chatErr);
-    }
 
-    setPaymentOpen(false);
-    setPaymentDebt(null);
-    fetchPayments();
-    toast({ title: t.debtSettled });
+      // Close modal immediately on success OR on duplicate (the first click already saved it).
+      const isDuplicate =
+        !!error && (error.code === "23505" || /duplicate_debt_payment/i.test(error.message ?? ""));
+
+      if (error && !isDuplicate) {
+        toast({ title: t.error, description: error.message, variant: "destructive" });
+        return;
+      }
+
+      // Close UI right away — side-effects below run as fire-and-forget.
+      setPaymentOpen(false);
+      setPaymentDebt(null);
+      fetchPayments();
+
+      if (isDuplicate) {
+        // Silently treat as success: the original click already registered the payment.
+        return;
+      }
+
+      toast({ title: t.debtSettled });
+
+      // Fire-and-forget notifications (must not block or re-open the modal).
+      const creditorProfile = members.find((m) => m.user_id === debt.to);
+      const debtorProfile = members.find((m) => m.user_id === debt.from);
+
+      (async () => {
+        try {
+          const { data: tripData } = await supabase.from("trips").select("title").eq("id", tripId).single();
+          const { data: creditorData } = await supabase.from("profiles").select("email").eq("id", debt.to).single();
+
+          if (creditorData?.email) {
+            await supabase.functions.invoke("send-transactional-email", {
+              body: {
+                templateName: "payment-notification",
+                recipientEmail: creditorData.email,
+                idempotencyKey: `payment-notif-${debt.from}-${debt.to}-${debt.amount}-${Math.floor(Date.now() / 60000)}`,
+                templateData: {
+                  debtorName: debtorProfile?.name || "Tu compañero/a",
+                  creditorName: creditorProfile?.name || "amigo/a",
+                  amount: debt.amount.toFixed(2),
+                  tripName: tripData?.title || "el viaje",
+                  paymentMethod: method,
+                  paidAt: new Date().toISOString(),
+                },
+              },
+            });
+          }
+        } catch (emailErr) {
+          console.error("Failed to send payment notification email:", emailErr);
+        }
+      })();
+
+      (async () => {
+        try {
+          const debtorName = debtorProfile?.name || "Alguien";
+          const credName = creditorProfile?.name || "su compañero/a";
+          const formattedAmount = debt.amount.toFixed(2);
+
+          const chatMessages = [
+            `💸 ¡Cuentas claras! ${debtorName} ya ha pagado a ${credName} los ${formattedAmount} € pendientes.`,
+            `✅ Movimiento registrado: ${debtorName} ha saldado ${formattedAmount} € con ${credName}. ¡Así da gusto viajar!`,
+            `🎉 ${debtorName} ya está en paz con ${credName}: ${formattedAmount} € liquidados.`,
+            `🤝 Deuda saldada: ${debtorName} → ${credName} · ${formattedAmount} €. ¡Viaje sin dramas!`,
+            `💰 ${debtorName} ha pagado ${formattedAmount} € a ${credName}. Las cuentas del viaje van tomando forma.`,
+          ];
+          const msg = chatMessages[Math.floor(Math.random() * chatMessages.length)];
+
+          await supabase.from("trip_messages").insert({
+            trip_id: tripId,
+            user_id: user.id,
+            content: msg,
+            type: "text",
+          });
+        } catch (chatErr) {
+          console.error("Failed to post payment chat message:", chatErr);
+        }
+      })();
+    } finally {
+      setSubmittingPayment(false);
+      paymentSubmitLockRef.current = false;
+    }
   };
 
   const paymentMethodLabel = (method: string) => {
