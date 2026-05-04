@@ -252,10 +252,12 @@ type TranslationKeys = {
   sendCurrentLocation: string;
   sharedLocation: string;
   sharedCurrentLocationBy: string;
+  youSharedYourLocation: string;
   viewOnMap: string;
   openInMaps: string;
   locationUnavailable: string;
   locationDenied: string;
+  locationTimeout: string;
   today: string;
   yesterday: string;
   errorSending: string;
