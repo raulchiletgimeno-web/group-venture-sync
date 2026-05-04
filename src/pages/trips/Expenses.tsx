@@ -495,19 +495,25 @@ const Expenses = () => {
 
   const handleUpdatePayment = async () => {
     if (!editPayment) return;
+    if (editPaymentLockRef.current) return;
+    editPaymentLockRef.current = true;
     setSubmittingEdit(true);
-    const { error } = await supabase
-      .from("debt_payments")
-      .update({ payment_method: editMethod, amount: parseFloat(editAmount) })
-      .eq("id", editPayment.id);
-    setSubmittingEdit(false);
-    if (error) {
-      toast({ title: t.error, description: error.message, variant: "destructive" });
-      return;
+    try {
+      const { error } = await supabase
+        .from("debt_payments")
+        .update({ payment_method: editMethod, amount: parseFloat(editAmount) })
+        .eq("id", editPayment.id);
+      if (error) {
+        toast({ title: t.error, description: error.message, variant: "destructive" });
+        return;
+      }
+      setEditPayment(null);
+      fetchPayments();
+      toast({ title: t.paymentRegistered });
+    } finally {
+      setSubmittingEdit(false);
+      editPaymentLockRef.current = false;
     }
-    setEditPayment(null);
-    fetchPayments();
-    toast({ title: t.paymentRegistered });
   };
 
   if (loading) {
