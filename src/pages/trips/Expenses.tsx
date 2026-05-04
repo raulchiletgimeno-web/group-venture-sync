@@ -266,9 +266,30 @@ const Expenses = () => {
         return;
       }
 
-      await supabase.from("trip_expense_splits").delete().eq("expense_id", editingId);
-      const splits = selectedMembers.map((uid) => ({ expense_id: editingId, user_id: uid }));
-      await supabase.from("trip_expense_splits").insert(splits);
+      // Insert new splits first, then remove old ones not in the new set,
+      // so the expense never has zero splits (DB trigger guard).
+      const newSplitRows = selectedMembers.map((uid) => ({ expense_id: editingId, user_id: uid }));
+      const { error: insertSplitErr } = await supabase
+        .from("trip_expense_splits")
+        .upsert(newSplitRows, { onConflict: "expense_id,user_id", ignoreDuplicates: true });
+      if (insertSplitErr) {
+        toast({ title: t.error, description: insertSplitErr.message, variant: "destructive" });
+        return;
+      }
+      const { error: delSplitErr } = await supabase
+        .from("trip_expense_splits")
+        .delete()
+        .eq("expense_id", editingId)
+        .not("user_id", "in", `(${selectedMembers.join(",")})`);
+      if (delSplitErr) {
+        const msg = delSplitErr.message ?? "";
+        if (delSplitErr.code === "23514" || msg.includes("expense_requires_at_least_one_member")) {
+          toast({ title: t.error, description: t.expenseNeedsAtLeastOneMember, variant: "destructive" });
+          return;
+        }
+        toast({ title: t.error, description: msg, variant: "destructive" });
+        return;
+      }
 
       setOpen(false);
       setEditingId(null);
