@@ -45,6 +45,7 @@ const Chat = () => {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [replyTo, setReplyTo] = useState<Message | null>(null);
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
+  const [attachOpen, setAttachOpen] = useState(false);
 
   // undefined = not yet fetched, null = no record (first visit)
   const [lastSeenAt, setLastSeenAt] = useState<string | null | undefined>(undefined);
@@ -218,7 +219,37 @@ const Chat = () => {
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
     setImageFile(file); setImagePreview(URL.createObjectURL(file)); e.target.value = "";
+  };
+
+  const sendLocation = async () => {
+    if (!user || !tripId || sending) return;
+    if (!("geolocation" in navigator)) {
+      toast({ title: t.locationUnavailable, variant: "destructive" });
+      return;
+    }
+    const replySnap = replyTo;
+    setSending(true);
+    navigator.geolocation.getCurrentPosition(
+      async ({ coords }) => {
+        const content = JSON.stringify({ lat: coords.latitude, lng: coords.longitude });
+        const { error } = await supabase.from("trip_messages").insert({
+          trip_id: tripId, user_id: user.id, type: "location",
+          content, reply_to_id: replySnap?.id ?? null,
+        });
+        if (error) toast({ title: t.errorSending, variant: "destructive" });
+        else notifyTripEvent(tripId, "chat", user.id);
+        setReplyTo(null); setSending(false);
+      },
+      () => {
+        toast({ title: t.locationDenied, variant: "destructive" });
+        setSending(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
   };
 
   const startRecording = async () => {
