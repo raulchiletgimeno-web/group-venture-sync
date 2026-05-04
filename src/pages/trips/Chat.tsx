@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState, useMemo } from "react";
 import { useParams } from "react-router-dom";
-import { Send, Camera, Mic, Square, Image as ImageIcon, X, Trash2, Reply } from "lucide-react";
+import { Send, Camera, Mic, Square, Image as ImageIcon, X, Trash2, Reply, Plus, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -18,7 +19,7 @@ interface Message {
   id: string;
   user_id: string;
   content: string | null;
-  type: "text" | "audio" | "image";
+  type: "text" | "audio" | "image" | "location";
   file_path: string | null;
   created_at: string;
   reply_to_id: string | null;
@@ -44,6 +45,7 @@ const Chat = () => {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [replyTo, setReplyTo] = useState<Message | null>(null);
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
+  const [attachOpen, setAttachOpen] = useState(false);
 
   // undefined = not yet fetched, null = no record (first visit)
   const [lastSeenAt, setLastSeenAt] = useState<string | null | undefined>(undefined);
@@ -153,6 +155,7 @@ const Chat = () => {
   const messageSnippet = (msg: Message) => {
     if (msg.type === "image") return t.imageMsg;
     if (msg.type === "audio") return t.audioMsg;
+    if (msg.type === "location") return t.locationMsg;
     return msg.content || "";
   };
 
@@ -217,6 +220,33 @@ const Chat = () => {
     const file = e.target.files?.[0];
     if (!file) return;
     setImageFile(file); setImagePreview(URL.createObjectURL(file)); e.target.value = "";
+  };
+
+  const sendLocation = async () => {
+    if (!user || !tripId || sending) return;
+    if (!("geolocation" in navigator)) {
+      toast({ title: t.locationUnavailable, variant: "destructive" });
+      return;
+    }
+    const replySnap = replyTo;
+    setSending(true);
+    navigator.geolocation.getCurrentPosition(
+      async ({ coords }) => {
+        const content = JSON.stringify({ lat: coords.latitude, lng: coords.longitude });
+        const { error } = await supabase.from("trip_messages").insert({
+          trip_id: tripId, user_id: user.id, type: "location",
+          content, reply_to_id: replySnap?.id ?? null,
+        });
+        if (error) toast({ title: t.errorSending, variant: "destructive" });
+        else notifyTripEvent(tripId, "chat", user.id);
+        setReplyTo(null); setSending(false);
+      },
+      () => {
+        toast({ title: t.locationDenied, variant: "destructive" });
+        setSending(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
   };
 
   const startRecording = async () => {
@@ -376,6 +406,30 @@ const Chat = () => {
                       {msg.type === "audio" && msg.file_path && (
                         <audio controls src={getFileUrl(msg.file_path)} className="max-w-[260px] h-12" ref={(el) => { if (el) el.volume = 1.0; }} />
                       )}
+                      {msg.type === "location" && msg.content && (() => {
+                        try {
+                          const { lat, lng } = JSON.parse(msg.content);
+                          const mapsUrl = `https://www.google.com/maps?q=${lat},${lng}`;
+                          return (
+                            <a
+                              href={mapsUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-3 p-3 rounded-xl bg-primary/5 hover:bg-primary/10 transition-colors border border-primary/20 max-w-[260px]"
+                            >
+                              <div className="h-10 w-10 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
+                                <MapPin className="h-5 w-5 text-primary" />
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-sm font-semibold text-foreground">{t.sharedLocation}</p>
+                                <p className="text-xs text-muted-foreground truncate">{t.openInMaps}</p>
+                              </div>
+                            </a>
+                          );
+                        } catch {
+                          return null;
+                        }
+                      })()}
                       <div className={`flex items-center gap-1.5 mt-0.5 ${isOwn ? "justify-end" : ""}`}>
                         <p className="text-[13px] text-foreground/50">{formatTime(msg.created_at)}</p>
                         <button
@@ -439,12 +493,56 @@ const Chat = () => {
       <div className="border-t border-border bg-card px-2 py-2 flex items-center gap-1.5">
         <input ref={fileInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleImageSelect} />
         <input ref={galleryInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageSelect} />
-        <Button variant="ghost" size="icon" className="shrink-0 h-9 w-9" onClick={() => fileInputRef.current?.click()} disabled={sending || recording}>
-          <Camera className="h-5 w-5 text-muted-foreground" />
-        </Button>
-        <Button variant="ghost" size="icon" className="shrink-0 h-9 w-9" onClick={() => galleryInputRef.current?.click()} disabled={sending || recording}>
-          <ImageIcon className="h-5 w-5 text-muted-foreground" />
-        </Button>
+        <Popover open={attachOpen} onOpenChange={setAttachOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="shrink-0 h-9 w-9 rounded-full"
+              disabled={sending || recording}
+              aria-label={t.attach}
+            >
+              <Plus className="h-5 w-5 text-muted-foreground" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent
+            side="top"
+            align="start"
+            sideOffset={8}
+            className="w-64 p-2 rounded-2xl shadow-lg"
+          >
+            <button
+              type="button"
+              onClick={() => { setAttachOpen(false); fileInputRef.current?.click(); }}
+              className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-muted transition-colors text-left"
+            >
+              <div className="h-10 w-10 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                <Camera className="h-5 w-5" />
+              </div>
+              <span className="text-sm font-medium text-foreground">{t.takePhoto}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => { setAttachOpen(false); galleryInputRef.current?.click(); }}
+              className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-muted transition-colors text-left"
+            >
+              <div className="h-10 w-10 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                <ImageIcon className="h-5 w-5" />
+              </div>
+              <span className="text-sm font-medium text-foreground">{t.chooseFromGallery}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => { setAttachOpen(false); sendLocation(); }}
+              className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-muted transition-colors text-left"
+            >
+              <div className="h-10 w-10 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                <MapPin className="h-5 w-5" />
+              </div>
+              <span className="text-sm font-medium text-foreground">{t.sendCurrentLocation}</span>
+            </button>
+          </PopoverContent>
+        </Popover>
 
         {recording ? (
           <div className="flex-1 flex items-center gap-2">

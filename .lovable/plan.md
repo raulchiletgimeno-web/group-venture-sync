@@ -1,104 +1,131 @@
-## Goal
+## Objetivo
 
-Make it impossible to save an expense (create or edit) in the Expenses section that is not assigned to at least one user in "Compartido entre". Nothing else in the app changes.
+Limpiar la barra inferior del Chat sustituyendo los iconos sueltos de cámara y galería por un único icono de adjuntar (`+`) con menú desplegable que incluya **Hacer una foto**, **Elegir de galería** y **Enviar mi ubicación actual**. El micrófono se mantiene visible y separado, fuera del menú. Nada más de la app cambia.
 
-## Where the problem is
+## Estado actual (`src/pages/trips/Chat.tsx`, líneas 439–475)
 
-File: `src/pages/trips/Expenses.tsx`, function `handleSubmit` (line 234).
+Hoy la barra muestra: `[Camera] [ImageIcon] [Input] [Send | Mic]`. Tres iconos compiten por espacio antes del campo de texto.
 
-Today, line 236 silently returns when `selectedMembers.length === 0`:
+## Cambios
+
+### 1. Barra de entrada (solo zona inferior del chat)
+
+Reemplazar los dos botones `Camera` + `ImageIcon` por **un único botón** con icono `Plus` (lucide), envuelto en un `Popover` (ya disponible en `src/components/ui/popover.tsx`, encaja con la estética actual mejor que `DropdownMenu` para móvil porque permite items grandes y táctiles).
+
+Layout final:
+```
+[ + ] [ Input .................. ] [ Send | Mic ]
+```
+
+El Popover abre hacia arriba (`side="top"`, `align="start"`) y muestra una tarjeta limpia con tres filas, cada una con icono + label:
+
+- `Camera` → "Hacer una foto" → dispara `fileInputRef` (input con `capture="environment"`).
+- `ImageIcon` → "Elegir de galería" → dispara `galleryInputRef`.
+- `MapPin` → "Enviar mi ubicación actual" → llama a `sendLocation()`.
+
+Cada item: botón ancho completo, icono en círculo `bg-primary/10 text-primary`, texto `text-sm font-medium`, separación `gap-3`, padding `p-3`, hover `bg-muted`. El popover cierra al elegir cualquier opción.
+
+El micrófono (`Mic`) y el botón `Send` permanecen exactamente como están (lado derecho, condicionados por `text.trim() || imageFile`). No se mueven al popover.
+
+Los dos `<input type="file">` ocultos y `handleImageSelect` se mantienen sin cambios — se siguen usando, solo cambia quién dispara el click.
+
+### 2. Envío de ubicación
+
+Nuevo handler `sendLocation()` en el componente:
 
 ```ts
-if (!tripId || !paidBy || selectedMembers.length === 0) return;
+const sendLocation = async () => {
+  if (!user || !tripId || sending) return;
+  if (!navigator.geolocation) {
+    toast({ title: t.locationUnavailable, variant: "destructive" });
+    return;
+  }
+  setSending(true);
+  navigator.geolocation.getCurrentPosition(
+    async ({ coords }) => {
+      const { latitude, longitude } = coords;
+      const content = JSON.stringify({ lat: latitude, lng: longitude });
+      const { error } = await supabase.from("trip_messages").insert({
+        trip_id: tripId, user_id: user.id, type: "location",
+        content, reply_to_id: replyTo?.id ?? null,
+      });
+      if (error) toast({ title: t.errorSending, variant: "destructive" });
+      else notifyTripEvent(tripId, "chat", user.id);
+      setReplyTo(null); setSending(false);
+    },
+    () => {
+      toast({ title: t.locationDenied, variant: "destructive" });
+      setSending(false);
+    },
+    { enableHighAccuracy: true, timeout: 10000 }
+  );
+};
 ```
 
-→ Pressing "Guardar" with everyone unchecked does nothing visible: the modal stays open and the user gets no feedback. There is also no DB-level guard, so a future bug or another client could still insert an orphan expense.
+Se reutiliza el campo `content` (TEXT) para guardar `{lat,lng}` como JSON. La columna `type` es `text` libre en la BD, así que no hace falta migración.
 
-## Fix — Frontend (clear, immediate, premium)
-
-In `src/pages/trips/Expenses.tsx`:
-
-1. Split the silent guard. Keep `!tripId || !paidBy` as a silent return, but handle empty splits explicitly with a clear error:
-   ```ts
-   if (selectedMembers.length === 0) {
-     toast({
-       title: t.error,
-       description: t.expenseNeedsAtLeastOneMember,
-       variant: "destructive",
-     });
-     return;
-   }
-   ```
-2. Add inline visual feedback in the "Compartido entre" section of the form (around line 570–583):
-   - Track a small local state `splitsError` (boolean), set to `true` when the user tries to submit with zero selected, cleared as soon as they tick at least one member.
-   - When `splitsError` is true, render a subtle destructive helper text directly under the checkbox list using the same `t.expenseNeedsAtLeastOneMember` copy, and add a `border-destructive` ring around the list container so the user instantly sees where the problem is.
-   - Reset `splitsError` whenever the dialog opens/closes or `selectedMembers` becomes non-empty.
-3. Add the new translation key `expenseNeedsAtLeastOneMember` to `src/i18n/translations.ts` for all existing languages (es, en, fr, pt, it, zh, de — same set already used by `invalidAmount` / `sharedAmong`). Suggested copy:
-   - es: "Debes asignar este gasto al menos a una persona."
-   - en: "You must assign this expense to at least one person."
-   - fr: "Vous devez attribuer cette dépense à au moins une personne."
-   - pt: "Tens de atribuir esta despesa a pelo menos uma pessoa."
-   - it: "Devi assegnare questa spesa ad almeno una persona."
-   - zh: "请至少为该费用分配一位成员。"
-   - de: "Du musst diese Ausgabe mindestens einer Person zuweisen."
-
-No other UI, layout, copy, or component is touched.
-
-## Fix — Backend (true safety net)
-
-Add a DB trigger so an expense without splits cannot survive a transaction, no matter which client inserts it. Migration:
-
-```sql
--- Reject any expense that has zero splits one second after creation.
--- We use a deferred/immediate check via AFTER INSERT on trip_expenses
--- combined with a safety check on splits deletion.
-CREATE OR REPLACE FUNCTION public.ensure_expense_has_splits()
-RETURNS trigger
-LANGUAGE plpgsql
-AS $$
-BEGIN
-  -- After deleting splits (e.g. during edit), require that at least one
-  -- split remains for the affected expense_id.
-  IF (TG_OP = 'DELETE') THEN
-    IF NOT EXISTS (
-      SELECT 1 FROM public.trip_expense_splits
-      WHERE expense_id = OLD.expense_id
-    ) THEN
-      -- Allow deletion only if the parent expense is also being removed
-      IF EXISTS (SELECT 1 FROM public.trip_expenses WHERE id = OLD.expense_id) THEN
-        RAISE EXCEPTION 'expense_requires_at_least_one_member'
-          USING ERRCODE = '23514';
-      END IF;
-    END IF;
-    RETURN OLD;
-  END IF;
-  RETURN NEW;
-END;
-$$;
-
-CREATE CONSTRAINT TRIGGER trip_expense_splits_require_one
-AFTER DELETE ON public.trip_expense_splits
-DEFERRABLE INITIALLY DEFERRED
-FOR EACH ROW EXECUTE FUNCTION public.ensure_expense_has_splits();
+Actualizar el tipo TS de `Message`:
+```ts
+type: "text" | "audio" | "image" | "location";
 ```
 
-Notes:
-- The trigger fires only on `DELETE` of splits and is `DEFERRABLE INITIALLY DEFERRED`, so the edit flow (which deletes all splits then re-inserts the new ones in the same transaction) stays valid as long as at least one new split is inserted before commit.
-- Creation flow is already protected by the frontend; if a client ever tried to insert an expense with zero splits and committed, the regular delete-then-insert pattern is unaffected. This trigger specifically blocks the "edit and uncheck everyone" race at the DB level.
-- In the frontend, if `error.code === '23514'` or message contains `expense_requires_at_least_one_member`, surface the same `t.expenseNeedsAtLeastOneMember` toast instead of a raw DB message.
+### 3. Visualización del mensaje de ubicación
 
-## Files touched
+En el bloque que renderiza tipos de mensaje (línea 372–378), añadir un caso para `location` que muestre una tarjeta limpia y premium dentro de la burbuja existente (misma `bg-white rounded-2xl`, sin romper estilo):
 
-- `src/pages/trips/Expenses.tsx` — only `handleSubmit`, the "Compartido entre" block, and a small `splitsError` state.
-- `src/i18n/translations.ts` — add one new key in all 7 existing languages.
-- New SQL migration adding the trigger above.
+```tsx
+{msg.type === "location" && msg.content && (() => {
+  const { lat, lng } = JSON.parse(msg.content);
+  const mapsUrl = `https://www.google.com/maps?q=${lat},${lng}`;
+  return (
+    <a href={mapsUrl} target="_blank" rel="noopener noreferrer"
+       className="flex items-center gap-3 p-3 rounded-xl bg-primary/5 hover:bg-primary/10 transition-colors border border-primary/20 max-w-[260px]">
+      <div className="h-10 w-10 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
+        <MapPin className="h-5 w-5 text-primary" />
+      </div>
+      <div className="min-w-0">
+        <p className="text-sm font-semibold text-foreground">{t.sharedLocation}</p>
+        <p className="text-xs text-muted-foreground truncate">{t.openInMaps}</p>
+      </div>
+    </a>
+  );
+})()}
+```
 
-Nothing else in the app is modified. No design changes elsewhere, no other components, no other flows.
+Para el snippet en respuestas citadas, añadir en `messageSnippet`:
+```ts
+if (msg.type === "location") return t.locationMsg; // "📍 Ubicación"
+```
 
-## Validation after implementation
+### 4. Traducciones (`src/i18n/translations.ts`)
 
-1. Create expense, uncheck everyone, press "Guardar" → modal stays open, destructive toast appears with the new copy, the checkbox list shows a red ring + helper text. No row inserted in `trip_expenses` or `trip_expense_splits`.
-2. Tick at least one member → red ring/helper disappears, "Guardar" works normally.
-3. Edit existing expense, uncheck everyone, press "Guardar" → same blocked behavior; original splits remain intact in DB (transaction rolls back thanks to the deferred trigger).
-4. Edit expense, swap selection to a different single member → saves correctly.
-5. All other expense flows (create with members, delete expense, payments, balances) are unchanged.
+Añadir 6 claves en cada uno de los 7 idiomas (es, en, fr, pt, it, zh, de), junto a `imageMsg` / `audioMsg` y `writeMessage`:
+
+- `attach` — "Adjuntar" / "Attach" / …
+- `takePhoto` — "Hacer una foto" / "Take a photo" / …
+- `chooseFromGallery` — "Elegir de galería" / "Choose from gallery" / …
+- `sendCurrentLocation` — "Enviar mi ubicación actual" / "Send my current location" / …
+- `sharedLocation` — "Ubicación compartida" / "Shared location" / …
+- `openInMaps` — "Abrir en Google Maps" / "Open in Google Maps" / …
+- `locationMsg` — "📍 Ubicación" / "📍 Location" / …
+- `locationUnavailable` — "Geolocalización no disponible" / …
+- `locationDenied` — "Permiso de ubicación denegado" / …
+
+### 5. Importes en `Chat.tsx`
+
+Añadir `Plus`, `MapPin` a la lista de iconos de `lucide-react` y `Popover, PopoverTrigger, PopoverContent` desde `@/components/ui/popover`.
+
+## Lo que NO se toca
+
+- Lógica de mensajes texto/audio/imagen, swipe-to-reply, eliminado, scroll, realtime, notificaciones, RLS, uploads, miembros, `notifyTripEvent`.
+- Ningún otro fichero del proyecto fuera de `src/pages/trips/Chat.tsx` y `src/i18n/translations.ts`.
+- No se crean migraciones (la columna `type` es `text` libre y `content` ya admite el JSON).
+- No se cambian permisos de la app: el navegador pedirá permiso de geolocalización al usuario solo cuando pulse "Enviar mi ubicación actual".
+
+## Validación tras implementar
+
+1. Botón `+` abre popover con tres opciones; micrófono sigue visible al lado del input.
+2. "Hacer una foto" abre cámara; "Elegir de galería" abre selector; ambos siguen el flujo de preview + envío existente.
+3. "Enviar mi ubicación actual" pide permiso, envía mensaje tipo `location`, aparece como tarjeta con `MapPin` enlazando a Google Maps.
+4. Responder/citar un mensaje de ubicación muestra "📍 Ubicación" como snippet.
+5. Mic, Send, swipe, replies, audio, imágenes y texto siguen funcionando idénticos.
