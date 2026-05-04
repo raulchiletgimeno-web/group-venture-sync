@@ -27,6 +27,34 @@ function generateToken(): string {
   return Array.from(bytes).map((b) => b.toString(16).padStart(2, '0')).join('')
 }
 
+/**
+ * Devuelve la fecha (YYYY-MM-DD) y hora actuales en Europe/Madrid.
+ * Esto nos permite enviar SIEMPRE a las 10:00 hora local de Madrid,
+ * sin importar verano o invierno.
+ */
+function getMadridNow(): { date: string; hour: number } {
+  const fmt = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Europe/Madrid',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  })
+  const parts = fmt.formatToParts(new Date())
+  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? ''
+  const date = `${get('year')}-${get('month')}-${get('day')}`
+  const hour = parseInt(get('hour'), 10)
+  return { date, hour }
+}
+
+function addDaysISO(dateStr: string, days: number): string {
+  const d = new Date(dateStr + 'T12:00:00Z')
+  d.setUTCDate(d.getUTCDate() + days)
+  return d.toISOString().slice(0, 10)
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
@@ -49,12 +77,28 @@ Deno.serve(async (req) => {
       }
     }
 
-    const now = new Date()
-    // Catch-up window: trips ending in last 3 days (D-1 a D-3 idealmente).
-    const today = now.toISOString().slice(0, 10)
-    const threeDaysAgo = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000)
-      .toISOString()
-      .slice(0, 10)
+    const madrid = getMadridNow()
+
+    // REGLA: solo se envía a las 10:00 hora local de Madrid.
+    // El cron está programado para disparar a 08:00 y 09:00 UTC
+    // para cubrir CET/CEST. La función decide aquí si toca enviar.
+    if (!forceTripId && madrid.hour !== 10) {
+      return new Response(
+        JSON.stringify({
+          ok: true,
+          processed: 0,
+          skipped: true,
+          reason: `Not 10:00 Europe/Madrid (current hour: ${madrid.hour})`,
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Selección: viajes cuyo end_date = AYER en Europe/Madrid.
+    // Catch-up: también incluimos hace 2 días por si una ejecución falló;
+    // la idempotencia (trip_post_departure_reminders) evita duplicados.
+    const yesterday = addDaysISO(madrid.date, -1)
+    const twoDaysAgo = addDaysISO(madrid.date, -2)
 
     let query = supabase
       .from('trips')
@@ -63,8 +107,7 @@ Deno.serve(async (req) => {
     if (forceTripId) {
       query = query.eq('id', forceTripId)
     } else {
-      // Trips that ended yesterday or earlier (within 3 days).
-      query = query.gte('end_date', threeDaysAgo).lt('end_date', today)
+      query = query.in('end_date', [yesterday, twoDaysAgo])
     }
 
     const { data: trips, error: tripsError } = await query
@@ -80,17 +123,6 @@ Deno.serve(async (req) => {
     const details: Array<Record<string, unknown>> = []
 
     for (const trip of trips) {
-      // Filter: at least 18h since end_date 00:00 UTC, so we don't send at midnight UTC
-      // but during the morning of D+1 in European timezones.
-      if (!forceTripId) {
-        const tripEnd = new Date(trip.end_date + 'T00:00:00Z')
-        const hoursSinceEnd =
-          (now.getTime() - tripEnd.getTime()) / (1000 * 60 * 60)
-        // hoursSinceEnd > 24 because end_date day itself is still "the trip day"
-        // (e.g. trip ends 02-may → send during 03-may, ~24h+ after end_date 00:00).
-        if (hoursSinceEnd < 24 || hoursSinceEnd > 96) continue
-      }
-
       const { data: members, error: membersError } = await supabase
         .from('trip_members')
         .select('user_id')
@@ -140,7 +172,6 @@ Deno.serve(async (req) => {
               console.error('Failed to create feedback token', tokErr)
               continue
             }
-            // Re-read in case of race
             const { data: storedTok } = await supabase
               .from('trip_feedback_tokens')
               .select('token')
@@ -206,7 +237,12 @@ Deno.serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ ok: true, processed: totalSent, details }),
+      JSON.stringify({
+        ok: true,
+        processed: totalSent,
+        madrid_now: madrid,
+        details,
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (e) {
