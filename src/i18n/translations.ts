@@ -736,6 +736,7 @@ const translations: Record<Language, TranslationKeys> = {
     sendCurrentLocation: "Enviar mi ubicación actual",
     sharedLocation: "Ubicación compartida",
     sharedCurrentLocationBy: "ha compartido su ubicación actual",
+    youSharedYourLocation: "Has compartido tu ubicación actual",
     viewOnMap: "Ver en el mapa",
     openInMaps: "Abrir en Google Maps",
     locationUnavailable: "Geolocalización no disponible",
