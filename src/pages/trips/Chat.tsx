@@ -20,11 +20,20 @@ interface Message {
   id: string;
   user_id: string;
   content: string | null;
-  type: "text" | "audio" | "image" | "location";
+  type: "text" | "audio" | "image" | "location" | "poll";
   file_path: string | null;
   created_at: string;
   reply_to_id: string | null;
 }
+
+interface PollOption { id: string; text: string; }
+interface Poll {
+  id: string;
+  message_id: string;
+  question: string;
+  options: PollOption[];
+}
+interface PollVote { user_id: string; option_id: string; }
 
 interface Member {
   user_id: string;
