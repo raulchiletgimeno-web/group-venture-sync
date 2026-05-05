@@ -1,181 +1,70 @@
-## Encuestas de grupo en el chat
+## Problema detectado en "Rioja Bike Race"
 
-Añado una nueva opción **"Crear encuesta"** dentro del menú del botón **+** del chat (junto a Cámara, Galería y Ubicación), sin tocar nada más de la app. El micrófono permanece visible y separado.
+El viaje tiene un alojamiento real y bien guardado:
 
----
+- **Nombre:** Las Columnas Centro
+- **Dirección:** `32 Calle Duquesa de la Victoria 4º-1º, 26003 Logroño, España`
 
-### 1. Flujo de usuario
+He probado esa dirección contra el geocoder de OpenStreetMap (Nominatim) tal como la usa la app hoy y devuelve **cero resultados** por dos motivos combinados:
 
-**Crear encuesta:**
-1. Pulsar **+** → **Crear encuesta** (nueva opción, mismo estilo que las otras).
-2. Se abre un modal limpio (Dialog) con:
-   - Campo *Pregunta* (obligatorio, 1–200 caracteres).
-   - Lista de opciones (mín. 2, máx. 10). Empieza con 2 vacías + botón **+ Añadir opción**.
-   - Cada opción es eliminable (icono X) si hay más de 2.
-   - Botón **Publicar encuesta** (deshabilitado hasta que haya pregunta + ≥2 opciones rellenas).
-3. Al publicar, aparece como un mensaje nuevo en el chat (tipo `poll`).
+1. La dirección incluye **planta y puerta** (`4º-1º`) — la normalización actual (`src/lib/usefulPlaces.ts` → `normalizeAddress`) solo elimina `nº/no/n°`, pero deja `4º-1º`, que confunde a Nominatim.
+2. El número de portal (`32`) va **al principio** de la calle en vez de al final — Nominatim funciona mucho mejor con `Calle X 32` que con `32 Calle X`.
 
-**Votar:**
-- Cualquier miembro pulsa una opción → se registra su voto.
-- **Voto único + se puede cambiar** (toca otra opción y se cambia). Justificación al final.
-- La opción que ha votado el usuario se ve marcada (radio relleno + acento teal).
+Cuando la consulta principal falla, el fallback `extractCity` actual toma la última palabra/chunk separado por coma. En esta dirección el último chunk es **`España`** (el país), no la ciudad. Resultado: la app geocodifica al **centroide de España** y busca restaurantes en un radio de 4 km alrededor de un punto en el medio de la península → **cero resultados** → mensaje "no hay sitios". Es exactamente el falso vacío descrito.
 
-**Resultados:**
-- Siempre visibles en la tarjeta:
-  - Texto de cada opción.
-  - Barra de progreso teal con el % de votos.
-  - Nº absoluto de votos por opción.
-  - Total de votos al pie ("12 votos").
-- Actualización en tiempo real (realtime) para todos los miembros.
+He verificado contra Nominatim que con una mínima limpieza (`Calle Duquesa de la Victoria 32, Logroño, España`) la dirección **sí** geocodifica perfectamente al portal exacto en Logroño (42.4648, -2.4400). La búsqueda de Overpass alrededor de ese punto devolverá restaurantes reales sin ningún problema.
 
-**Borrar:** solo el autor de la encuesta puede borrarla (mismo patrón que el resto de mensajes).
+## Qué voy a corregir
 
----
+Toco **un solo archivo de lógica** (`src/lib/usefulPlaces.ts`) y la llamada en `UsefulPlacesCategory.tsx` para añadir un trozo final de validación. **No toco nada de UI, ni el diseño, ni otras secciones, ni Sitios útiles más allá de esta lógica.**
 
-### 2. Cómo se ve en el chat
+### 1. `normalizeAddress` mucho más robusta
 
-Tarjeta dentro de la burbuja blanca habitual (mismos colores YORMIT, redondeo y sombras):
+Mejorar la limpieza previa al geocoding para que tolere los formatos reales que escriben los usuarios españoles:
 
-```text
-┌─────────────────────────────────────┐
-│ 📊 Encuesta                         │
-│ ¿Dónde cenamos esta noche?          │
-│                                     │
-│ ◉ Pizzería Da Marco       ████ 60% │
-│                                  6  │
-│ ○ Restaurante asiático    ██   30% │
-│                                  3  │
-│ ○ Cocinar en casa          █   10% │
-│                                  1  │
-│                                     │
-│ 10 votos                            │
-└─────────────────────────────────────┘
-```
+- Eliminar **planta-puerta** (`4º-1º`, `3º A`, `Bajo B`, `Ático`, `Esc. 2`, `Pta 1`, `Piso 4`, `1ºD`, etc.) con un patrón más amplio.
+- Eliminar el sufijo `, España` / `, Spain` / `, ES` para no confundir al fallback de ciudad.
+- **Reordenar** cuando el número de portal va al principio: `32 Calle Duquesa de la Victoria` → `Calle Duquesa de la Victoria 32`.
+- Colapsar comas duplicadas y espacios.
 
-- Cabecera con icono `BarChart3` + "Encuesta".
-- Opciones tocables (botones grandes, accesibles en móvil).
-- Animación suave de la barra al votar.
-- Sigue funcionando reply / swipe / borrar como cualquier mensaje.
+### 2. `extractCity` más fiable
 
----
+- Ignorar tokens de país (`España`, `Spain`, `ES`, `Portugal`, `France`, `Francia`, `Italia`, `Italy`, etc.) cuando aparecen como último chunk.
+- Preferir el chunk **anterior al país** si existe.
+- Mantener el patrón actual de "código postal + ciudad" como prioritario (ya funciona en muchos casos).
 
-### 3. Modelo de datos (migración)
+### 3. Validación de coordenadas tras geocodificar
 
-Tres cambios mínimos y aislados:
+En `geocodeAddress` añadir un guard final: si el resultado tiene `addresstype === "country"` o `place_rank` muy bajo (centroide de país/región muy grande), **descartarlo** y seguir intentando con las siguientes estrategias. Esto evita el caso "geocodificado al centro de España".
 
-**a) Permitir `poll` como tipo de mensaje** (igual que hicimos con `location`):
+### 4. Búsqueda enriquecida en `handleNearAccommodation`
 
-```sql
-ALTER TABLE public.trip_messages
-  DROP CONSTRAINT IF EXISTS trip_messages_type_check;
-ALTER TABLE public.trip_messages
-  ADD CONSTRAINT trip_messages_type_check
-  CHECK (type = ANY (ARRAY['text','audio','image','location','poll']));
-```
+En `UsefulPlacesCategory.tsx` (función `handleNearAccommodation`):
 
-**b) Tabla `trip_polls`** (una fila por encuesta, vinculada al mensaje):
+- Pasar a `geocodeAddress` la versión normalizada y, si falla, intentar también con el formato `name + ", " + city` y `street + ", " + city` por separado.
+- Si después de todos los intentos las coordenadas resultantes están a más de ~50 km del **destino del viaje** (`trips.destination`), considerarlo geocodificación errónea y caer al destino del viaje como fallback razonable, mostrando los sitios alrededor del destino.
 
-```sql
-CREATE TABLE public.trip_polls (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  message_id uuid NOT NULL UNIQUE REFERENCES public.trip_messages(id) ON DELETE CASCADE,
-  trip_id uuid NOT NULL,
-  created_by uuid NOT NULL,
-  question text NOT NULL,
-  options jsonb NOT NULL,  -- [{ id: "opt_1", text: "Pizza" }, ...]
-  created_at timestamptz NOT NULL DEFAULT now()
-);
-ALTER TABLE public.trip_polls ENABLE ROW LEVEL SECURITY;
+Esto último es la red de seguridad: si por cualquier motivo la dirección está mal escrita o es ambigua, al menos el usuario verá restaurantes reales del destino del viaje, no un falso "no hay sitios".
 
-CREATE POLICY "Members view polls"   ON public.trip_polls FOR SELECT TO authenticated USING (is_trip_member(trip_id));
-CREATE POLICY "Members create polls" ON public.trip_polls FOR INSERT TO authenticated WITH CHECK (is_trip_member(trip_id) AND created_by = auth.uid());
-CREATE POLICY "Author deletes polls" ON public.trip_polls FOR DELETE TO authenticated USING (created_by = auth.uid());
-```
+### 5. Mensaje de error más honesto
 
-**c) Tabla `trip_poll_votes`** (un voto por usuario y encuesta — UNIQUE permite cambiar voto vía upsert):
+Solo mostrar "no se ha podido localizar el alojamiento" cuando **realmente** falle todo (incluido el fallback al destino del viaje). En cualquier otro caso, devolver resultados.
 
-```sql
-CREATE TABLE public.trip_poll_votes (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  poll_id uuid NOT NULL REFERENCES public.trip_polls(id) ON DELETE CASCADE,
-  user_id uuid NOT NULL,
-  option_id text NOT NULL,
-  voted_at timestamptz NOT NULL DEFAULT now(),
-  UNIQUE (poll_id, user_id)
-);
-ALTER TABLE public.trip_poll_votes ENABLE ROW LEVEL SECURITY;
+## Archivos modificados
 
-CREATE POLICY "Members view votes" ON public.trip_poll_votes FOR SELECT TO authenticated
-  USING (EXISTS (SELECT 1 FROM trip_polls p WHERE p.id = poll_id AND is_trip_member(p.trip_id)));
-CREATE POLICY "Members vote" ON public.trip_poll_votes FOR INSERT TO authenticated
-  WITH CHECK (user_id = auth.uid() AND EXISTS (SELECT 1 FROM trip_polls p WHERE p.id = poll_id AND is_trip_member(p.trip_id)));
-CREATE POLICY "Members change own vote" ON public.trip_poll_votes FOR UPDATE TO authenticated
-  USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid());
-CREATE POLICY "Members remove own vote" ON public.trip_poll_votes FOR DELETE TO authenticated
-  USING (user_id = auth.uid());
+- `src/lib/usefulPlaces.ts` — `normalizeAddress`, `extractCity`, `geocodeAddress` (validación de resultado)
+- `src/pages/trips/UsefulPlacesCategory.tsx` — `handleNearAccommodation` (cadena de intentos + fallback al destino del viaje)
 
-ALTER PUBLICATION supabase_realtime ADD TABLE public.trip_polls;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.trip_poll_votes;
-```
+## Lo que NO toco
 
-**d) Actualizar `get_unseen_section_counts` y `get_unseen_counts`**: no hace falta — las encuestas viajan como `trip_messages` tipo `poll` y ya cuentan como mensajes nuevos en el badge del chat. ✅
+- Diseño y UI de Sitios útiles
+- Resto de la app (chat, fotos, encuestas, transporte, etc.)
+- Estructura de la base de datos
+- Resto de funciones de `usefulPlaces.ts` (`searchPlaces`, caches, Overpass)
 
----
+## Validación post-implementación
 
-### 4. Cambios en código
-
-**`src/pages/trips/Chat.tsx`**
-- Añadir `"poll"` al tipo `Message`.
-- Añadir cuarto botón en el popover del **+**: **"Crear encuesta"** (icono `BarChart3`, mismo patrón visual que los otros 3).
-- Nuevo estado `pollDialogOpen` y nuevo componente local `<PollDialog />` con el formulario (Dialog + Input pregunta + lista de Inputs opciones + botón añadir/eliminar + Publicar).
-- Función `createPoll(question, options)`:
-  1. Insertar un `trip_messages` con `type: 'poll'`, `content: question`.
-  2. Insertar `trip_polls` con `message_id`, `options` (cada una con `id` generado: `opt_<uuid>`).
-  3. `notifyTripEvent(tripId, "chat", user.id)`.
-- Render del mensaje cuando `msg.type === 'poll'`: nuevo subcomponente `<PollCard pollMessageId={msg.id} isOwn={isOwn} />` que:
-  - Carga `trip_polls` + `trip_poll_votes` por `poll_id`.
-  - Suscribe a realtime (`trip_poll_votes` filtrado por `poll_id`).
-  - Renderiza pregunta, opciones tocables, barras y total.
-  - Al pulsar opción: `upsert` en `trip_poll_votes` por `(poll_id, user_id)` cambiando `option_id` (permite cambiar voto). Si pulsa la opción ya votada → `delete` (quitar voto).
-- `messageSnippet` devuelve `t.pollMsg` cuando `type === 'poll'` (para previews de reply).
-
-**`src/i18n/translations.ts`** — añadir 7 idiomas × claves nuevas:
-- `createPoll` ("Crear encuesta" / "Create poll" / …)
-- `poll` ("Encuesta")
-- `pollMsg` ("📊 Encuesta")
-- `pollQuestionPlaceholder` ("Escribe una pregunta…")
-- `pollOptionPlaceholder` ("Opción {n}")
-- `addOption` ("Añadir opción")
-- `publishPoll` ("Publicar encuesta")
-- `pollVotesCount` ({n} votos / {n} voto)
-- `noVotesYet` ("Sin votos todavía")
-
----
-
-### 5. Decisión de UX: ¿se puede cambiar el voto?
-
-**Sí, se permite cambiar el voto y quitarlo.**
-
-Razones:
-- Es un grupo de viaje pequeño y de confianza, no una votación formal — la gente cambia de opinión ("al final prefiero la pizzería").
-- WhatsApp lo permite y es la convención que los usuarios esperan.
-- Volver a pulsar la misma opción quita el voto (toggle), por si alguien quiere abstenerse.
-- Implementación más simple: una fila por usuario con `UNIQUE(poll_id, user_id)` + upsert.
-
----
-
-### 6. Lo que NO se toca
-
-Foto, galería, ubicación, audio, texto, replies, swipe, scroll, badges, notificaciones push, diseño global del chat, header, otras secciones, RLS de tablas existentes (sólo se amplía el CHECK de `type`).
-
----
-
-### 7. Validación post-implementación
-
-1. Publicado.
-2. + → **Crear encuesta** abre modal premium.
-3. Voto se registra en realtime para todos.
-4. Resultados con barras y % visibles siempre.
-5. Toque en otra opción cambia el voto; toque en la misma lo quita.
-6. Solo el autor puede borrar la encuesta (cascada borra los votos).
-7. Confirmado: nada más de la app modificado.
+1. En "Rioja Bike Race" → Sitios útiles → Restaurantes → Cerca del alojamiento debe devolver restaurantes reales en Logroño centro.
+2. El mapa debe centrarse en el portal correcto de Calle Duquesa de la Victoria 32.
+3. Otros viajes con alojamiento bien escrito siguen funcionando igual.
+4. Si un viaje no tiene alojamiento, el mensaje claro de "no hay alojamiento" se mantiene.

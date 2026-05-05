@@ -146,29 +146,61 @@ const UsefulPlacesCategory = () => {
     setSource("accommodation");
     setLoading(true);
 
-    const { data } = await supabase
-      .from("trip_accommodation")
-      .select("name, address")
-      .eq("trip_id", tripId)
-      .order("check_in", { ascending: true })
-      .limit(1);
+    // Fetch accommodation + trip destination in parallel — destination is the safety net.
+    const [{ data: accData }, { data: tripData }] = await Promise.all([
+      supabase
+        .from("trip_accommodation")
+        .select("name, address")
+        .eq("trip_id", tripId)
+        .order("check_in", { ascending: true })
+        .limit(1),
+      supabase.from("trips").select("destination").eq("id", tripId).maybeSingle(),
+    ]);
 
-    const acc = data?.[0];
+    const acc = accData?.[0];
     if (!acc) {
       setLoading(false);
       setError(t.placesNoAccommodation);
       return;
     }
 
-    const rawAddress = acc.address?.trim();
-    const query = rawAddress
-      ? rawAddress.replace(/n[ºo°]\s*/gi, "").replace(/\s{2,}/g, " ").trim()
-      : acc.name;
-    let coords = await geocodeAddress(query);
-    // Extra fallback: try accommodation name if address-based geocoding failed
-    if (!coords && rawAddress && acc.name) {
-      coords = await geocodeAddress(acc.name);
+    // Try a chain of geocoding strategies, picking the FIRST that returns coords.
+    const rawAddress = acc.address?.trim() ?? "";
+    const attempts: string[] = [];
+    if (rawAddress) attempts.push(rawAddress);
+    if (acc.name && rawAddress) attempts.push(`${acc.name}, ${rawAddress}`);
+    if (acc.name) attempts.push(acc.name);
+
+    let coords: LatLon | null = null;
+    for (const q of attempts) {
+      coords = await geocodeAddress(q);
+      if (coords) break;
     }
+
+    // Safety net: if geocoding failed OR result is suspiciously far (>50km) from
+    // the trip destination, fall back to the trip destination so the user gets
+    // real results instead of a false "no places".
+    const destination = tripData?.destination?.trim();
+    if (destination) {
+      const destCoords = await geocodeAddress(destination);
+      if (destCoords) {
+        if (!coords) {
+          coords = destCoords;
+        } else {
+          // Haversine quick-check — reuse same formula inline (km).
+          const R = 6371;
+          const toRad = (d: number) => (d * Math.PI) / 180;
+          const dLat = toRad(destCoords.lat - coords.lat);
+          const dLon = toRad(destCoords.lon - coords.lon);
+          const a =
+            Math.sin(dLat / 2) ** 2 +
+            Math.cos(toRad(coords.lat)) * Math.cos(toRad(destCoords.lat)) * Math.sin(dLon / 2) ** 2;
+          const distKm = 2 * R * Math.asin(Math.sqrt(a));
+          if (distKm > 50) coords = destCoords;
+        }
+      }
+    }
+
     if (!coords) {
       setLoading(false);
       setError(t.placesNoAccommodation);

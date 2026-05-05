@@ -312,17 +312,77 @@ export async function searchPlaces(
   return result;
 }
 
-// Normalize a free-form address to improve geocoding hit rate
+// Country tokens we want to strip / ignore when extracting a city fallback
+const COUNTRY_TOKENS = new Set([
+  "españa", "espana", "spain", "es",
+  "portugal", "pt",
+  "francia", "france", "fr",
+  "italia", "italy", "it",
+  "alemania", "germany", "deutschland", "de",
+  "reino unido", "uk", "united kingdom", "england", "inglaterra",
+  "marruecos", "morocco",
+  "andorra",
+]);
+
+function isCountryToken(s: string): boolean {
+  return COUNTRY_TOKENS.has(s.trim().toLowerCase());
+}
+
+// Normalize a free-form address to improve geocoding hit rate.
+// Handles Spanish-style messy addresses: "32 Calle X 4º-1º, 26003 Logroño, España"
 function normalizeAddress(query: string): string {
-  return query
-    .replace(/n[ºo°]\s*/gi, "")
-    .replace(/\s{2,}/g, " ")
-    .trim();
+  let s = query;
+
+  // 1. Remove "nº/no/n°" prefixes before numbers
+  s = s.replace(/\bn[ºo°·]\s*/gi, "");
+
+  // 2. Remove planta-puerta noise: "4º-1º", "3ºA", "1º D", "Bajo B", "Ático",
+  //    "Esc. 2", "Pta 1", "Piso 4", "Pl. 3", "Esc 1", etc.
+  //    Strategy: strip ordinal floor markers and common abbreviations.
+  s = s.replace(/\b\d+\s*[ºª°]\s*[-,\s]?\s*\d*\s*[ºª°]?\s*[A-Za-z]?\b/g, " "); // 4º-1º, 3ºA, 1º D
+  s = s.replace(/\b(piso|planta|pta|puerta|esc|escalera|pl|bajo|atico|ático|entresuelo|sótano|sotano|principal)\b\.?\s*\d*\s*[A-Za-z]?\b/gi, " ");
+
+  // 3. Remove trailing country tokens (", España", ", Spain", ", ES")
+  //    so the fallback "extract city from last chunk" doesn't pick the country.
+  s = s.replace(/,\s*(españa|espana|spain|es|portugal|pt|francia|france|fr|italia|italy|it|alemania|germany|deutschland|de|reino unido|uk|united kingdom|andorra)\s*$/gi, "");
+
+  // 4. Reorder leading number: "32 Calle X" → "Calle X 32"
+  //    (Nominatim handles trailing house numbers far better in ES/EU.)
+  const leadingNumMatch = s.match(/^\s*(\d{1,5})\s+([A-Za-zÀ-ÿ].+?)(,|$)/);
+  if (leadingNumMatch) {
+    const num = leadingNumMatch[1];
+    const street = leadingNumMatch[2].trim();
+    const rest = s.slice(leadingNumMatch[0].length - (leadingNumMatch[3] ? leadingNumMatch[3].length : 0));
+    s = `${street} ${num}${rest}`;
+  }
+
+  // 5. Strip stray ordinal markers left behind ("º", "ª")
+  s = s.replace(/\s[ºª°]\s/g, " ").replace(/\s[ºª°],/g, ",").replace(/\s[ºª°]$/g, "");
+  // 6. Collapse repeated commas/whitespace
+  s = s.replace(/,\s*,/g, ",").replace(/\s{2,}/g, " ").replace(/\s+,/g, ",").trim();
+  return s;
+}
+
+// Reject Nominatim hits that are too coarse to be useful (country/state centroids).
+// place_rank: ~4=country, ~8=state, ~12=county, ~16=city, ~20=suburb, ~26+=street, 30=house
+interface NominatimHit {
+  lat: string;
+  lon: string;
+  place_rank?: number;
+  addresstype?: string;
+  class?: string;
+  type?: string;
+}
+
+function isUsefulHit(hit: NominatimHit): boolean {
+  if (hit.addresstype === "country" || hit.type === "country") return false;
+  if (typeof hit.place_rank === "number" && hit.place_rank < 12) return false;
+  return true;
 }
 
 async function nominatimSearch(query: string, signal?: AbortSignal): Promise<LatLon | null> {
   try {
-    const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(
+    const url = `https://nominatim.openstreetmap.org/search?format=json&limit=3&addressdetails=0&q=${encodeURIComponent(
       query,
     )}`;
     const res = await fetch(url, {
@@ -330,8 +390,8 @@ async function nominatimSearch(query: string, signal?: AbortSignal): Promise<Lat
       signal,
     });
     if (!res.ok) return null;
-    const json = (await res.json()) as Array<{ lat: string; lon: string }>;
-    const first = json?.[0];
+    const json = (await res.json()) as NominatimHit[];
+    const first = (json ?? []).find(isUsefulHit);
     if (!first) return null;
     const lat = parseFloat(first.lat);
     const lon = parseFloat(first.lon);
@@ -358,17 +418,32 @@ async function openMeteoSearch(query: string, signal?: AbortSignal): Promise<Lat
   }
 }
 
-// Extract a likely city/locality token from a free-form address
+// Extract a likely city/locality token from a free-form address.
+// Skips country tokens so "..., España" doesn't return "España".
 function extractCity(query: string): string | null {
-  // Match a 5-digit postal code followed by city words (e.g. "28012 Madrid")
-  const postalMatch = query.match(/\b\d{4,5}\s+([A-Za-zÀ-ÿ' .-]{2,})$/);
-  if (postalMatch) return postalMatch[1].trim();
-  // Fallback: last comma-separated chunk
+  // 1. "28012 Madrid" anywhere in the string (postal code + city words, possibly mid-string)
+  const postalMatch = query.match(/\b\d{4,5}\s+([A-Za-zÀ-ÿ' .-]{2,}?)(?=,|$)/);
+  if (postalMatch) {
+    const candidate = postalMatch[1].trim();
+    if (!isCountryToken(candidate)) return candidate;
+  }
+  // 2. Walk comma-separated chunks from the end, skipping countries
   const parts = query.split(",").map((p) => p.trim()).filter(Boolean);
-  if (parts.length > 1) return parts[parts.length - 1];
-  // Fallback: last word
-  const words = query.trim().split(/\s+/);
-  return words.length ? words[words.length - 1] : null;
+  for (let i = parts.length - 1; i >= 0; i--) {
+    const p = parts[i];
+    if (isCountryToken(p)) continue;
+    // Skip pure postal codes
+    if (/^\d{4,5}$/.test(p)) continue;
+    // Strip leading postal code from chunk: "26003 Logroño" → "Logroño"
+    const stripped = p.replace(/^\d{4,5}\s+/, "").trim();
+    if (stripped && !isCountryToken(stripped)) return stripped;
+  }
+  // 3. Last resort: last non-country word
+  const words = query.trim().split(/[\s,]+/).filter(Boolean);
+  for (let i = words.length - 1; i >= 0; i--) {
+    if (!isCountryToken(words[i]) && !/^\d+$/.test(words[i])) return words[i];
+  }
+  return null;
 }
 
 // Geocode a free-form address — fires multiple strategies in PARALLEL,
