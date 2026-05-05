@@ -356,7 +356,9 @@ function normalizeAddress(query: string): string {
     s = `${street} ${num}${rest}`;
   }
 
-  // 5. Collapse repeated commas/whitespace
+  // 5. Strip stray ordinal markers left behind ("º", "ª")
+  s = s.replace(/\s[ºª°]\s/g, " ").replace(/\s[ºª°],/g, ",").replace(/\s[ºª°]$/g, "");
+  // 6. Collapse repeated commas/whitespace
   s = s.replace(/,\s*,/g, ",").replace(/\s{2,}/g, " ").replace(/\s+,/g, ",").trim();
   return s;
 }
