@@ -26,19 +26,44 @@ function formatDateEs(iso: string): string {
   }
 }
 
+function buildDestinationCandidates(destination: string): string[] {
+  const raw = (destination ?? '').trim()
+  if (!raw) return []
+  const parts = raw.split(',').map((p) => p.trim()).filter(Boolean)
+  const ordered = [raw, ...parts, parts[parts.length - 1]].filter(Boolean) as string[]
+  return [...new Set(ordered)]
+}
+
+async function geocodeDestination(
+  destination: string
+): Promise<{ latitude: number; longitude: number } | null> {
+  const candidates = buildDestinationCandidates(destination)
+  for (const candidate of candidates) {
+    try {
+      const geoUrl = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(candidate)}&count=1&language=es&format=json`
+      const geoRes = await fetch(geoUrl)
+      if (!geoRes.ok) continue
+      const geoData = await geoRes.json()
+      const place = geoData?.results?.[0]
+      if (place?.latitude && place?.longitude) {
+        return { latitude: place.latitude, longitude: place.longitude }
+      }
+    } catch (e) {
+      console.warn('Geocoding candidate failed', { candidate, error: String(e) })
+    }
+  }
+  console.warn('Geocoding failed for all candidates', { destination, candidates })
+  return null
+}
+
 async function fetchForecast(
   destination: string,
   startDate: string,
   endDate: string
 ): Promise<DailyForecast[] | null> {
   try {
-    // 1. Geocode
-    const geoUrl = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(destination)}&count=1&language=es&format=json`
-    const geoRes = await fetch(geoUrl)
-    if (!geoRes.ok) return null
-    const geoData = await geoRes.json()
-    const place = geoData?.results?.[0]
-    if (!place?.latitude || !place?.longitude) return null
+    const place = await geocodeDestination(destination)
+    if (!place) return null
 
     // 2. Forecast (Open-Meteo supports up to 16 days ahead)
     const fcUrl = `https://api.open-meteo.com/v1/forecast?latitude=${place.latitude}&longitude=${place.longitude}&daily=temperature_2m_max,temperature_2m_min,weathercode&start_date=${startDate}&end_date=${endDate}&timezone=auto`
