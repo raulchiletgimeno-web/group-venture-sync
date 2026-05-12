@@ -1,44 +1,53 @@
-## Reenvío extraordinario del email previo al viaje — "Rioja Bike Race"
+## Diagnóstico (ya realizado, solo lectura)
 
-Operación puntual. **No modifica código de la app, ni la regla fija (2 días antes a las 10:00 Madrid, una vez por usuario y viaje).**
+He consultado `email_send_log` y `suppressed_emails` para `raul@chiletychilet.com`:
 
-### Contexto
-- Trip ID: `3b5e645d-3144-4206-9503-1f5c3c0b3862` (start_date 2026-05-14).
-- La función `check-trip-pre-departure` ya soporta `force_trip_id` para ignorar el chequeo de hora/fecha — exactamente el mecanismo previsto para catch-up manual.
-- Bloqueos a salvar para que el reenvío llegue de verdad:
-  1. La tabla `trip_pre_departure_reminders` ya tiene registros para los miembros (filtro `recipients` los excluiría).
-  2. `send-transactional-email` deduplica por `idempotencyKey`, y la función usa una clave fija `pre-departure-${tripId}-${userId}` que ya se consumió en el envío anterior.
+**Email del reenvío extraordinario "Rioja Bike Race"**
+- `message_id`: `6e60a2c9-28df-4d6c-81dd-c97a19b62164`
+- `template_name`: `trip-pre-departure`
+- 17:44:57 UTC → `pending` (encolado correctamente)
+- 17:44:59 UTC → `sent` (entregado al proveedor sin error)
+- `error_message`: vacío
+- No está en `suppressed_emails`
+- Histórico: el mismo destinatario ha recibido sin problema otros emails recientes (`payment-notification`, `trip-post-departure`, e incluso un `trip-pre-departure` previo el 2026-05-11), todos con estado `sent`.
 
-### Pasos (solo datos / invocación, **sin tocar código**)
+**Conclusión técnica:** desde la app y el dispatcher todo se ejecutó correctamente. El correo salió, no rebotó, no fue rechazado, no está suprimido y no hay error registrado. La no recepción es ya externa al sistema (filtro spam/promociones del buzón, regla del cliente de correo, o entrega diferida del proveedor sin notificación de bounce).
 
-1. **Borrar los recordatorios previos solo de este viaje** para que la función vuelva a considerar a los miembros como pendientes:
-   ```sql
-   DELETE FROM trip_pre_departure_reminders
-   WHERE trip_id = '3b5e645d-3144-4206-9503-1f5c3c0b3862';
-   ```
-   (Migración acotada al trip — no afecta a otros viajes ni a la regla futura.)
+## Acción propuesta (puntual, aislada)
 
-2. **Liberar la idempotencia previa** del send para este trip, para que `send-transactional-email` no descarte los reenvíos como duplicados:
-   ```sql
-   DELETE FROM email_send_log
-   WHERE idempotency_key LIKE 'pre-departure-3b5e645d-3144-4206-9503-1f5c3c0b3862-%';
-   ```
-   (Si la tabla/columna real difiere, lo ajusto tras inspeccionarla; es la usada por `send-transactional-email`.)
+Ejecutar **un único reenvío manual** invocando directamente `send-transactional-email` solo para `raul@chiletychilet.com`, con una `idempotencyKey` nueva para forzar un envío fresco. Sin tocar:
 
-3. **Invocar manualmente** la edge function con `force_trip_id`:
-   ```
-   POST /functions/v1/check-trip-pre-departure
-   { "force_trip_id": "3b5e645d-3144-4206-9503-1f5c3c0b3862" }
-   ```
-   Esto reenvía a todos los miembros aprobados con email, recalculando el bloque del tiempo. Tras el envío, la función vuelve a registrar los recordatorios → futuros runs automáticos no reenvían.
+- el cron
+- la edge function `check-trip-pre-departure`
+- la lógica de la regla fija (2 días antes, 10:00 Madrid)
+- la tabla `trip_pre_departure_reminders`
+- ningún otro destinatario
+- ningún archivo de la app
 
-### Lo que NO se toca
-- Ningún archivo del repo (ni edge functions, ni plantillas, ni frontend).
-- Cron `check-trip-pre-departure-hourly` → sigue en `0 8,9 * * *`.
-- Lógica estricta: `start_date = targetDate` + `madridHour === 10` + UNIQUE constraint.
-- Otros viajes, otros emails, RLS, diseño, navegación.
+### Detalle técnico
 
-### Validación tras la ejecución
-- Respuesta JSON de la función con `processed > 0` y detalle por destinatario.
-- `weather: 'included'` por destinatario si la previsión está disponible.
-- Confirmación de que la regla automática queda intacta.
+Una llamada HTTP a la edge `send-transactional-email` con:
+```json
+{
+  "templateName": "trip-pre-departure",
+  "recipientEmail": "raul@chiletychilet.com",
+  "idempotencyKey": "manual-resend-rioja-raul-<timestamp>",
+  "templateData": {
+    "userName": "<nombre real>",
+    "tripName": "Rioja Bike Race",
+    "destination": "<destino real>",
+    "startDate": "14 may 2026",
+    "endDate": "<fin real>",
+    "forecast": <forecast recalculado on-the-fly>
+  }
+}
+```
+
+Datos `templateData` extraídos del registro real del viaje y del perfil del destinatario (sin modificar nada). El forecast se obtendrá vía Open-Meteo igual que hace la función automática.
+
+### Validación posterior
+
+Tras el envío:
+1. Confirmar nuevo `message_id` con `status=sent` en `email_send_log`.
+2. Pedir a Raúl que revise **spam / promociones / "otros"** del buzón, ya que el sistema confirma envío correcto en los dos intentos previos.
+3. Reportar resultado y confirmar que ningún otro archivo o flujo ha sido modificado.
