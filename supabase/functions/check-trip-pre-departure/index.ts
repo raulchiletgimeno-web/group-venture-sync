@@ -113,14 +113,36 @@ Deno.serve(async (req) => {
       }
     }
 
-    const now = new Date()
-    // Catch-up window: today through today+3 days. Combined with the
-    // trip_pre_departure_reminders UNIQUE constraint this means a missed
-    // hourly cron run is recovered by the next one — no trip is lost.
-    const today = now.toISOString().slice(0, 10)
-    const inThreeDays = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000)
-      .toISOString()
-      .slice(0, 10)
+    // Regla fija e inamovible:
+    // - Email enviado EXACTAMENTE 2 días naturales antes del start_date
+    // - EXACTAMENTE a las 10:00 hora de Madrid (Europe/Madrid)
+    // - Una sola vez por usuario y por viaje (UNIQUE constraint)
+    const madridParts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Europe/Madrid',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      hour12: false,
+    }).formatToParts(new Date())
+    const get = (t: string) => madridParts.find((p) => p.type === t)!.value
+    const madridYear = parseInt(get('year'))
+    const madridMonth = parseInt(get('month'))
+    const madridDay = parseInt(get('day'))
+    const madridHour = parseInt(get('hour'))
+
+    // Bloquea cualquier ejecución que no caiga a las 10:00 Madrid
+    // (salvo catch-up manual con force_trip_id)
+    if (!forceTripId && madridHour !== 10) {
+      return new Response(
+        JSON.stringify({ ok: true, processed: 0, message: `Skip: Madrid hour is ${madridHour}, not 10` }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // target = hoy (Madrid) + 2 días
+    const targetDateObj = new Date(Date.UTC(madridYear, madridMonth - 1, madridDay + 2))
+    const targetDate = targetDateObj.toISOString().slice(0, 10)
 
     let query = supabase
       .from('trips')
@@ -129,7 +151,7 @@ Deno.serve(async (req) => {
     if (forceTripId) {
       query = query.eq('id', forceTripId)
     } else {
-      query = query.gte('start_date', today).lte('start_date', inThreeDays)
+      query = query.eq('start_date', targetDate)
     }
 
     const { data: trips, error: tripsError } = await query
@@ -146,15 +168,9 @@ Deno.serve(async (req) => {
     const details: Array<Record<string, unknown>> = []
 
     for (const trip of trips) {
-      // Catch-up window: send any time from ~60h before start until the
-      // trip's end day. The UNIQUE (trip_id, user_id) constraint on
-      // trip_pre_departure_reminders prevents duplicate sends.
-      // In force mode (manual catch-up), bypass the window check entirely.
-      if (!forceTripId) {
-        const tripStart = new Date(trip.start_date + 'T00:00:00Z')
-        const hoursAway = (tripStart.getTime() - now.getTime()) / (1000 * 60 * 60)
-        if (hoursAway < -24 || hoursAway > 60) continue
-      }
+      // Sin ventana flexible: el filtro start_date = targetDate ya garantiza
+      // exactamente 2 días antes. La UNIQUE constraint en
+      // trip_pre_departure_reminders evita duplicados.
 
       // Get approved members
       const { data: members, error: membersError } = await supabase
