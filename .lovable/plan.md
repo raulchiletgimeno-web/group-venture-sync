@@ -1,50 +1,44 @@
-## Diagnóstico — por qué el email se envió el día 11
+## Reenvío extraordinario del email previo al viaje — "Rioja Bike Race"
 
-El cron `check-trip-pre-departure-hourly` se ejecuta **cada hora en punto** (`0 * * * *`) y la edge function aceptaba cualquier viaje cuyo inicio estuviera entre **+60h y −24h** desde "ahora":
+Operación puntual. **No modifica código de la app, ni la regla fija (2 días antes a las 10:00 Madrid, una vez por usuario y viaje).**
 
-```ts
-if (hoursAway < -24 || hoursAway > 60) continue
-```
+### Contexto
+- Trip ID: `3b5e645d-3144-4206-9503-1f5c3c0b3862` (start_date 2026-05-14).
+- La función `check-trip-pre-departure` ya soporta `force_trip_id` para ignorar el chequeo de hora/fecha — exactamente el mecanismo previsto para catch-up manual.
+- Bloqueos a salvar para que el reenvío llegue de verdad:
+  1. La tabla `trip_pre_departure_reminders` ya tiene registros para los miembros (filtro `recipients` los excluiría).
+  2. `send-transactional-email` deduplica por `idempotencyKey`, y la función usa una clave fija `pre-departure-${tripId}-${userId}` que ya se consumió en el envío anterior.
 
-Además, el filtro SQL selecciona viajes con `start_date` entre hoy y hoy+3 días. Resultado: para un viaje que empieza el día 14 a las 00:00 UTC, el envío se dispara **60h antes** = día 11 a las 12:00 UTC. Eso es lo que ocurrió con "Rioja Bike Race".
+### Pasos (solo datos / invocación, **sin tocar código**)
 
-La regla actual es una "ventana de catch-up" flexible, exactamente lo que no quieres.
+1. **Borrar los recordatorios previos solo de este viaje** para que la función vuelva a considerar a los miembros como pendientes:
+   ```sql
+   DELETE FROM trip_pre_departure_reminders
+   WHERE trip_id = '3b5e645d-3144-4206-9503-1f5c3c0b3862';
+   ```
+   (Migración acotada al trip — no afecta a otros viajes ni a la regla futura.)
 
-## Regla nueva (fija e inamovible)
+2. **Liberar la idempotencia previa** del send para este trip, para que `send-transactional-email` no descarte los reenvíos como duplicados:
+   ```sql
+   DELETE FROM email_send_log
+   WHERE idempotency_key LIKE 'pre-departure-3b5e645d-3144-4206-9503-1f5c3c0b3862-%';
+   ```
+   (Si la tabla/columna real difiere, lo ajusto tras inspeccionarla; es la usada por `send-transactional-email`.)
 
-> El email previo se envía **exactamente 2 días naturales antes** del `start_date` del viaje, **a las 10:00 hora de Madrid (Europe/Madrid)**, una sola vez por usuario y por viaje.
+3. **Invocar manualmente** la edge function con `force_trip_id`:
+   ```
+   POST /functions/v1/check-trip-pre-departure
+   { "force_trip_id": "3b5e645d-3144-4206-9503-1f5c3c0b3862" }
+   ```
+   Esto reenvía a todos los miembros aprobados con email, recalculando el bloque del tiempo. Tras el envío, la función vuelve a registrar los recordatorios → futuros runs automáticos no reenvían.
 
-Ejemplo: viaje el 14 → email el 12 a las 10:00 Madrid.
+### Lo que NO se toca
+- Ningún archivo del repo (ni edge functions, ni plantillas, ni frontend).
+- Cron `check-trip-pre-departure-hourly` → sigue en `0 8,9 * * *`.
+- Lógica estricta: `start_date = targetDate` + `madridHour === 10` + UNIQUE constraint.
+- Otros viajes, otros emails, RLS, diseño, navegación.
 
-## Cambios (solo en el envío del email previo)
-
-### 1. `supabase/functions/check-trip-pre-departure/index.ts`
-
-Sustituir la ventana flexible por una comprobación estricta:
-
-- Calcular `nowMadrid` usando `Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Madrid', ... })`.
-- Calcular `targetDate = nowMadrid + 2 días` (formato `YYYY-MM-DD`).
-- Filtro SQL: `start_date = targetDate` (igualdad exacta, ya no rango).
-- Comprobación de hora: si `nowMadrid.hour !== 10`, salir sin hacer nada (salvo que venga `force_trip_id`).
-- Eliminar el bloque `hoursAway < -24 || hoursAway > 60`.
-- Mantener `force_trip_id` para catch-up manual (bypass de fecha y hora).
-- Mantener la unique constraint en `trip_pre_departure_reminders` como salvaguarda anti-duplicados.
-
-### 2. Cron `check-trip-pre-departure-hourly`
-
-Pasar de `0 * * * *` (cada hora) a `0 8,9 * * *` (08:00 y 09:00 UTC), igual que ya hace `check-trip-post-departure`. Esto cubre las 10:00 de Madrid tanto en horario de verano (CEST = UTC+2 → 08:00 UTC) como de invierno (CET = UTC+1 → 09:00 UTC). La edge function decide cuál de las dos ejecuciones es la válida comprobando `nowMadrid.hour === 10`.
-
-Renombrar a `check-trip-pre-departure-daily-10` por coherencia.
-
-## Lo que NO se toca
-
-- Plantilla del email (`trip-pre-departure.tsx`)
-- Bloque de tiempo / geocoding (ya corregido)
-- Frontend, otras edge functions, otros emails, RLS, base de datos
-- Diseño y navegación
-
-## Validación tras desplegar
-
-1. Comprobar que el cron queda en `0 8,9 * * *`.
-2. Para "Rioja Bike Race" (inicio día 14): ya tiene `trip_pre_departure_reminders` registrados → no se reenviará (la unique constraint lo bloquea). Confirmar consultando la tabla.
-3. Para futuros viajes: el envío se producirá únicamente el día (start_date − 2) a las 10:00 Madrid.
+### Validación tras la ejecución
+- Respuesta JSON de la función con `processed > 0` y detalle por destinatario.
+- `weather: 'included'` por destinatario si la previsión está disponible.
+- Confirmación de que la regla automática queda intacta.
