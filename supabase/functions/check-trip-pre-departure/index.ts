@@ -168,15 +168,9 @@ Deno.serve(async (req) => {
     const details: Array<Record<string, unknown>> = []
 
     for (const trip of trips) {
-      // Catch-up window: send any time from ~60h before start until the
-      // trip's end day. The UNIQUE (trip_id, user_id) constraint on
-      // trip_pre_departure_reminders prevents duplicate sends.
-      // In force mode (manual catch-up), bypass the window check entirely.
-      if (!forceTripId) {
-        const tripStart = new Date(trip.start_date + 'T00:00:00Z')
-        const hoursAway = (tripStart.getTime() - now.getTime()) / (1000 * 60 * 60)
-        if (hoursAway < -24 || hoursAway > 60) continue
-      }
+      // Sin ventana flexible: el filtro start_date = targetDate ya garantiza
+      // exactamente 2 días antes. La UNIQUE constraint en
+      // trip_pre_departure_reminders evita duplicados.
 
       // Get approved members
       const { data: members, error: membersError } = await supabase
