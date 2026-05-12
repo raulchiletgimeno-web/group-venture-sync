@@ -1,0 +1,2 @@
+DELETE FROM public.trip_pre_departure_reminders WHERE trip_id = '3b5e645d-3144-4206-9503-1f5c3c0b3862';
+DELETE FROM public.email_send_log WHERE metadata->>'idempotency_key' LIKE 'pre-departure-3b5e645d-3144-4206-9503-1f5c3c0b3862-%' OR id::text IN (SELECT id::text FROM public.email_send_log WHERE template_name = 'trip-pre-departure' AND metadata::text LIKE '%3b5e645d-3144-4206-9503-1f5c3c0b3862%');
