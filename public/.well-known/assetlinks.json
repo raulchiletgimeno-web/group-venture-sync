@@ -1,13 +1,11 @@
 [
   {
-    "relation": [
-      "delegate_permission/common.handle_all_urls"
-    ],
+    "relation": ["delegate_permission/common.handle_all_urls"],
     "target": {
       "namespace": "android_app",
       "package_name": "com.yormit.twa",
       "sha256_cert_fingerprints": [
-        "A9:3B:38:DD:EB:40:2B:CA:1F:16:22:E7:A6:EA:44:27:2A:49:A0:39:5A:EB:79:2D:7F:85:B0:A3:55:A7:C1:85"
+        "BD:91:95:22:12:1C:FB:25:DA:13:AE:7F:C8:2C:6B:AE:CA:CC:A6:8F:E7:B1:0B:D2:11:AB:9F:DB:97:5F:75:0D"
       ]
     }
   }
