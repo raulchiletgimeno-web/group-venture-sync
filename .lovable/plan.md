@@ -1,55 +1,59 @@
-## Diagnóstico (solo lectura, ya realizado)
+## Diagnóstico real, usuario por usuario
 
-Consulta a `email_send_log` y `suppressed_emails` para `anasedo74@gmail.com`:
+Viaje "Rioja Bike Race" (fin 17 may). El cron post-viaje se ejecutó correctamente el **18 may a las 10:00 Madrid (08:00 UTC)** y procesó a los 4 usuarios aprobados. La tabla `trip_post_departure_reminders` tiene marca de envío para los 4, y `email_send_log` confirma:
 
-**Email "Rioja Bike Race" — reenvío extraordinario de hoy**
-- `message_id`: `1c4020ac-4eca-41fc-946d-4f3b3e47f3c9`
-- `template_name`: `trip-pre-departure`
-- 2026-05-12 17:44:54 UTC → `pending` (encolado correctamente)
-- 2026-05-12 17:44:58 UTC → `sent` (entregado al proveedor sin error)
-- `error_message`: vacío
-- No está en `suppressed_emails`
-- Histórico reciente sano: el mismo destinatario ha recibido sin problema otros emails en los últimos días (`debt-reminder` el 5/6/7/8/9 mayo, `trip-post-departure`, `payment-notification`, e incluso un `trip-pre-departure` previo el 11 mayo), todos con estado `sent`.
+| Usuario | Email | Estado real en el sistema |
+|---|---|---|
+| Raúl Chilet | raul@chiletychilet.com | `pending` → **`sent`** (08:00:11 UTC) |
+| Ana Sedó | anasedo74@gmail.com | `pending` → **`sent`** (08:00:11 UTC) |
+| Rocío Gómez | rgomezlppez@hotmail.com | `pending` → **`sent`** (08:00:15 UTC) |
+| Jabel Balseiro | jabelbalseiro@gmail.com | **`suppressed`** — no se envió |
 
-**Conclusión técnica:** desde la app y el dispatcher todo se ejecutó correctamente. El correo salió, no rebotó, no fue rechazado, no está suprimido y no hay error registrado. La no recepción es externa al sistema (filtro spam/promociones del buzón de Gmail, regla del cliente, o entrega diferida del proveedor sin notificación de bounce). Es exactamente el mismo patrón que con `raul@chiletychilet.com`.
+Sin errores, sin bounces, sin rechazos del proveedor.
 
-A los otros 3 destinatarios (`raul@`, `jabelbalseiro@`, `rgomezlppez@`) el envío también figura como `sent` sin error — no es un problema específico de Ana en la cola ni en la lógica.
+### Por qué Jabel no lo recibió
+Jabel está en la tabla `suppressed_emails` desde el **16 abril 2026** con motivo `unsubscribe`. Él mismo se dio de baja en un envío anterior. El sistema, **correctamente y por ley (RGPD / CAN-SPAM)**, bloquea todos los emails transaccionales a esa dirección. Esto es comportamiento intencionado y no debe saltarse.
 
-## Acción propuesta (puntual, aislada)
+### Por qué Ana y Rocío dicen no haberlo recibido
+Para ambas el email salió sin error (`sent`, sin bounce, sin complaint). Es el mismo patrón ya visto con Raúl y Ana en otros envíos: filtro de Gmail (Promociones/Spam) o de Hotmail. No es un fallo del sistema.
 
-Ejecutar **un único reenvío manual** invocando directamente `send-transactional-email` solo para `anasedo74@gmail.com`, con una `idempotencyKey` nueva para forzar un envío fresco.
+### Por qué Raúl sí lo vio
+Probablemente porque ya había interactuado antes con emails de YORMIT y su buzón los entrega a Principal. Los demás no, aunque sí los recibieron a nivel proveedor.
 
-Sin tocar:
-- el cron
-- la edge function `check-trip-pre-departure`
-- la lógica de la regla fija (2 días antes, 10:00 Madrid)
-- la tabla `trip_pre_departure_reminders`
-- ningún otro destinatario
-- ningún archivo de la app
+## ¿Hay fallo estructural en la lógica?
 
-### Detalle técnico
+**No.** Repasado el flujo:
+- `check-trip-post-departure` se disparó a las 10:00 Madrid del día siguiente a `end_date`.
+- Seleccionó los 4 miembros `approved`.
+- Excluyó solo a los ya registrados en `trip_post_departure_reminders` (ninguno en este caso).
+- Encoló 4 envíos con idempotencia `post-departure-{tripId}-{userId}`.
+- El dispatcher procesó los 4: 3 enviados, 1 suprimido por unsubscribe previo.
 
-Una llamada HTTP a `send-transactional-email` con:
-```json
-{
-  "templateName": "trip-pre-departure",
-  "recipientEmail": "anasedo74@gmail.com",
-  "idempotencyKey": "manual-resend-rioja-ana-<timestamp>",
-  "templateData": {
-    "userName": "Ana Se.",
-    "tripName": "Rioja Bike Race",
-    "destination": "Logroño",
-    "startDate": "14 may 2026",
-    "endDate": "<fin real>",
-    "forecast": <forecast Open-Meteo on-the-fly>
-  }
-}
-```
+La regla "1 vez por usuario y viaje, día siguiente a las 10:00 Madrid" funciona correctamente. **No hay nada que tocar en cron, función ni tabla de control.**
 
-Datos extraídos del registro real del viaje y del perfil (sin modificar nada).
+## Acción puntual propuesta (aislada)
 
-### Validación posterior
+Reenviar manualmente a las **2 únicas usuarias que realmente faltan por recibirlo en su bandeja**, con `idempotencyKey` nuevo para forzar un envío fresco fuera de la regla de duplicados:
 
-1. Confirmar nuevo `message_id` con `status=sent` en `email_send_log`.
-2. Pedir a Ana que revise **spam / promociones / "otros"** del buzón de Gmail.
-3. Reportar resultado y confirmar que ningún otro archivo o flujo ha sido modificado.
+1. **Ana Sedó** — `anasedo74@gmail.com`
+2. **Rocío Gómez** — `rgomezlppez@hotmail.com`
+
+Llamada directa a `send-transactional-email` con `templateName: trip-post-departure`, reutilizando su token de feedback existente (o generando uno si no hay) para que el botón "Valorar" funcione correctamente.
+
+### Lo que NO se hará
+- **No** se reenviará a Raúl (ya lo recibió).
+- **No** se reenviará a Jabel: está unsubscribed, saltarse la supresión sería ilegal y dañaría la reputación del dominio. Si Jabel quiere volver a recibir comunicaciones, debe pedirlo y se elimina su entrada de `suppressed_emails` manualmente — esto se puede hablar aparte, pero no debe hacerse por iniciativa nuestra.
+- **No** se tocará ninguna otra parte de la app, ni cron, ni función, ni diseño, ni templates, ni otros emails.
+
+## Validación posterior
+1. Confirmar dos nuevos `message_id` con estado `sent` en `email_send_log`.
+2. Pedir a Ana y Rocío que revisen Spam / Promociones / Otros.
+3. Reportar resultado exacto con los 4 estados finales.
+
+## Sobre próximos viajes
+La lógica ya está bien blindada. La única variable externa es el filtro del buzón del destinatario, que no podemos controlar desde el código. Si quieres maximizar entregabilidad en Principal, lo que ayuda de verdad es:
+- mantener el remitente y dominio (`notify.yormit.com`) consistentes (ya lo está),
+- evitar palabras tipo "gratis/oferta/descuento" en asunto (ya evitado),
+- y que los propios usuarios marquen un email previo de YORMIT como "No es spam" una vez (acción del usuario, no del sistema).
+
+No propongo cambios estructurales porque no hay fallo estructural que corregir.
