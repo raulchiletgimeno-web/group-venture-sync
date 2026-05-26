@@ -84,19 +84,27 @@ export function useUnseenCounts(): UnseenResult & { pendingTotal: number } {
       "trip_members",
     ];
 
-    const channel = supabase
-      .channel("unseen-counts")
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: tables[0] }, fetchCounts)
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: tables[1] }, fetchCounts)
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: tables[2] }, fetchCounts)
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: tables[3] }, fetchCounts)
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: tables[4] }, fetchCounts)
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: tables[5] }, fetchCounts)
-      .on("postgres_changes", { event: "*", schema: "public", table: tables[6] }, fetchCounts)
-      .subscribe();
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    let cancelled = false;
+
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user || cancelled) return;
+      channel = supabase
+        .channel(`user:${user.id}:unseen`, { config: { private: true } })
+        .on("postgres_changes", { event: "INSERT", schema: "public", table: tables[0] }, fetchCounts)
+        .on("postgres_changes", { event: "INSERT", schema: "public", table: tables[1] }, fetchCounts)
+        .on("postgres_changes", { event: "INSERT", schema: "public", table: tables[2] }, fetchCounts)
+        .on("postgres_changes", { event: "INSERT", schema: "public", table: tables[3] }, fetchCounts)
+        .on("postgres_changes", { event: "INSERT", schema: "public", table: tables[4] }, fetchCounts)
+        .on("postgres_changes", { event: "INSERT", schema: "public", table: tables[5] }, fetchCounts)
+        .on("postgres_changes", { event: "*", schema: "public", table: tables[6] }, fetchCounts)
+        .subscribe();
+    })();
 
     return () => {
-      supabase.removeChannel(channel);
+      cancelled = true;
+      if (channel) supabase.removeChannel(channel);
     };
   }, [fetchCounts]);
 
