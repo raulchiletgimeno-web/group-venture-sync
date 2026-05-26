@@ -211,7 +211,7 @@ const Landing = () => {
                   { quote: "Muy útil, completa e intuitiva. Realmente facilita tanto la organización como el desarrollo de todos los aspectos que intervienen en un viaje en grupo 👌🏻", name: "Juan Rodríguez", rating: 5 },
                   { quote: "Gran herramienta para los viajes en grupo. Facilita la organización previa, la comunicación y compartir fotos durante el viaje, y la división de gastos al terminar.", name: "Vicente Fresneda", rating: 5 },
                   { quote: "Ideal para viajes en grupo.", name: "Javier Castelló", rating: 5 },
-                  { quote: "La app es muy útil, varias funciones en una sola app.", name: "Javier Olmos", rating: 5 },
+                  { quote: "La app es muy útil, varias funciones en una sola app.", name: "Javier Olmo", rating: 5 },
                   { quote: "Es muy útil y cómoda para viajar.", name: "Primitivo Murcia", rating: 5 },
                   { quote: "La app es muy intuitiva y cómoda para no tener caos en la organización del viaje.", name: "José Peiró", rating: 4.5 },
                   { quote: "Muy práctica para tener todo el viaje organizado en un solo sitio y no depender de varios chats y notas.", name: "María López", rating: 5 },
