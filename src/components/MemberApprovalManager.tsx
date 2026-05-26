@@ -10,7 +10,6 @@ interface PendingMember {
   id: string;
   user_id: string;
   name: string | null;
-  email: string | null;
 }
 
 interface MemberApprovalManagerProps {
@@ -38,7 +37,7 @@ const MemberApprovalManager = ({ tripId }: MemberApprovalManagerProps) => {
     const userIds = data.map((m) => m.user_id);
     const { data: profiles } = await supabase
       .from("profiles")
-      .select("id, name, email")
+      .select("id, name")
       .in("id", userIds);
 
     const merged = data.map((m) => {
@@ -47,7 +46,6 @@ const MemberApprovalManager = ({ tripId }: MemberApprovalManagerProps) => {
         id: m.id,
         user_id: m.user_id,
         name: profile?.name ?? null,
-        email: profile?.email ?? null,
       };
     });
 
@@ -120,11 +118,8 @@ const MemberApprovalManager = ({ tripId }: MemberApprovalManagerProps) => {
           >
             <div>
               <p className="text-sm font-medium text-card-foreground">
-                {formatDisplayName(member.name, member.email || t.usuario)}
+                {formatDisplayName(member.name, t.usuario)}
               </p>
-              {member.name && member.email && (
-                <p className="text-xs text-muted-foreground">{member.email}</p>
-              )}
             </div>
             <div className="flex gap-1.5">
               <Button

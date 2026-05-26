@@ -13,7 +13,7 @@ import { getSignedUrl } from "@/lib/signedUrl";
 
 interface Member {
   user_id: string;
-  profiles: { name: string | null; email: string | null } | null;
+  profiles: { name: string | null } | null;
 }
 
 interface TicketRecord {
@@ -58,7 +58,7 @@ const ActivityTicketManager = ({ scheduleId, tripId, isCreator }: Props) => {
   const fetchMembers = async () => {
     const { data } = await supabase
       .from("trip_members")
-      .select("user_id, profiles(name, email)")
+      .select("user_id, profiles(name)")
       .eq("trip_id", tripId);
     setMembers((data as unknown as Member[]) ?? []);
   };
@@ -156,7 +156,7 @@ const ActivityTicketManager = ({ scheduleId, tripId, isCreator }: Props) => {
 
   const memberName = (userId: string) => {
     const m = members.find((m) => m.user_id === userId);
-    return formatDisplayName(m?.profiles?.name, m?.profiles?.email || userId.slice(0, 8));
+    return formatDisplayName(m?.profiles?.name, userId.slice(0, 8));
   };
 
   // Non-creator: show ticket icon only if they have a personal or group ticket
@@ -224,7 +224,7 @@ const ActivityTicketManager = ({ scheduleId, tripId, isCreator }: Props) => {
                   <SelectContent>
                     {members.map((m) => (
                       <SelectItem key={m.user_id} value={m.user_id}>
-                        {formatDisplayName(m.profiles?.name, m.profiles?.email || m.user_id.slice(0, 8))}
+                        {formatDisplayName(m.profiles?.name, m.user_id.slice(0, 8))}
                       </SelectItem>
                     ))}
                   </SelectContent>
