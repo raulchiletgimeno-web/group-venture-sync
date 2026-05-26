@@ -1,42 +1,50 @@
-## Funciones afectadas
+## Auditoría de buckets y policies de Storage
 
-Auditando las funciones del esquema `public`, hay **5 funciones sin `SET search_path` explícito**, que son las que disparan la advertencia "Function Search Path Mutable":
+He revisado el estado real del proyecto (no el snapshot del panel) y la advertencia "Public Bucket Allows Listing" **ya no existe**.
 
-1. `public.delete_email(text, bigint)` — SECURITY DEFINER, sin search_path
-2. `public.enqueue_email(text, jsonb)` — SECURITY DEFINER, sin search_path
-3. `public.read_email_batch(text, integer, integer)` — SECURITY DEFINER, sin search_path
-4. `public.move_to_dlq(text, text, bigint, jsonb)` — SECURITY DEFINER, sin search_path
-5. `public.validate_trip_feedback_rating()` — trigger, sin search_path
+### 1. Buckets existentes
 
-Las otras 8 funciones (`is_trip_member`, `is_trip_creator`, `get_unseen_counts`, `get_unseen_section_counts`, `find_trip_id_by_invite_code`, `handle_new_user`, `ensure_expense_has_splits`, `prevent_duplicate_debt_payment`) ya tienen `SET search_path TO 'public'` y están correctas.
+Solo hay un bucket en el proyecto:
 
-## Corrección
+| Bucket | public |
+|---|---|
+| `trip-photos` | **false** (privado) |
 
-Las 4 funciones de cola de emails usan `pgmq.send`, `pgmq.read`, `pgmq.delete`, `pgmq.create` (esquema `pgmq`). Para que sigan funcionando con un search_path fijo y seguro, hay que incluir `pgmq` además de `public`.
+No hay ningún otro bucket. No queda ningún bucket público.
 
-`validate_trip_feedback_rating` no referencia ninguna tabla, solo `NEW.*`, así que `public` basta.
+### 2. Policies de `storage.objects` activas
 
-Migración (usa `ALTER FUNCTION ... SET search_path = ...`, sin tocar el cuerpo ni los permisos ya endurecidos en la migración anterior):
+| Operación | Policy | Condición |
+|---|---|---|
+| SELECT | Trip members can view trip photos | `bucket_id = 'trip-photos' AND is_trip_member(trip_id)` — solo rol `authenticated` |
+| INSERT | Trip members can upload photos | `bucket_id = 'trip-photos' AND auth.role() = 'authenticated' AND is_trip_member(trip_id)` |
+| DELETE | Author or creator can delete photos | `auth.role() = 'authenticated' AND (autor del archivo O creador del viaje)` |
 
-```sql
-ALTER FUNCTION public.delete_email(text, bigint)
-  SET search_path = public, pgmq;
-ALTER FUNCTION public.enqueue_email(text, jsonb)
-  SET search_path = public, pgmq;
-ALTER FUNCTION public.read_email_batch(text, integer, integer)
-  SET search_path = public, pgmq;
-ALTER FUNCTION public.move_to_dlq(text, text, bigint, jsonb)
-  SET search_path = public, pgmq;
-ALTER FUNCTION public.validate_trip_feedback_rating()
-  SET search_path = public;
-```
+No existe ninguna policy con `USING (true)`, ni ninguna que permita subir, listar o borrar sin ser miembro del viaje. No hay policy para el rol `anon`. No hay policy de UPDATE (no se puede sobrescribir desde cliente fuera de los flujos previstos por upsert del propietario).
 
-## Validación
+### 3. Resultado del linter ahora mismo
 
-1. Ejecuto `supabase--linter` después de la migración y confirmo que `function_search_path_mutable` desaparece.
-2. Consulto `pg_proc.proconfig` para verificar que las 5 funciones tienen `search_path=...` fijo.
-3. No se modifica cuerpo, firma, permisos ni lógica → cola de emails, feedback y triggers siguen funcionando igual.
+`supabase--linter` devuelve **5 warnings**, todas del tipo "Signed-In Users Can Execute SECURITY DEFINER Function" (las que ya decidimos mantener: `is_trip_member`, `is_trip_creator`, `get_unseen_counts`, `get_unseen_section_counts`, `find_trip_id_by_invite_code`, necesarias para RLS y hooks).
 
-## Lo que NO se toca
+**Ya NO aparece** `0025_public_bucket_allows_listing` ni ningún hallazgo de storage. La corrección de hacer `trip-photos` privado (hecha en un cambio anterior) ya resolvió esta advertencia.
 
-Diseño, navegación, emails (lógica), chat, fotos, gastos, transport, accommodation, schedule, auth, i18n, RLS, otras funciones, edge functions, frontend. Solo `ALTER FUNCTION ... SET search_path`.
+### 4. Sobre el panel de seguridad
+
+Los hallazgos que ves en el panel (`PUBLIC_STORAGE_EXPOSURE`, `SUPA_public_bucket_allows_listing`) provienen de un escaneo anterior y están desactualizados. Para refrescarlos hay que volver a ejecutar el escaneo desde el panel de Seguridad, o yo puedo marcar el finding como resuelto con `security--manage_security_finding` para que desaparezca de la lista.
+
+### Plan propuesto
+
+**Opción A (recomendada): no tocar código ni SQL.** El problema ya está corregido. Solo marco como resueltos en el panel:
+
+- `supabase_lov` / `trip_photos_bucket_public_read` → mark_as_fixed (el bucket ya es privado y las policies exigen `is_trip_member`).
+- `supabase` / `SUPA_public_bucket_allows_listing` → mark_as_fixed (no aparece en el linter actual).
+
+No se toca: diseño, navegación, emails, chat, gastos, transport, accommodation, schedule, auth, fotos (lógica), i18n, RLS, ni ninguna otra parte de la app. Cero cambios de código o SQL.
+
+### Validación que haré tras aprobar
+
+1. Re-ejecutar `supabase--linter` y confirmar que no aparece ningún hallazgo de storage.
+2. Confirmar con `SELECT public FROM storage.buckets` que `trip-photos` sigue privado.
+3. Confirmar con `pg_policies` que las 3 policies siguen como están descritas arriba.
+
+¿Apruebas la Opción A (solo marcar como resuelto, sin tocar nada)?
