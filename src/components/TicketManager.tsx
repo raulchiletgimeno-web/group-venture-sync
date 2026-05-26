@@ -126,7 +126,7 @@ const TicketManager = ({ transportId, tripId, isCreator }: Props) => {
 
   const memberName = (userId: string) => {
     const m = members.find((m) => m.user_id === userId);
-    return formatDisplayName(m?.profiles?.name, m?.profiles?.email || userId.slice(0, 8));
+    return formatDisplayName(m?.profiles?.name, userId.slice(0, 8));
   };
 
   // For non-creator: show ticket button if they have a ticket
