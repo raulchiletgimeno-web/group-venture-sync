@@ -1,71 +1,86 @@
 ## Problema
 
-El finding `MISSING_REALTIME_AUTHORIZATION` indica que la tabla `realtime.messages` (la que Supabase Realtime usa internamente para autorizar suscripciones a canales) no tiene políticas RLS. Consecuencia: cualquier usuario autenticado puede invocar `supabase.channel('chat-<tripId>').subscribe()` con cualquier `tripId` y el broker abre el canal sin validar pertenencia al viaje.
+El bucket `trip-photos` está marcado como `public = true` y tiene la policy `"Public can view trip photos" USING (bucket_id = 'trip-photos')` en `storage.objects`. Consecuencia: cualquier persona en Internet con la URL `…/storage/v1/object/public/trip-photos/<tripId>/…` ve la foto sin autenticarse ni ser miembro del viaje. En el código, todos los puntos generan URLs públicas vía `getPublicUrl()`:
 
-Matiz importante: los datos reales de `postgres_changes` siguen filtrándose por la RLS de las tablas origen (`trip_messages`, `trip_expenses`, `trip_photos`, etc. ya usan `is_trip_member`), por lo que actualmente no se filtran filas a quien no es miembro. Pero el broker sí acepta la suscripción y eso es lo que el escáner marca como crítico. La solución oficial de Supabase es:
+- `src/pages/trips/Photos.tsx` (galería, viewer, miniaturas)
+- `src/pages/trips/Chat.tsx` (imágenes, audios y ficheros del chat)
+- `src/pages/trips/Accommodation.tsx` (booking files)
+- `src/pages/trips/Expenses.tsx` (receipts)
+- `src/components/TicketManager.tsx` (tickets de transporte)
+- `src/components/ActivityTicketManager.tsx` (tickets de actividades)
 
-1. Activar canales "privados" en el cliente (`config: { private: true }`).
-2. Nombrar los topics de forma determinista (`trip:<id>:...`, `user:<id>:...`).
-3. Añadir políticas RLS en `realtime.messages` que sólo permitan SELECT cuando el topic pertenece a un viaje del que el usuario es miembro (o a su propio user_id).
+Todas las rutas suben con el patrón `${tripId}/...`, así que podemos validar pertenencia con `(storage.foldername(name))[1]::uuid` + `is_trip_member()`.
 
 ## Cambios
 
-### 1. Migración SQL (única tabla tocada: `realtime.messages`)
-
-- `ALTER PUBLICATION supabase_realtime` ya cubre las tablas que necesitamos; no se toca.
-- `ALTER TABLE realtime.messages ENABLE ROW LEVEL SECURITY` (idempotente).
-- Crear política `SELECT` (suscripción) y `INSERT` (broadcast/presence) para `authenticated`:
+### 1. Migración SQL (única tabla tocada: `storage.objects` + `storage.buckets`)
 
 ```sql
-CREATE POLICY "Trip members authorize realtime topics"
-ON realtime.messages
-FOR SELECT TO authenticated
+-- Privatizar el bucket
+UPDATE storage.buckets SET public = false WHERE id = 'trip-photos';
+
+-- Quitar la policy permisiva
+DROP POLICY IF EXISTS "Public can view trip photos" ON storage.objects;
+
+-- Solo miembros aprobados del viaje pueden leer el objeto
+CREATE POLICY "Trip members can view trip photos"
+ON storage.objects FOR SELECT
+TO authenticated
 USING (
-  CASE
-    WHEN realtime.topic() LIKE 'trip:%'
-      THEN public.is_trip_member( (split_part(realtime.topic(),':',2))::uuid )
-    WHEN realtime.topic() LIKE 'user:%'
-      THEN (split_part(realtime.topic(),':',2))::uuid = auth.uid()
-    ELSE false
-  END
+  bucket_id = 'trip-photos'
+  AND public.is_trip_member( (storage.foldername(name))[1]::uuid )
 );
--- misma lógica para INSERT (envío de broadcasts/presence)
 ```
 
-Esto bloquea cualquier suscripción a un topic `trip:<otroId>:*` si el usuario no es miembro aprobado de ese viaje.
+Efecto inmediato: las URLs públicas (`…/object/public/trip-photos/…`) dejan de servir contenido (404/403). Cualquier enlace público antiguo queda invalidado de raíz. Sólo funciona el acceso autenticado vía Signed URLs o la API `download` con sesión.
 
-### 2. Renombrar topics y activar `private: true` en cliente (8 puntos)
+Las policies de INSERT y DELETE existentes (que ya filtran por `is_trip_member` y `is_trip_creator`) se mantienen sin tocar.
 
-Sólo se cambian los nombres de canal y se añade `{ config: { private: true } }`. No se altera lógica, UI, ni filtros de `postgres_changes`.
+### 2. Helper de Signed URLs en cliente (1 fichero nuevo, sin cambios de UI)
 
-| Archivo | Topic actual | Topic nuevo |
-|---|---|---|
-| `src/hooks/use-member-status.ts` | `member-status-${tripId}` | `trip:${tripId}:members` |
-| `src/hooks/use-unseen-section-counts.ts` | `unseen-section-${tripId}` | `trip:${tripId}:unseen` |
-| `src/hooks/use-unseen-counts.ts` | `unseen-counts` | `user:${userId}:unseen` (requiere el `user.id` ya disponible en el hook) |
-| `src/pages/Dashboard.tsx` | `pending-members-dashboard` | `user:${userId}:memberships` |
-| `src/pages/TripDashboard.tsx` | `dashboard-members-${tripId}` | `trip:${tripId}:members` |
-| `src/pages/trips/Chat.tsx` (mensajes) | `chat-${tripId}` | `trip:${tripId}:chat` |
-| `src/pages/trips/Chat.tsx` (votos poll) | `poll-votes-${poll.id}` | `trip:${tripId}:poll:${poll.id}` (pasar `tripId` al PollComponent que ya está en scope) |
-| `src/components/MemberApprovalManager.tsx` | `pending-members-${tripId}` | `trip:${tripId}:members` |
+`src/lib/signedUrl.ts`: caché en memoria por `file_path` con expiración. Devuelve URL firmada válida 1 hora; refresca si quedan <5 minutos. Una sola entrada por path.
 
-Notas:
-- Para los dos canales "globales" (`unseen-counts`, `pending-members-dashboard`), pasamos al patrón `user:${userId}:...`. El postgres_changes filter sigue siendo el mismo, sólo cambiamos el nombre del topic para que la política RLS pueda autorizarlo.
-- No se añaden, eliminan ni reordenan listeners; sólo se renombra el `.channel(...)` y se le añade el segundo argumento `{ config: { private: true } }`.
+```ts
+export async function getSignedUrl(path: string, expiresIn = 3600): Promise<string>
+export async function getSignedUrls(paths: string[], expiresIn = 3600): Promise<Record<string,string>>
+```
 
-### 3. Nada más se toca
+Internamente usa `supabase.storage.from('trip-photos').createSignedUrl(...)` o `createSignedUrls(...)` en lote.
 
-No se modifica: diseño, navegación, emails, chat (lógica), fotos, gastos, transporte, alojamiento, schedule, auth, otras políticas, edge functions, i18n, ni el resto de findings del escáner.
+### 3. Componente `<SignedImg>` (1 fichero nuevo)
+
+`src/components/SignedImg.tsx`: wrapper sobre `<img>` que recibe `path` en lugar de `src`, resuelve la signed URL vía el helper y la pinta. Acepta `className`, `onClick`, `loading`, `alt`, etc. para no tocar diseño. Maneja loading skeleton igual que el render actual cuando aplica.
+
+### 4. Sustitución mecánica de `getPublicUrl` por equivalente firmado
+
+Sólo se cambia la fuente de la URL, no la UI ni la lógica:
+
+| Archivo | Cambio |
+|---|---|
+| `src/pages/trips/Photos.tsx` | Prefetch en lote de signed URLs al cargar `photos` (`getSignedUrls(paths)`), guardar en `useState<Record<path,url>>` y usar ese mapa en miniaturas y viewer en lugar de `getPublicUrl`. Para el botón "abrir/compartir" se llama `getSignedUrl(path)` on-demand. |
+| `src/pages/trips/Chat.tsx` | `getFileUrl` pasa a ser async vía helper. Las imágenes/audio del chat se renderizan con `<SignedImg>` o resolviendo la URL en un pequeño hook local. |
+| `src/pages/trips/Accommodation.tsx` | El enlace al booking file llama `getSignedUrl(path)` al hacer click (no se renderiza embebido). |
+| `src/pages/trips/Expenses.tsx` | El enlace al receipt llama `getSignedUrl(path)` al hacer click. |
+| `src/components/TicketManager.tsx` | Igual: signed URL on-demand. |
+| `src/components/ActivityTicketManager.tsx` | Igual: signed URL on-demand. |
+
+No se cambia: layout, estilos, navegación, animaciones, lazy loading, swiper del viewer, ni copy. La sustitución es 1:1 a nivel de origen de URL.
+
+### 5. Nada más se toca
+
+No se modifica: diseño, navegación, chat (lógica), gastos (lógica), emails, otras policies, otras tablas, edge functions, i18n, ni el resto de findings del escáner.
 
 ## Validación
 
-1. **Usuario A intenta suscribirse a viaje ajeno**: `supabase.channel('trip:<otroId>:chat', { config:{ private:true }}).subscribe()` → estado `CHANNEL_ERROR` / no recibe eventos (RLS de `realtime.messages` lo bloquea).
-2. **Miembro aprobado**: recibe inserts en chat, expenses, photos, members, polls, igual que antes.
-3. **Smoke test en preview**: abrir chat de un viaje, enviar mensaje, comprobar que llega en tiempo real; abrir dashboard, aprobar un pending member y comprobar que la lista se actualiza.
-4. Re-ejecutar el escáner de seguridad: el finding `MISSING_REALTIME_AUTHORIZATION` debe desaparecer.
+1. **No autenticado**: abrir directamente `https://<proyecto>.supabase.co/storage/v1/object/public/trip-photos/<tripId>/<file>` → 400/404. Listar el bucket sin auth → vacío.
+2. **Autenticado no miembro**: intentar `createSignedUrl` desde el cliente con un `tripId` ajeno → error (RLS rechaza). Intentar abrir una signed URL no propia → 403 al expirar / no obtenible.
+3. **Miembro aprobado**: la galería, el chat, los recibos de gastos, los booking files y los tickets cargan exactamente igual que ahora.
+4. **Smoke test en preview**: subir foto en galería, abrir viewer, abrir recibo, abrir ticket, enviar imagen al chat — todo visible.
+5. Re-ejecutar el escáner: el finding `PUBLIC_STORAGE_EXPOSURE` y `SUPA_public_bucket_allows_listing` deben desaparecer.
 
 ## Resumen
 
-- 1 migración SQL en `realtime.messages` (políticas RLS por topic).
-- 8 ficheros front modificados sólo en la línea `.channel(...)` para usar topic determinista + `private: true`.
-- Cero cambios funcionales, visuales o de negocio.
+- 1 migración: bucket privado + policy `SELECT` restringida a `is_trip_member`.
+- 2 ficheros nuevos: helper `signedUrl.ts` y componente `SignedImg.tsx`.
+- 6 ficheros front modificados solo para cambiar el origen de la URL (de pública a firmada). Cero cambios funcionales, visuales o de negocio.
+- URLs públicas antiguas invalidadas automáticamente al privatizar el bucket.
