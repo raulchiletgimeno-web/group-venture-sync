@@ -148,8 +148,9 @@ const ActivityTicketManager = ({ scheduleId, tripId, isCreator }: Props) => {
   };
 
   const openTicketView = async (filePath: string) => {
-    const { data } = supabase.storage.from("trip-photos").getPublicUrl(filePath);
-    setViewUrl(data.publicUrl);
+    const url = await getSignedUrl(filePath);
+    if (!url) return;
+    setViewUrl(url);
     setViewOpen(true);
   };
 
