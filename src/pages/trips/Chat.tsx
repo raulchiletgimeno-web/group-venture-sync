@@ -784,10 +784,11 @@ const PollDialog = ({ open, onOpenChange, onPublish, sending, t }: PollDialogPro
 // ============================================================
 interface PollCardProps {
   messageId: string;
+  tripId: string;
   currentUserId: string | null;
   t: any;
 }
-const PollCard = ({ messageId, currentUserId, t }: PollCardProps) => {
+const PollCard = ({ messageId, tripId, currentUserId, t }: PollCardProps) => {
   const [poll, setPoll] = useState<Poll | null>(null);
   const [votes, setVotes] = useState<PollVote[]>([]);
 
