@@ -1,50 +1,93 @@
-## Auditoría de buckets y policies de Storage
+## Auditoría final — 5 warnings SECURITY DEFINER restantes
 
-He revisado el estado real del proyecto (no el snapshot del panel) y la advertencia "Public Bucket Allows Listing" **ya no existe**.
+Revisión función por función. Las 5 son ejecutables por `authenticated`, todas con `SECURITY DEFINER`, `STABLE`, `search_path` fijo a `public`, y todas con scope interno a `auth.uid()` o a una sola fila por código.
 
-### 1. Buckets existentes
+---
 
-Solo hay un bucket en el proyecto:
+### 1. `is_trip_member(p_trip_id uuid) → boolean`
+- **Por qué authenticated:** la usan **todas las policies RLS** del proyecto (chat, fotos, gastos, transporte, alojamiento, schedule, tickets, etc.) vía `USING (is_trip_member(trip_id))`. PostgREST evalúa las policies en el rol del usuario — si `authenticated` no puede ejecutarla, **toda la app deja de leer datos**.
+- **Riesgo de quitar el permiso:** ruptura total de lectura. Crítico.
+- **Más restrictivo posible:** no. Solo devuelve `true/false` sobre `auth.uid()` (no acepta otro user_id). No filtra datos sensibles.
+- **Veredicto:** **aceptable e intencional**. El warning es un falso positivo del linter.
 
-| Bucket | public |
+---
+
+### 2. `is_trip_creator(p_trip_id uuid) → boolean`
+- **Por qué authenticated:** policies RLS de admin (borrar mensajes ajenos, gestionar tickets, alojamiento, transporte, schedule). También se usa en `Author or creator can delete photos` de storage.
+- **Riesgo de quitar el permiso:** los admins no podrían operar.
+- **Más restrictivo posible:** no. Internamente compara contra `auth.uid()`. Devuelve solo boolean.
+- **Veredicto:** **aceptable e intencional**.
+
+---
+
+### 3. `get_unseen_counts(p_user_id uuid)`
+- **Por qué authenticated:** la llama `src/hooks/use-unseen-counts.ts` desde el cliente para pintar los badges del Dashboard.
+- **Riesgo real del parámetro `p_user_id`:** un usuario malicioso podría invocarla con el `user_id` de otro y obtener cuántos elementos sin ver tiene en cada viaje. **Esto es un leak menor pero real** (no contenido, solo conteos).
+- **Más restrictivo posible:** sí — ignorar el parámetro y usar `auth.uid()` dentro de la función. Es un cambio de **una línea** y no rompe el cliente (el hook ya pasa el propio user.id).
+- **Veredicto:** mejorable con cambio mínimo y seguro.
+
+---
+
+### 4. `get_unseen_section_counts(p_user_id uuid, p_trip_id uuid)`
+- Mismo caso que la anterior. La llama `src/hooks/use-unseen-section-counts.ts`.
+- **Riesgo:** un usuario podría pedir conteos por sección de otro user, siempre que adivine `trip_id`. Leak menor.
+- **Más restrictivo:** sí — sustituir `p_user_id` por `auth.uid()` internamente. Compatible.
+- **Veredicto:** mejorable con cambio mínimo y seguro.
+
+---
+
+### 5. `find_trip_id_by_invite_code(_code text) → uuid`
+- **Por qué authenticated:** la usan `JoinTripDialog.tsx` y `JoinTrip.tsx` para resolver el `trip_id` desde el código de invitación sin exponer la tabla `trips`.
+- **Riesgo real:** un atacante autenticado solo puede comprobar si un código existe (devuelve UUID o null). El código es secreto y el conocimiento del UUID no da acceso (RLS protege todo).
+- **Más restrictivo posible:** marginal (añadir rate limiting fuera del scope). La función ya es mínima: una sola columna, una sola fila por código.
+- **Veredicto:** **aceptable e intencional**. Necesario para el flujo de unión a viajes.
+
+---
+
+## Resumen y plan
+
+| Función | Veredicto |
 |---|---|
-| `trip-photos` | **false** (privado) |
+| `is_trip_member` | Aceptable, intencional |
+| `is_trip_creator` | Aceptable, intencional |
+| `get_unseen_counts` | **Endurecer (sustituir `p_user_id` por `auth.uid()`)** |
+| `get_unseen_section_counts` | **Endurecer (idem)** |
+| `find_trip_id_by_invite_code` | Aceptable, intencional |
 
-No hay ningún otro bucket. No queda ningún bucket público.
+### Cambio propuesto (única acción)
 
-### 2. Policies de `storage.objects` activas
+Migración SQL mínima que **reemplaza el cuerpo** de `get_unseen_counts` y `get_unseen_section_counts` para ignorar el parámetro `p_user_id` y usar `auth.uid()` internamente. Se mantiene la firma (`p_user_id uuid` o `p_user_id uuid, p_trip_id uuid`) para no romper la generación de tipos ni los hooks existentes — el parámetro simplemente se ignora.
 
-| Operación | Policy | Condición |
-|---|---|---|
-| SELECT | Trip members can view trip photos | `bucket_id = 'trip-photos' AND is_trip_member(trip_id)` — solo rol `authenticated` |
-| INSERT | Trip members can upload photos | `bucket_id = 'trip-photos' AND auth.role() = 'authenticated' AND is_trip_member(trip_id)` |
-| DELETE | Author or creator can delete photos | `auth.role() = 'authenticated' AND (autor del archivo O creador del viaje)` |
+```sql
+CREATE OR REPLACE FUNCTION public.get_unseen_counts(p_user_id uuid)
+RETURNS TABLE(trip_id uuid, unseen_count bigint)
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = 'public'
+AS $$
+  WITH me AS (SELECT auth.uid() AS uid), ...
+$$;
 
-No existe ninguna policy con `USING (true)`, ni ninguna que permita subir, listar o borrar sin ser miembro del viaje. No hay policy para el rol `anon`. No hay policy de UPDATE (no se puede sobrescribir desde cliente fuera de los flujos previstos por upsert del propietario).
+CREATE OR REPLACE FUNCTION public.get_unseen_section_counts(p_user_id uuid, p_trip_id uuid)
+RETURNS TABLE(section text, unseen_count bigint)
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = 'public'
+AS $$
+  -- reemplazar p_user_id por auth.uid() en todo el cuerpo
+$$;
+```
 
-### 3. Resultado del linter ahora mismo
+Cuerpo idéntico al actual salvo que cada `p_user_id` se sustituye por `auth.uid()`. Cero cambios en frontend, hooks, RLS, edge functions, tipos, ni en el resto de funciones.
 
-`supabase--linter` devuelve **5 warnings**, todas del tipo "Signed-In Users Can Execute SECURITY DEFINER Function" (las que ya decidimos mantener: `is_trip_member`, `is_trip_creator`, `get_unseen_counts`, `get_unseen_section_counts`, `find_trip_id_by_invite_code`, necesarias para RLS y hooks).
+### Actualización de security memory
 
-**Ya NO aparece** `0025_public_bucket_allows_listing` ni ningún hallazgo de storage. La corrección de hacer `trip-photos` privado (hecha en un cambio anterior) ya resolvió esta advertencia.
+Después de aplicar la migración, actualizo `security--update_memory` para documentar que los 3 warnings restantes (`is_trip_member`, `is_trip_creator`, `find_trip_id_by_invite_code`) son intencionales y no deben volver a flagearse.
 
-### 4. Sobre el panel de seguridad
+### Validación tras aprobar
 
-Los hallazgos que ves en el panel (`PUBLIC_STORAGE_EXPOSURE`, `SUPA_public_bucket_allows_listing`) provienen de un escaneo anterior y están desactualizados. Para refrescarlos hay que volver a ejecutar el escaneo desde el panel de Seguridad, o yo puedo marcar el finding como resuelto con `security--manage_security_finding` para que desaparezca de la lista.
+1. `supabase--linter` → confirmar que solo quedan 3 warnings de SECURITY DEFINER (los aceptables).
+2. `supabase--read_query` sobre `pg_proc` para confirmar que las 2 nuevas versiones ya no dependen del parámetro.
+3. Smoke-test mental de los hooks `use-unseen-counts` y `use-unseen-section-counts`: siguen funcionando porque internamente la función usará el usuario autenticado real (que es lo mismo que el hook ya pasa).
 
-### Plan propuesto
+### Lo que NO se toca
 
-**Opción A (recomendada): no tocar código ni SQL.** El problema ya está corregido. Solo marco como resueltos en el panel:
+Diseño, navegación, emails, chat, fotos, gastos, transporte, alojamiento, schedule, auth, i18n, RLS, edge functions, frontend, hooks. Solo el cuerpo SQL de 2 funciones.
 
-- `supabase_lov` / `trip_photos_bucket_public_read` → mark_as_fixed (el bucket ya es privado y las policies exigen `is_trip_member`).
-- `supabase` / `SUPA_public_bucket_allows_listing` → mark_as_fixed (no aparece en el linter actual).
-
-No se toca: diseño, navegación, emails, chat, gastos, transport, accommodation, schedule, auth, fotos (lógica), i18n, RLS, ni ninguna otra parte de la app. Cero cambios de código o SQL.
-
-### Validación que haré tras aprobar
-
-1. Re-ejecutar `supabase--linter` y confirmar que no aparece ningún hallazgo de storage.
-2. Confirmar con `SELECT public FROM storage.buckets` que `trip-photos` sigue privado.
-3. Confirmar con `pg_policies` que las 3 policies siguen como están descritas arriba.
-
-¿Apruebas la Opción A (solo marcar como resuelto, sin tocar nada)?
+¿Apruebas aplicar la migración de endurecimiento sobre `get_unseen_counts` y `get_unseen_section_counts`?
