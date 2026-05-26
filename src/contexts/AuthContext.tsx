@@ -21,13 +21,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<AuthContextType["profile"]>(null);
 
-  const fetchProfile = async (userId: string) => {
+  const fetchProfile = async (userId: string, fallbackEmail: string | null) => {
     const { data } = await supabase
       .from("profiles")
-      .select("id, name, email, avatar_url")
+      .select("id, name, avatar_url")
       .eq("id", userId)
       .single();
-    setProfile(data);
+    setProfile(data ? { ...data, email: fallbackEmail } : null);
   };
 
   useEffect(() => {
