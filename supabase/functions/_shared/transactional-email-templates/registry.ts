@@ -14,6 +14,9 @@ import { template as paymentNotification } from './payment-notification.tsx'
 import { template as tripPreDeparture } from './trip-pre-departure.tsx'
 import { template as tripPostDeparture } from './trip-post-departure.tsx'
 import { template as tripFeedbackInternal } from './trip-feedback-internal.tsx'
+import { template as internalAlertCritical } from './internal-alert-critical.tsx'
+import { template as internalAlertDigest } from './internal-alert-digest.tsx'
+import { template as internalAlertResolved } from './internal-alert-resolved.tsx'
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
   'debt-reminder': debtReminder,
@@ -21,4 +24,7 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'trip-pre-departure': tripPreDeparture,
   'trip-post-departure': tripPostDeparture,
   'trip-feedback-internal': tripFeedbackInternal,
+  'internal-alert-critical': internalAlertCritical,
+  'internal-alert-digest': internalAlertDigest,
+  'internal-alert-resolved': internalAlertResolved,
 }
