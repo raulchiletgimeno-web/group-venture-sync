@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { formatDisplayName } from "@/lib/formatDisplayName";
+import { getSignedUrl } from "@/lib/signedUrl";
 
 interface Member {
   user_id: string;
@@ -117,8 +118,9 @@ const TicketManager = ({ transportId, tripId, isCreator }: Props) => {
   };
 
   const openTicketView = async (filePath: string) => {
-    const { data } = supabase.storage.from("trip-photos").getPublicUrl(filePath);
-    setViewUrl(data.publicUrl);
+    const url = await getSignedUrl(filePath);
+    if (!url) return;
+    setViewUrl(url);
     setViewOpen(true);
   };
 

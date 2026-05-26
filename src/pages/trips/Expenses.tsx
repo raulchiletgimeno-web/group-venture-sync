@@ -20,6 +20,8 @@ import { getLocale } from "@/i18n/translations";
 import { formatDisplayName } from "@/lib/formatDisplayName";
 import { useMarkSectionSeen } from "@/hooks/use-mark-section-seen";
 import { notifyTripEvent } from "@/lib/notifyTripEvent";
+import { SignedImg } from "@/components/SignedImg";
+import { getSignedUrl } from "@/lib/signedUrl";
 
 interface Member {
   user_id: string;
@@ -223,10 +225,11 @@ const Expenses = () => {
     return path;
   };
 
-  const getReceiptUrl = (path: string) => {
-    const { data } = supabase.storage.from("trip-photos").getPublicUrl(path);
-    return data.publicUrl;
+  const openReceipt = async (path: string) => {
+    const url = await getSignedUrl(path);
+    if (url) window.open(url, "_blank");
   };
+
 
   const toggleMember = (uid: string) => {
     setSelectedMembers((prev) => {
@@ -645,11 +648,19 @@ const Expenses = () => {
                 />
                 {receiptPreview || existingReceiptPath ? (
                   <div className="relative inline-block">
-                    <img
-                      src={receiptPreview ?? (existingReceiptPath ? getReceiptUrl(existingReceiptPath) : "")}
-                      alt="Ticket"
-                      className="h-24 w-24 rounded-lg object-cover border border-border"
-                    />
+                    {receiptPreview ? (
+                      <img
+                        src={receiptPreview}
+                        alt="Ticket"
+                        className="h-24 w-24 rounded-lg object-cover border border-border"
+                      />
+                    ) : existingReceiptPath ? (
+                      <SignedImg
+                        path={existingReceiptPath}
+                        alt="Ticket"
+                        className="h-24 w-24 rounded-lg object-cover border border-border"
+                      />
+                    ) : null}
                     <button
                       type="button"
                       onClick={removeReceipt}
@@ -1001,7 +1012,7 @@ const Expenses = () => {
                       {exp.receipt_path && (
                         <button
                           type="button"
-                          onClick={() => window.open(getReceiptUrl(exp.receipt_path!), '_blank')}
+                          onClick={() => openReceipt(exp.receipt_path!)}
                           className="mt-2 inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
                         >
                           <ImageIcon className="h-4 w-4" />

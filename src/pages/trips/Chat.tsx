@@ -15,6 +15,8 @@ import { useToast } from "@/hooks/use-toast";
 import { formatDisplayName } from "@/lib/formatDisplayName";
 import { useMarkSectionSeen } from "@/hooks/use-mark-section-seen";
 import { notifyTripEvent } from "@/lib/notifyTripEvent";
+import { SignedImg } from "@/components/SignedImg";
+import { getSignedUrl } from "@/lib/signedUrl";
 
 interface Message {
   id: string;
@@ -161,7 +163,12 @@ const Chat = () => {
 
   const getMemberName = (userId: string) => formatDisplayName(members.find((m) => m.user_id === userId)?.name, t.usuario);
   const getInitials = (name: string) => name.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2);
-  const getFileUrl = (path: string) => supabase.storage.from("trip-photos").getPublicUrl(path).data.publicUrl;
+  const openSignedFile = async (path: string) => {
+    try {
+      const url = await getSignedUrl(path);
+      if (url) window.open(url, "_blank");
+    } catch { /* ignore */ }
+  };
 
   const messageSnippet = (msg: Message) => {
     if (msg.type === "image") return t.imageMsg;
@@ -460,10 +467,10 @@ const Chat = () => {
                       </p>
                       {msg.type === "text" && <p className="text-[17px] whitespace-pre-wrap break-words overflow-hidden text-foreground" style={{ overflowWrap: "anywhere" }}>{msg.content}</p>}
                       {msg.type === "image" && msg.file_path && (
-                        <img src={getFileUrl(msg.file_path)} alt={t.image} className="rounded-lg max-w-full max-h-60 object-cover cursor-pointer" loading="lazy" decoding="async" onClick={() => window.open(getFileUrl(msg.file_path!), "_blank")} />
+                        <SignedImg path={msg.file_path} alt={t.image} className="rounded-lg max-w-full max-h-60 object-cover cursor-pointer" loading="lazy" decoding="async" onClick={() => openSignedFile(msg.file_path!)} />
                       )}
                       {msg.type === "audio" && msg.file_path && (
-                        <audio controls src={getFileUrl(msg.file_path)} className="max-w-[260px] h-12" ref={(el) => { if (el) el.volume = 1.0; }} />
+                        <SignedAudio path={msg.file_path} />
                       )}
                       {msg.type === "location" && msg.content && (() => {
                         try {
@@ -923,6 +930,17 @@ const PollCard = ({ messageId, tripId, currentUserId, t }: PollCardProps) => {
       </p>
     </div>
   );
+};
+
+const SignedAudio = ({ path }: { path: string }) => {
+  const [url, setUrl] = useState<string>("");
+  useEffect(() => {
+    let cancelled = false;
+    getSignedUrl(path).then((u) => { if (!cancelled) setUrl(u); }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [path]);
+  if (!url) return null;
+  return <audio controls src={url} className="max-w-[260px] h-12" ref={(el) => { if (el) el.volume = 1.0; }} />;
 };
 
 export default Chat;
