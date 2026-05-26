@@ -148,8 +148,8 @@ Deno.serve(async (req) => {
   }
 
 
-  // Create Supabase client with service role (bypasses RLS)
-  const supabase = createClient(supabaseUrl, supabaseServiceKey)
+  // (Supabase client already created above for recipient resolution)
+
 
   // 2. Check suppression list (fail-closed: if we can't verify, don't send)
   const { data: suppressed, error: suppressionError } = await supabase
