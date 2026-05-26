@@ -225,10 +225,11 @@ const Expenses = () => {
     return path;
   };
 
-  const getReceiptUrl = (path: string) => {
-    const { data } = supabase.storage.from("trip-photos").getPublicUrl(path);
-    return data.publicUrl;
+  const openReceipt = async (path: string) => {
+    const url = await getSignedUrl(path);
+    if (url) window.open(url, "_blank");
   };
+
 
   const toggleMember = (uid: string) => {
     setSelectedMembers((prev) => {
