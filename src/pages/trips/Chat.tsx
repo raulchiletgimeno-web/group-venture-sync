@@ -932,4 +932,15 @@ const PollCard = ({ messageId, tripId, currentUserId, t }: PollCardProps) => {
   );
 };
 
+const SignedAudio = ({ path }: { path: string }) => {
+  const [url, setUrl] = useState<string>("");
+  useEffect(() => {
+    let cancelled = false;
+    getSignedUrl(path).then((u) => { if (!cancelled) setUrl(u); }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [path]);
+  if (!url) return null;
+  return <audio controls src={url} className="max-w-[260px] h-12" ref={(el) => { if (el) el.volume = 1.0; }} />;
+};
+
 export default Chat;
