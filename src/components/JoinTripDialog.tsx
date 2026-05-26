@@ -27,17 +27,15 @@ const JoinTripDialog = ({ open, onOpenChange }: JoinTripDialogProps) => {
     if (!user) return;
     setSubmitting(true);
 
-    const { data: trip } = await supabase
-      .from("trips")
-      .select("id")
-      .eq("invite_code", code.toUpperCase().trim())
-      .single();
+    const { data: tripId } = await supabase.rpc("find_trip_id_by_invite_code", { _code: code });
 
-    if (!trip) {
+    if (!tripId) {
       toast({ title: t.invalidCode, description: t.invalidCodeDesc, variant: "destructive" });
       setSubmitting(false);
       return;
     }
+
+    const trip = { id: tripId as string };
 
     const { data: existing } = await supabase
       .from("trip_members")
