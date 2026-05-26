@@ -163,7 +163,12 @@ const Chat = () => {
 
   const getMemberName = (userId: string) => formatDisplayName(members.find((m) => m.user_id === userId)?.name, t.usuario);
   const getInitials = (name: string) => name.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2);
-  const getFileUrl = (path: string) => supabase.storage.from("trip-photos").getPublicUrl(path).data.publicUrl;
+  const openSignedFile = async (path: string) => {
+    try {
+      const url = await getSignedUrl(path);
+      if (url) window.open(url, "_blank");
+    } catch { /* ignore */ }
+  };
 
   const messageSnippet = (msg: Message) => {
     if (msg.type === "image") return t.imageMsg;
