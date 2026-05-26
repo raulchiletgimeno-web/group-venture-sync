@@ -1,86 +1,68 @@
-## Problema
+## Dónde se está exponiendo el email
 
-El bucket `trip-photos` está marcado como `public = true` y tiene la policy `"Public can view trip photos" USING (bucket_id = 'trip-photos')` en `storage.objects`. Consecuencia: cualquier persona en Internet con la URL `…/storage/v1/object/public/trip-photos/<tripId>/…` ve la foto sin autenticarse ni ser miembro del viaje. En el código, todos los puntos generan URLs públicas vía `getPublicUrl()`:
+El scanner marca correctamente este problema. Tras auditar el código y las policies, los emails se filtran en estos puntos:
 
-- `src/pages/trips/Photos.tsx` (galería, viewer, miniaturas)
-- `src/pages/trips/Chat.tsx` (imágenes, audios y ficheros del chat)
-- `src/pages/trips/Accommodation.tsx` (booking files)
-- `src/pages/trips/Expenses.tsx` (receipts)
-- `src/components/TicketManager.tsx` (tickets de transporte)
-- `src/components/ActivityTicketManager.tsx` (tickets de actividades)
+1. **Base de datos — policy `Trip members can view co-member profiles` en `profiles`**
+   La policy permite `SELECT *`, que incluye la columna `email`. Cualquier miembro aprobado de un viaje puede leer el email de cualquier co‑miembro vía la Data API. Este es el agujero real.
 
-Todas las rutas suben con el patrón `${tripId}/...`, así que podemos validar pertenencia con `(storage.foldername(name))[1]::uuid` + `is_trip_member()`.
+2. **Frontend — lecturas innecesarias de `email`** (puramente decorativas o evitables):
+   - `src/components/MemberApprovalManager.tsx` → `select("id, name, email")` y pinta el email debajo del nombre del solicitante pendiente.
+   - `src/components/TicketManager.tsx` → `select("user_id, profiles(name, email)")`, usa el email como fallback del nombre.
+   - `src/components/ActivityTicketManager.tsx` → idéntico al anterior.
+   - `src/pages/trips/Expenses.tsx` (línea 465) → lee `profiles.email` del acreedor en cliente para invocar `send-transactional-email` al confirmar un pago de deuda.
+   - `src/contexts/AuthContext.tsx` → lee el email del propio usuario desde `profiles` (uso legítimo, pero puede obtenerse de `auth.user.email` y dejar de depender de la columna).
 
-## Cambios
+Los demás usos del literal "email" en el código son textos i18n, formularios de login/registro o tipos generados — no exponen datos de otros usuarios.
 
-### 1. Migración SQL (única tabla tocada: `storage.objects` + `storage.buckets`)
+## Solución
+
+Cierre **a nivel de datos** (no solo UI) revocando la visibilidad de la columna `email` para usuarios autenticados, y limpieza de los selects del frontend para que nadie pida la columna.
+
+### 1. Migración SQL (capa de datos — la definitiva)
+
+PostgREST respeta los `GRANT` a nivel de columna sobre `public.profiles`. La idea es: la fila sigue siendo legible (por las policies actuales), pero la columna `email` deja de ser seleccionable por el rol `authenticated`. El `service_role` (edge functions internas) mantiene acceso completo.
 
 ```sql
--- Privatizar el bucket
-UPDATE storage.buckets SET public = false WHERE id = 'trip-photos';
+-- 1. Revocar SELECT amplio sobre profiles para authenticated
+REVOKE SELECT ON public.profiles FROM authenticated;
 
--- Quitar la policy permisiva
-DROP POLICY IF EXISTS "Public can view trip photos" ON storage.objects;
+-- 2. Conceder SELECT solo sobre columnas no sensibles
+GRANT SELECT (id, name, avatar_url, language, created_at)
+  ON public.profiles TO authenticated;
 
--- Solo miembros aprobados del viaje pueden leer el objeto
-CREATE POLICY "Trip members can view trip photos"
-ON storage.objects FOR SELECT
-TO authenticated
-USING (
-  bucket_id = 'trip-photos'
-  AND public.is_trip_member( (storage.foldername(name))[1]::uuid )
-);
+-- 3. Mantener INSERT/UPDATE como antes (las RLS siguen restringiendo a auth.uid())
+GRANT INSERT, UPDATE ON public.profiles TO authenticated;
+
+-- service_role ya tiene GRANT ALL — sin cambios
+-- Las policies actuales se mantienen intactas
 ```
 
-Efecto inmediato: las URLs públicas (`…/object/public/trip-photos/…`) dejan de servir contenido (404/403). Cualquier enlace público antiguo queda invalidado de raíz. Sólo funciona el acceso autenticado vía Signed URLs o la API `download` con sesión.
+Efecto: cualquier `select("email")` desde cliente autenticado devolverá error de permiso, incluso para el propio usuario. Por eso el frontend deja de pedir esa columna y obtiene el email propio de `auth.user.email` (que sigue disponible vía sesión Supabase Auth).
 
-Las policies de INSERT y DELETE existentes (que ya filtran por `is_trip_member` y `is_trip_creator`) se mantienen sin tocar.
-
-### 2. Helper de Signed URLs en cliente (1 fichero nuevo, sin cambios de UI)
-
-`src/lib/signedUrl.ts`: caché en memoria por `file_path` con expiración. Devuelve URL firmada válida 1 hora; refresca si quedan <5 minutos. Una sola entrada por path.
-
-```ts
-export async function getSignedUrl(path: string, expiresIn = 3600): Promise<string>
-export async function getSignedUrls(paths: string[], expiresIn = 3600): Promise<Record<string,string>>
-```
-
-Internamente usa `supabase.storage.from('trip-photos').createSignedUrl(...)` o `createSignedUrls(...)` en lote.
-
-### 3. Componente `<SignedImg>` (1 fichero nuevo)
-
-`src/components/SignedImg.tsx`: wrapper sobre `<img>` que recibe `path` en lugar de `src`, resuelve la signed URL vía el helper y la pinta. Acepta `className`, `onClick`, `loading`, `alt`, etc. para no tocar diseño. Maneja loading skeleton igual que el render actual cuando aplica.
-
-### 4. Sustitución mecánica de `getPublicUrl` por equivalente firmado
-
-Sólo se cambia la fuente de la URL, no la UI ni la lógica:
+### 2. Cambios frontend (mínimos, sin tocar diseño ni flujos)
 
 | Archivo | Cambio |
 |---|---|
-| `src/pages/trips/Photos.tsx` | Prefetch en lote de signed URLs al cargar `photos` (`getSignedUrls(paths)`), guardar en `useState<Record<path,url>>` y usar ese mapa en miniaturas y viewer en lugar de `getPublicUrl`. Para el botón "abrir/compartir" se llama `getSignedUrl(path)` on-demand. |
-| `src/pages/trips/Chat.tsx` | `getFileUrl` pasa a ser async vía helper. Las imágenes/audio del chat se renderizan con `<SignedImg>` o resolviendo la URL en un pequeño hook local. |
-| `src/pages/trips/Accommodation.tsx` | El enlace al booking file llama `getSignedUrl(path)` al hacer click (no se renderiza embebido). |
-| `src/pages/trips/Expenses.tsx` | El enlace al receipt llama `getSignedUrl(path)` al hacer click. |
-| `src/components/TicketManager.tsx` | Igual: signed URL on-demand. |
-| `src/components/ActivityTicketManager.tsx` | Igual: signed URL on-demand. |
+| `src/contexts/AuthContext.tsx` | Quitar `email` del `select`. Rellenar `profile.email` desde `session.user.email` para mantener el tipo y el contrato existente. |
+| `src/components/MemberApprovalManager.tsx` | `select("id, name")`. Quitar la línea decorativa `{member.email}` del bloque pendiente. Mantener el `formatDisplayName(member.name, t.usuario)` como fallback. |
+| `src/components/TicketManager.tsx` | `select("user_id, profiles(name)")`. Sustituir los dos fallbacks `m.profiles?.email \|\| userId.slice(0,8)` por `userId.slice(0,8)` (comportamiento idéntico cuando no hay nombre — el email casi nunca se mostraba realmente). Ajustar el tipo `Member`. |
+| `src/components/ActivityTicketManager.tsx` | Igual que TicketManager. |
+| `src/pages/trips/Expenses.tsx` | Eliminar el `select("email")` del acreedor. En su lugar, pasar `recipientUserId: debt.to` a `send-transactional-email` y resolver el email en servidor. |
 
-No se cambia: layout, estilos, navegación, animaciones, lazy loading, swiper del viewer, ni copy. La sustitución es 1:1 a nivel de origen de URL.
+### 3. Edge function `send-transactional-email`
 
-### 5. Nada más se toca
+Añadir soporte opcional para `recipientUserId`: si llega, la función (que ya corre con `service_role`) hace `supabase.auth.admin.getUserById(recipientUserId)` y usa ese email como `effectiveRecipient`. Si llega `recipientEmail` directamente, se mantiene el comportamiento actual (lo usan los workers internos como `check-trip-debts`, `notify-trip`, etc., que ya operan en servidor con datos legítimos). Cambio aditivo, no rompe nada.
 
-No se modifica: diseño, navegación, chat (lógica), gastos (lógica), emails, otras policies, otras tablas, edge functions, i18n, ni el resto de findings del escáner.
+### 4. Validación técnica
 
-## Validación
+- Como **usuario A autenticado** ejecutar en consola del navegador:
+  `await supabase.from('profiles').select('email').eq('id', '<id_usuario_B>')`
+  → debe devolver error `permission denied for column email`.
+- `await supabase.from('profiles').select('id,name,avatar_url').eq('id', '<id_usuario_B>')` → sigue funcionando para co‑miembros (UI de miembros, expenses, fotos, chat).
+- `supabase.auth.getUser()` sigue devolviendo el email propio (lo usa `AuthContext` ahora).
+- Probar flujo de aprobación de miembros pendientes (sigue mostrando nombre), tickets de transporte/actividad (sigue mostrando nombre), confirmación de pago de deuda (sigue enviando email de notificación porque ahora se resuelve server‑side).
+- Re‑ejecutar el security scan: la advertencia `profiles_email_co_member_exposure` debe desaparecer.
 
-1. **No autenticado**: abrir directamente `https://<proyecto>.supabase.co/storage/v1/object/public/trip-photos/<tripId>/<file>` → 400/404. Listar el bucket sin auth → vacío.
-2. **Autenticado no miembro**: intentar `createSignedUrl` desde el cliente con un `tripId` ajeno → error (RLS rechaza). Intentar abrir una signed URL no propia → 403 al expirar / no obtenible.
-3. **Miembro aprobado**: la galería, el chat, los recibos de gastos, los booking files y los tickets cargan exactamente igual que ahora.
-4. **Smoke test en preview**: subir foto en galería, abrir viewer, abrir recibo, abrir ticket, enviar imagen al chat — todo visible.
-5. Re-ejecutar el escáner: el finding `PUBLIC_STORAGE_EXPOSURE` y `SUPA_public_bucket_allows_listing` deben desaparecer.
+### Lo que NO se toca
 
-## Resumen
-
-- 1 migración: bucket privado + policy `SELECT` restringida a `is_trip_member`.
-- 2 ficheros nuevos: helper `signedUrl.ts` y componente `SignedImg.tsx`.
-- 6 ficheros front modificados solo para cambiar el origen de la URL (de pública a firmada). Cero cambios funcionales, visuales o de negocio.
-- URLs públicas antiguas invalidadas automáticamente al privatizar el bucket.
+Diseño, navegación, emails automáticos, chat, fotos, gastos (lógica), transporte, alojamiento, schedule, auth flows, i18n, otras policies, otros findings (function search_path, security definer executable, public bucket listing — quedan fuera de esta incidencia).
