@@ -37,7 +37,7 @@ const MemberApprovalManager = ({ tripId }: MemberApprovalManagerProps) => {
     const userIds = data.map((m) => m.user_id);
     const { data: profiles } = await supabase
       .from("profiles")
-      .select("id, name, email")
+      .select("id, name")
       .in("id", userIds);
 
     const merged = data.map((m) => {
@@ -46,7 +46,6 @@ const MemberApprovalManager = ({ tripId }: MemberApprovalManagerProps) => {
         id: m.id,
         user_id: m.user_id,
         name: profile?.name ?? null,
-        email: profile?.email ?? null,
       };
     });
 
