@@ -467,10 +467,10 @@ const Chat = () => {
                       </p>
                       {msg.type === "text" && <p className="text-[17px] whitespace-pre-wrap break-words overflow-hidden text-foreground" style={{ overflowWrap: "anywhere" }}>{msg.content}</p>}
                       {msg.type === "image" && msg.file_path && (
-                        <img src={getFileUrl(msg.file_path)} alt={t.image} className="rounded-lg max-w-full max-h-60 object-cover cursor-pointer" loading="lazy" decoding="async" onClick={() => window.open(getFileUrl(msg.file_path!), "_blank")} />
+                        <SignedImg path={msg.file_path} alt={t.image} className="rounded-lg max-w-full max-h-60 object-cover cursor-pointer" loading="lazy" decoding="async" onClick={() => openSignedFile(msg.file_path!)} />
                       )}
                       {msg.type === "audio" && msg.file_path && (
-                        <audio controls src={getFileUrl(msg.file_path)} className="max-w-[260px] h-12" ref={(el) => { if (el) el.volume = 1.0; }} />
+                        <SignedAudio path={msg.file_path} />
                       )}
                       {msg.type === "location" && msg.content && (() => {
                         try {
