@@ -142,15 +142,22 @@ const Index = () => {
 
   // Realtime subscription for pending member changes
   useEffect(() => {
-    const channel = supabase
-      .channel("pending-members-dashboard")
-      .on("postgres_changes", { event: "*", schema: "public", table: "trip_members" }, () => {
-        fetchPendingCounts();
-      })
-      .subscribe();
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    let cancelled = false;
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user || cancelled) return;
+      channel = supabase
+        .channel(`user:${user.id}:memberships`, { config: { private: true } })
+        .on("postgres_changes", { event: "*", schema: "public", table: "trip_members" }, () => {
+          fetchPendingCounts();
+        })
+        .subscribe();
+    })();
 
     return () => {
-      supabase.removeChannel(channel);
+      cancelled = true;
+      if (channel) supabase.removeChannel(channel);
     };
   }, []);
 

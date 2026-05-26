@@ -27,7 +27,7 @@ export function useMemberStatus(tripId: string | undefined) {
 
     // Subscribe to changes on this member's status
     const channel = supabase
-      .channel(`member-status-${tripId}`)
+      .channel(`trip:${tripId}:members`, { config: { private: true } })
       .on(
         "postgres_changes",
         {

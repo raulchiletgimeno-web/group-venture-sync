@@ -135,7 +135,7 @@ const TripDashboard = () => {
       });
 
     const memberChannel = supabase
-      .channel(`dashboard-members-${tripId}`)
+      .channel(`trip:${tripId}:members`, { config: { private: true } })
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "trip_members", filter: `trip_id=eq.${tripId}` },

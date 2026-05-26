@@ -105,7 +105,7 @@ const Chat = () => {
 
   useEffect(() => {
     if (!tripId) return;
-    const channel = supabase.channel(`chat-${tripId}`)
+    const channel = supabase.channel(`trip:${tripId}:chat`, { config: { private: true } })
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "trip_messages", filter: `trip_id=eq.${tripId}` },
         (payload) => { setMessages((prev) => prev.some((m) => m.id === payload.new.id) ? prev : [...prev, payload.new as Message]); })
       .subscribe();
@@ -502,7 +502,7 @@ const Chat = () => {
                         }
                       })()}
                       {msg.type === "poll" && (
-                        <PollCard messageId={msg.id} currentUserId={user?.id ?? null} t={t} />
+                        <PollCard messageId={msg.id} tripId={tripId!} currentUserId={user?.id ?? null} t={t} />
                       )}
                       <div className={`flex items-center gap-1.5 mt-0.5 ${isOwn ? "justify-end" : ""}`}>
                         <p className="text-[13px] text-foreground/50">{formatTime(msg.created_at)}</p>
@@ -784,10 +784,11 @@ const PollDialog = ({ open, onOpenChange, onPublish, sending, t }: PollDialogPro
 // ============================================================
 interface PollCardProps {
   messageId: string;
+  tripId: string;
   currentUserId: string | null;
   t: any;
 }
-const PollCard = ({ messageId, currentUserId, t }: PollCardProps) => {
+const PollCard = ({ messageId, tripId, currentUserId, t }: PollCardProps) => {
   const [poll, setPoll] = useState<Poll | null>(null);
   const [votes, setVotes] = useState<PollVote[]>([]);
 
@@ -826,7 +827,7 @@ const PollCard = ({ messageId, currentUserId, t }: PollCardProps) => {
     };
     loadVotes();
     const channel = supabase
-      .channel(`poll-votes-${poll.id}`)
+      .channel(`trip:${tripId}:poll:${poll.id}`, { config: { private: true } })
       .on("postgres_changes",
         { event: "*", schema: "public", table: "trip_poll_votes", filter: `poll_id=eq.${poll.id}` },
         () => loadVotes()

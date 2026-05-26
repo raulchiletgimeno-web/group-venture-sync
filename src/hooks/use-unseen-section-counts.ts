@@ -44,7 +44,7 @@ export function useUnseenSectionCounts(tripId: string | undefined) {
     ];
 
     const channel = supabase
-      .channel(`unseen-section-${tripId}`)
+      .channel(`trip:${tripId}:unseen`, { config: { private: true } })
       .on("postgres_changes", { event: "INSERT", schema: "public", table: tables[0], filter: `trip_id=eq.${tripId}` }, fetchCounts)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: tables[1], filter: `trip_id=eq.${tripId}` }, fetchCounts)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: tables[2], filter: `trip_id=eq.${tripId}` }, fetchCounts)
