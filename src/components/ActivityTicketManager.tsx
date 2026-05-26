@@ -13,7 +13,7 @@ import { getSignedUrl } from "@/lib/signedUrl";
 
 interface Member {
   user_id: string;
-  profiles: { name: string | null; email: string | null } | null;
+  profiles: { name: string | null } | null;
 }
 
 interface TicketRecord {
