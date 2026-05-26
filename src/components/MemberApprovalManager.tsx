@@ -58,7 +58,7 @@ const MemberApprovalManager = ({ tripId }: MemberApprovalManagerProps) => {
     fetchPending();
 
     const channel = supabase
-      .channel(`pending-members-${tripId}`)
+      .channel(`trip:${tripId}:members`, { config: { private: true } })
       .on(
         "postgres_changes",
         {
