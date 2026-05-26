@@ -1,68 +1,65 @@
-## Dónde se está exponiendo el email
+## Auditoría: funciones SECURITY DEFINER en `public`
 
-El scanner marca correctamente este problema. Tras auditar el código y las policies, los emails se filtran en estos puntos:
+Hay 10 funciones `SECURITY DEFINER` en el esquema `public`. Estos son sus permisos `EXECUTE` actuales y el problema concreto:
 
-1. **Base de datos — policy `Trip members can view co-member profiles` en `profiles`**
-   La policy permite `SELECT *`, que incluye la columna `email`. Cualquier miembro aprobado de un viaje puede leer el email de cualquier co‑miembro vía la Data API. Este es el agujero real.
+| Función | EXECUTE actual | ¿Quién la necesita? | Acción |
+|---|---|---|---|
+| `delete_email(text, bigint)` | anon, authenticated, service_role | solo edge functions (service_role) | **Revocar** de PUBLIC, anon, authenticated |
+| `enqueue_email(text, jsonb)` | anon, authenticated, service_role | solo edge functions (service_role) | **Revocar** de PUBLIC, anon, authenticated |
+| `read_email_batch(text, int, int)` | anon, authenticated, service_role | solo edge functions (service_role) | **Revocar** de PUBLIC, anon, authenticated |
+| `move_to_dlq(text, text, bigint, jsonb)` | anon, authenticated, service_role | solo edge functions (service_role) | **Revocar** de PUBLIC, anon, authenticated |
+| `handle_new_user()` | PUBLIC, anon, authenticated, service_role | solo el trigger sobre `auth.users` (corre como owner) | **Revocar** de PUBLIC, anon, authenticated, service_role |
+| `is_trip_member(uuid)` | PUBLIC, anon, authenticated, service_role | RLS de tablas autenticadas y app cliente | **Revocar** de PUBLIC y anon. Mantener authenticated + service_role |
+| `is_trip_creator(uuid)` | PUBLIC, anon, authenticated, service_role | RLS de tablas autenticadas | **Revocar** de PUBLIC y anon. Mantener authenticated + service_role |
+| `get_unseen_counts(uuid)` | PUBLIC, anon, authenticated, service_role | hook `use-unseen-counts` (usuario autenticado) | **Revocar** de PUBLIC y anon. Mantener authenticated + service_role |
+| `get_unseen_section_counts(uuid, uuid)` | PUBLIC, anon, authenticated, service_role | hook `use-unseen-section-counts` | **Revocar** de PUBLIC y anon. Mantener authenticated + service_role |
+| `find_trip_id_by_invite_code(text)` | authenticated, service_role | `JoinTrip` (usuario autenticado) | Ya está OK (sin PUBLIC, sin anon). No tocar. |
 
-2. **Frontend — lecturas innecesarias de `email`** (puramente decorativas o evitables):
-   - `src/components/MemberApprovalManager.tsx` → `select("id, name, email")` y pinta el email debajo del nombre del solicitante pendiente.
-   - `src/components/TicketManager.tsx` → `select("user_id, profiles(name, email)")`, usa el email como fallback del nombre.
-   - `src/components/ActivityTicketManager.tsx` → idéntico al anterior.
-   - `src/pages/trips/Expenses.tsx` (línea 465) → lee `profiles.email` del acreedor en cliente para invocar `send-transactional-email` al confirmar un pago de deuda.
-   - `src/contexts/AuthContext.tsx` → lee el email del propio usuario desde `profiles` (uso legítimo, pero puede obtenerse de `auth.user.email` y dejar de depender de la columna).
+### Por qué hay que revocar de PUBLIC y anon
 
-Los demás usos del literal "email" en el código son textos i18n, formularios de login/registro o tipos generados — no exponen datos de otros usuarios.
+- Las funciones de la **cola de emails** (`delete_email`, `enqueue_email`, `read_email_batch`, `move_to_dlq`) escriben en `pgmq` y deben ser invocadas únicamente desde los workers que corren con `service_role` (`process-email-queue`, `handle-email-suppression`). Cualquier cliente autenticado actualmente podría encolar emails arbitrarios o leer/borrar mensajes de la cola.
+- `handle_new_user` es un **trigger function** sobre `auth.users`. Postgres ejecuta el trigger con privilegios del owner y no requiere `EXECUTE` para los roles del API. Mantenerlo público es ruido innecesario.
+- `is_trip_member`, `is_trip_creator`, `get_unseen_counts`, `get_unseen_section_counts` no tienen sentido para `anon` (no hay `auth.uid()`) ni para el rol `PUBLIC`. Las RLS y las llamadas legítimas siempre vienen de `authenticated`.
 
-## Solución
-
-Cierre **a nivel de datos** (no solo UI) revocando la visibilidad de la columna `email` para usuarios autenticados, y limpieza de los selects del frontend para que nadie pida la columna.
-
-### 1. Migración SQL (capa de datos — la definitiva)
-
-PostgREST respeta los `GRANT` a nivel de columna sobre `public.profiles`. La idea es: la fila sigue siendo legible (por las policies actuales), pero la columna `email` deja de ser seleccionable por el rol `authenticated`. El `service_role` (edge functions internas) mantiene acceso completo.
+## Migración SQL
 
 ```sql
--- 1. Revocar SELECT amplio sobre profiles para authenticated
-REVOKE SELECT ON public.profiles FROM authenticated;
+-- 1) Cola de emails: solo service_role
+REVOKE EXECUTE ON FUNCTION public.delete_email(text, bigint)            FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.enqueue_email(text, jsonb)            FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.read_email_batch(text, integer, integer) FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.move_to_dlq(text, text, bigint, jsonb) FROM PUBLIC, anon, authenticated;
 
--- 2. Conceder SELECT solo sobre columnas no sensibles
-GRANT SELECT (id, name, avatar_url, language, created_at)
-  ON public.profiles TO authenticated;
+-- 2) Trigger function: nadie a través del API
+REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM PUBLIC, anon, authenticated, service_role;
 
--- 3. Mantener INSERT/UPDATE como antes (las RLS siguen restringiendo a auth.uid())
-GRANT INSERT, UPDATE ON public.profiles TO authenticated;
-
--- service_role ya tiene GRANT ALL — sin cambios
--- Las policies actuales se mantienen intactas
+-- 3) Helpers de membresía + contadores: solo authenticated y service_role
+REVOKE EXECUTE ON FUNCTION public.is_trip_member(uuid)              FROM PUBLIC, anon;
+REVOKE EXECUTE ON FUNCTION public.is_trip_creator(uuid)             FROM PUBLIC, anon;
+REVOKE EXECUTE ON FUNCTION public.get_unseen_counts(uuid)           FROM PUBLIC, anon;
+REVOKE EXECUTE ON FUNCTION public.get_unseen_section_counts(uuid, uuid) FROM PUBLIC, anon;
 ```
 
-Efecto: cualquier `select("email")` desde cliente autenticado devolverá error de permiso, incluso para el propio usuario. Por eso el frontend deja de pedir esa columna y obtiene el email propio de `auth.user.email` (que sigue disponible vía sesión Supabase Auth).
+No se altera ninguna policy, schema, columna, edge function, ni nada del frontend. Solo se reducen permisos `EXECUTE`.
 
-### 2. Cambios frontend (mínimos, sin tocar diseño ni flujos)
+## Validación técnica
 
-| Archivo | Cambio |
-|---|---|
-| `src/contexts/AuthContext.tsx` | Quitar `email` del `select`. Rellenar `profile.email` desde `session.user.email` para mantener el tipo y el contrato existente. |
-| `src/components/MemberApprovalManager.tsx` | `select("id, name")`. Quitar la línea decorativa `{member.email}` del bloque pendiente. Mantener el `formatDisplayName(member.name, t.usuario)` como fallback. |
-| `src/components/TicketManager.tsx` | `select("user_id, profiles(name)")`. Sustituir los dos fallbacks `m.profiles?.email \|\| userId.slice(0,8)` por `userId.slice(0,8)` (comportamiento idéntico cuando no hay nombre — el email casi nunca se mostraba realmente). Ajustar el tipo `Member`. |
-| `src/components/ActivityTicketManager.tsx` | Igual que TicketManager. |
-| `src/pages/trips/Expenses.tsx` | Eliminar el `select("email")` del acreedor. En su lugar, pasar `recipientUserId: debt.to` a `send-transactional-email` y resolver el email en servidor. |
+Tras aplicar la migración, comprobaré con `pg_proc.proacl`:
 
-### 3. Edge function `send-transactional-email`
+- `delete_email`, `enqueue_email`, `read_email_batch`, `move_to_dlq` → solo `service_role=X` (y owner).
+- `handle_new_user` → solo `postgres=X` (el trigger sigue funcionando porque corre como owner).
+- `is_trip_member`, `is_trip_creator`, `get_unseen_counts`, `get_unseen_section_counts` → solo `authenticated=X`, `service_role=X`.
+- `find_trip_id_by_invite_code` → sin cambios.
 
-Añadir soporte opcional para `recipientUserId`: si llega, la función (que ya corre con `service_role`) hace `supabase.auth.admin.getUserById(recipientUserId)` y usa ese email como `effectiveRecipient`. Si llega `recipientEmail` directamente, se mantiene el comportamiento actual (lo usan los workers internos como `check-trip-debts`, `notify-trip`, etc., que ya operan en servidor con datos legítimos). Cambio aditivo, no rompe nada.
+Funcionalidad verificada conceptualmente:
+- Las RLS que llaman a `is_trip_member` / `is_trip_creator` siguen funcionando (las invoca el rol `authenticated`, que mantiene `EXECUTE`).
+- Los hooks de contadores siguen funcionando (rol `authenticated`).
+- Los workers de emails siguen funcionando (rol `service_role`).
+- El trigger `on_auth_user_created` sigue creando perfiles (corre como owner del trigger).
+- `JoinTrip` por código sigue funcionando (`find_trip_id_by_invite_code` no se toca).
 
-### 4. Validación técnica
+Marcaré los findings `SUPA_anon_security_definer_function_executable` y `SUPA_authenticated_security_definer_function_executable` como resueltos.
 
-- Como **usuario A autenticado** ejecutar en consola del navegador:
-  `await supabase.from('profiles').select('email').eq('id', '<id_usuario_B>')`
-  → debe devolver error `permission denied for column email`.
-- `await supabase.from('profiles').select('id,name,avatar_url').eq('id', '<id_usuario_B>')` → sigue funcionando para co‑miembros (UI de miembros, expenses, fotos, chat).
-- `supabase.auth.getUser()` sigue devolviendo el email propio (lo usa `AuthContext` ahora).
-- Probar flujo de aprobación de miembros pendientes (sigue mostrando nombre), tickets de transporte/actividad (sigue mostrando nombre), confirmación de pago de deuda (sigue enviando email de notificación porque ahora se resuelve server‑side).
-- Re‑ejecutar el security scan: la advertencia `profiles_email_co_member_exposure` debe desaparecer.
+## Lo que NO se toca
 
-### Lo que NO se toca
-
-Diseño, navegación, emails automáticos, chat, fotos, gastos (lógica), transporte, alojamiento, schedule, auth flows, i18n, otras policies, otros findings (function search_path, security definer executable, public bucket listing — quedan fuera de esta incidencia).
+Diseño, navegación, emails automáticos, chat, fotos, gastos, transporte, alojamiento, schedule, auth flows, i18n, otras policies, RLS, esquemas, frontend, edge functions.
