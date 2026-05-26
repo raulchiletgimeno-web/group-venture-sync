@@ -502,7 +502,7 @@ const Chat = () => {
                         }
                       })()}
                       {msg.type === "poll" && (
-                        <PollCard messageId={msg.id} currentUserId={user?.id ?? null} t={t} />
+                        <PollCard messageId={msg.id} tripId={tripId!} currentUserId={user?.id ?? null} t={t} />
                       )}
                       <div className={`flex items-center gap-1.5 mt-0.5 ${isOwn ? "justify-end" : ""}`}>
                         <p className="text-[13px] text-foreground/50">{formatTime(msg.created_at)}</p>
