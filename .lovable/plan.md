@@ -1,93 +1,117 @@
-## Auditoría final — 5 warnings SECURITY DEFINER restantes
+# Auditoría final de seguridad — YORMIT
 
-Revisión función por función. Las 5 son ejecutables por `authenticated`, todas con `SECURITY DEFINER`, `STABLE`, `search_path` fijo a `public`, y todas con scope interno a `auth.uid()` o a una sola fila por código.
-
----
-
-### 1. `is_trip_member(p_trip_id uuid) → boolean`
-- **Por qué authenticated:** la usan **todas las policies RLS** del proyecto (chat, fotos, gastos, transporte, alojamiento, schedule, tickets, etc.) vía `USING (is_trip_member(trip_id))`. PostgREST evalúa las policies en el rol del usuario — si `authenticated` no puede ejecutarla, **toda la app deja de leer datos**.
-- **Riesgo de quitar el permiso:** ruptura total de lectura. Crítico.
-- **Más restrictivo posible:** no. Solo devuelve `true/false` sobre `auth.uid()` (no acepta otro user_id). No filtra datos sensibles.
-- **Veredicto:** **aceptable e intencional**. El warning es un falso positivo del linter.
+Revisión read-only sobre la base de datos publicada, el storage, las RLS y el linter. Resultado: **prácticamente todo está cerrado correctamente**, pero hay **1 hallazgo real pendiente** (email de usuarios visible a co-miembros del viaje) que conviene corregir ahora con un cambio mínimo.
 
 ---
 
-### 2. `is_trip_creator(p_trip_id uuid) → boolean`
-- **Por qué authenticated:** policies RLS de admin (borrar mensajes ajenos, gestionar tickets, alojamiento, transporte, schedule). También se usa en `Author or creator can delete photos` de storage.
-- **Riesgo de quitar el permiso:** los admins no podrían operar.
-- **Más restrictivo posible:** no. Internamente compara contra `auth.uid()`. Devuelve solo boolean.
-- **Veredicto:** **aceptable e intencional**.
+## Bloque por bloque
 
----
+### 1. Visibilidad de viajes — **RESUELTO**
+- `trips` SELECT: `USING is_trip_member(id)`. Un usuario solo ve los viajes en los que es miembro aprobado.
+- `find_trip_id_by_invite_code` sigue operativo para el flujo de unirse por código.
 
-### 3. `get_unseen_counts(p_user_id uuid)`
-- **Por qué authenticated:** la llama `src/hooks/use-unseen-counts.ts` desde el cliente para pintar los badges del Dashboard.
-- **Riesgo real del parámetro `p_user_id`:** un usuario malicioso podría invocarla con el `user_id` de otro y obtener cuántos elementos sin ver tiene en cada viaje. **Esto es un leak menor pero real** (no contenido, solo conteos).
-- **Más restrictivo posible:** sí — ignorar el parámetro y usar `auth.uid()` dentro de la función. Es un cambio de **una línea** y no rompe el cliente (el hook ya pasa el propio user.id).
-- **Veredicto:** mejorable con cambio mínimo y seguro.
+### 2. Suscripciones Realtime — **RESUELTO**
+- Canales privados por viaje (`trip:{id}:...`) y por usuario, todos con `config: { private: true }`.
+- Filtros realtime van por `trip_id` y la RLS de las tablas subyacentes (`is_trip_member`) corta el acceso a viajes ajenos.
 
----
+### 3. Storage / fotos / archivos — **RESUELTO**
+- Único bucket: `trip-photos`, `public = false`. Sin URLs públicas.
+- Policies en `storage.objects`: SELECT solo `authenticated` + `is_trip_member`; INSERT solo miembros; DELETE solo autor o creator. Sin policies `USING (true)`, sin `anon`.
+- Frontend usa `getSignedUrl` con TTL y caché — funcionando.
 
-### 4. `get_unseen_section_counts(p_user_id uuid, p_trip_id uuid)`
-- Mismo caso que la anterior. La llama `src/hooks/use-unseen-section-counts.ts`.
-- **Riesgo:** un usuario podría pedir conteos por sección de otro user, siempre que adivine `trip_id`. Leak menor.
-- **Más restrictivo:** sí — sustituir `p_user_id` por `auth.uid()` internamente. Compatible.
-- **Veredicto:** mejorable con cambio mínimo y seguro.
+### 4. Emails de usuarios — **PENDIENTE (ver acción al final)**
+- La policy `Trip members can view co-member profiles` en `profiles` permite a un co-miembro leer **todas** las columnas, incluida `email`. El scanner lo marca como ERROR y contradice la memoria de seguridad ("los emails de otros usuarios no deben ser legibles desde el cliente").
+- Propio usuario sigue viendo su email vía `Users can view own profile`.
 
----
+### 5. Funciones SECURITY DEFINER — **ACEPTADO / INTENCIONAL**
+EXECUTE comprobado en `pg_proc.proacl`. Las únicas accesibles a `authenticated` son exactamente las 5 esperadas, todas con `search_path = public` y scope vía `auth.uid()`:
+- `is_trip_member`, `is_trip_creator` — necesarias para que las RLS de toda la app funcionen.
+- `find_trip_id_by_invite_code` — necesaria para unirse por código.
+- `get_unseen_counts`, `get_unseen_section_counts` — endurecidas; ignoran `p_user_id` y usan `auth.uid()`.
 
-### 5. `find_trip_id_by_invite_code(_code text) → uuid`
-- **Por qué authenticated:** la usan `JoinTripDialog.tsx` y `JoinTrip.tsx` para resolver el `trip_id` desde el código de invitación sin exponer la tabla `trips`.
-- **Riesgo real:** un atacante autenticado solo puede comprobar si un código existe (devuelve UUID o null). El código es secreto y el conocimiento del UUID no da acceso (RLS protege todo).
-- **Más restrictivo posible:** marginal (añadir rate limiting fuera del scope). La función ya es mínima: una sola columna, una sola fila por código.
-- **Veredicto:** **aceptable e intencional**. Necesario para el flujo de unión a viajes.
+Las funciones de email/cola (`enqueue_email`, `delete_email`, `read_email_batch`, `move_to_dlq`, `handle_new_user`) **no** son ejecutables por `authenticated` — solo `service_role`/`postgres`. Correcto.
 
----
+### 6. search_path — **RESUELTO**
+Todas las funciones SECURITY DEFINER tienen `SET search_path` explícito. No hay funciones mutables en el linter.
 
-## Resumen y plan
+### 7. Buckets / policies storage — **RESUELTO**
+Confirmado en bloque 3.
 
-| Función | Veredicto |
+### 8. Regresión funcional — **OK**
+Revisando policies y código: entrar a viaje, unirse por código, chat, fotos, gastos, tickets/recibos, realtime, emails automáticos (vía service_role), feedback (vía edge function con service_role) y recordatorios previos/posteriores (vía edge function con service_role) siguen operativos. Ninguna de las RLS endurecidas rompe estos flujos.
+
+### 9. Linter / panel de seguridad — estado actual
+
+**5 warnings del linter de Supabase (SECURITY DEFINER ejecutable por authenticated):**
+→ **ACEPTADOS / INTENCIONALES**. Son las 5 funciones del bloque 5. Documentadas en la security memory.
+
+**4 hallazgos del scanner Lovable:**
+
+| ID | Veredicto |
 |---|---|
-| `is_trip_member` | Aceptable, intencional |
-| `is_trip_creator` | Aceptable, intencional |
-| `get_unseen_counts` | **Endurecer (sustituir `p_user_id` por `auth.uid()`)** |
-| `get_unseen_section_counts` | **Endurecer (idem)** |
-| `find_trip_id_by_invite_code` | Aceptable, intencional |
+| `profiles_email_co_member_exposure` (ERROR) | **PENDIENTE real** — ver abajo |
+| `debt_reminders_write_missing` (WARN) | **Falso positivo** — RLS activo + sin policy INSERT/UPDATE/DELETE = bloqueado para `authenticated`. Solo `service_role` (edge functions) puede escribir. Seguro por defecto. |
+| `trip_pre_post_departure_reminders_write_missing` (WARN) | **Falso positivo** — mismo motivo. |
+| `trip_feedback_user_access` (WARN) | **ACEPTADO** — el flujo de feedback es 100% server-side vía edge function `submit-trip-feedback` con `service_role`. No hay token redemption desde cliente. |
 
-### Cambio propuesto (única acción)
+---
 
-Migración SQL mínima que **reemplaza el cuerpo** de `get_unseen_counts` y `get_unseen_section_counts` para ignorar el parámetro `p_user_id` y usar `auth.uid()` internamente. Se mantiene la firma (`p_user_id uuid` o `p_user_id uuid, p_trip_id uuid`) para no romper la generación de tipos ni los hooks existentes — el parámetro simplemente se ignora.
+## Acción única recomendada
+
+**Ocultar `profiles.email` a co-miembros** sin romper nada. Cambio mínimo en SQL, cero cambios en frontend/edge functions:
 
 ```sql
-CREATE OR REPLACE FUNCTION public.get_unseen_counts(p_user_id uuid)
-RETURNS TABLE(trip_id uuid, unseen_count bigint)
-LANGUAGE sql STABLE SECURITY DEFINER SET search_path = 'public'
-AS $$
-  WITH me AS (SELECT auth.uid() AS uid), ...
-$$;
+-- Sustituir la policy actual por dos:
+DROP POLICY "Trip members can view co-member profiles" ON public.profiles;
 
-CREATE OR REPLACE FUNCTION public.get_unseen_section_counts(p_user_id uuid, p_trip_id uuid)
-RETURNS TABLE(section text, unseen_count bigint)
-LANGUAGE sql STABLE SECURITY DEFINER SET search_path = 'public'
-AS $$
-  -- reemplazar p_user_id por auth.uid() en todo el cuerpo
-$$;
+-- Cada usuario sigue viendo su propio perfil completo (policy existente)
+
+-- Co-miembros: ven todas las columnas EXCEPTO email, gracias a column-level GRANT
+-- Recrear policy de co-miembros tal cual (necesaria para nombre/avatar en chat, etc.)
+CREATE POLICY "Trip members can view co-member profiles"
+ON public.profiles FOR SELECT TO authenticated
+USING (EXISTS (
+  SELECT 1 FROM trip_members tm1 JOIN trip_members tm2 ON tm1.trip_id = tm2.trip_id
+  WHERE tm1.user_id = auth.uid() AND tm2.user_id = profiles.id
+));
+
+-- Restringir el email a nivel de columna: revocar SELECT(email) a authenticated
+REVOKE SELECT (email) ON public.profiles FROM authenticated;
+-- El dueño sigue accediendo a su email vía la policy "Users can view own profile"
+-- + GRANT SELECT(email) explícito solo cuando id = auth.uid() no es expresable como GRANT,
+-- así que usamos otra vía: mantener GRANT al rol y cubrirlo con una policy más estricta.
 ```
 
-Cuerpo idéntico al actual salvo que cada `p_user_id` se sustituye por `auth.uid()`. Cero cambios en frontend, hooks, RLS, edge functions, tipos, ni en el resto de funciones.
+> Nota técnica: PostgreSQL no permite GRANT condicional por fila sobre una columna. La forma robusta y mínima es: dejar el `GRANT SELECT (email)` solo para `service_role`, y servir el email al propio usuario desde el cliente vía `session.user.email` (que ya viene de `auth.users` y no de `profiles`). El frontend ya hace esto en `AuthContext.fetchProfile` (pasa `fallbackEmail` desde la sesión), así que **no hay regresión**.
 
-### Actualización de security memory
+Migración exacta propuesta:
 
-Después de aplicar la migración, actualizo `security--update_memory` para documentar que los 3 warnings restantes (`is_trip_member`, `is_trip_creator`, `find_trip_id_by_invite_code`) son intencionales y no deben volver a flagearse.
+```sql
+REVOKE SELECT (email) ON public.profiles FROM authenticated, anon;
+-- service_role conserva acceso para edge functions (notify-creator-join, emails, etc.)
+```
 
-### Validación tras aprobar
+Ningún cambio de policies, ningún cambio de frontend. El email seguirá disponible para:
+- el propio usuario, vía `session.user.email` (ya en uso).
+- edge functions, vía `service_role`.
 
-1. `supabase--linter` → confirmar que solo quedan 3 warnings de SECURITY DEFINER (los aceptables).
-2. `supabase--read_query` sobre `pg_proc` para confirmar que las 2 nuevas versiones ya no dependen del parámetro.
-3. Smoke-test mental de los hooks `use-unseen-counts` y `use-unseen-section-counts`: siguen funcionando porque internamente la función usará el usuario autenticado real (que es lo mismo que el hook ya pasa).
+Y dejará de ser legible para co-miembros desde el cliente.
 
-### Lo que NO se toca
+---
 
-Diseño, navegación, emails, chat, fotos, gastos, transporte, alojamiento, schedule, auth, i18n, RLS, edge functions, frontend, hooks. Solo el cuerpo SQL de 2 funciones.
+## Conclusión
 
-¿Apruebas aplicar la migración de endurecimiento sobre `get_unseen_counts` y `get_unseen_section_counts`?
+| Bloque | Estado |
+|---|---|
+| Visibilidad viajes | ✅ Resuelto |
+| Realtime | ✅ Resuelto |
+| Storage / fotos | ✅ Resuelto |
+| **Emails** | ⚠️ **1 acción pendiente (mínima)** |
+| SECURITY DEFINER | ✅ Aceptado/intencional |
+| search_path | ✅ Resuelto |
+| Buckets/policies | ✅ Resuelto |
+| Regresión funcional | ✅ Sin roturas |
+| Linter | 5 warnings aceptados |
+| Scanner Lovable | 1 real + 3 falsos positivos / aceptados |
+
+**¿Apruebas aplicar la única migración (REVOKE SELECT(email))?** Tras aplicarla y marcar los falsos positivos del scanner como tales, el bloque queda completamente cerrado.
