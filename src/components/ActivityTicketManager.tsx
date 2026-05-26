@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { formatDisplayName } from "@/lib/formatDisplayName";
+import { getSignedUrl } from "@/lib/signedUrl";
 
 interface Member {
   user_id: string;
