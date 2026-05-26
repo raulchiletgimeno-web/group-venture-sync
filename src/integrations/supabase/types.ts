@@ -194,6 +194,72 @@ export type Database = {
         }
         Relationships: []
       }
+      internal_alerts: {
+        Row: {
+          created_at: string
+          description: string
+          event_key: string
+          first_seen_at: string
+          id: string
+          impact: string | null
+          included_in_digest_at: string | null
+          last_seen_at: string
+          metadata: Json
+          notified_immediately_at: string | null
+          occurrences: number
+          recommended_action: string | null
+          resolution_notes: string | null
+          resolved_at: string | null
+          severity: string
+          source: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          event_key: string
+          first_seen_at?: string
+          id?: string
+          impact?: string | null
+          included_in_digest_at?: string | null
+          last_seen_at?: string
+          metadata?: Json
+          notified_immediately_at?: string | null
+          occurrences?: number
+          recommended_action?: string | null
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          severity: string
+          source: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          event_key?: string
+          first_seen_at?: string
+          id?: string
+          impact?: string | null
+          included_in_digest_at?: string | null
+          last_seen_at?: string
+          metadata?: Json
+          notified_immediately_at?: string | null
+          occurrences?: number
+          recommended_action?: string | null
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          severity?: string
+          source?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -1027,6 +1093,36 @@ export type Database = {
       }
       is_trip_creator: { Args: { p_trip_id: string }; Returns: boolean }
       is_trip_member: { Args: { p_trip_id: string }; Returns: boolean }
+      mark_alert_resolved: {
+        Args: { p_alert_id: string; p_notes?: string }
+        Returns: {
+          created_at: string
+          description: string
+          event_key: string
+          first_seen_at: string
+          id: string
+          impact: string | null
+          included_in_digest_at: string | null
+          last_seen_at: string
+          metadata: Json
+          notified_immediately_at: string | null
+          occurrences: number
+          recommended_action: string | null
+          resolution_notes: string | null
+          resolved_at: string | null
+          severity: string
+          source: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "internal_alerts"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       move_to_dlq: {
         Args: {
           dlq_name: string
