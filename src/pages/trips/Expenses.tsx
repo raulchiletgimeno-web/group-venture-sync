@@ -648,11 +648,19 @@ const Expenses = () => {
                 />
                 {receiptPreview || existingReceiptPath ? (
                   <div className="relative inline-block">
-                    <img
-                      src={receiptPreview ?? (existingReceiptPath ? getReceiptUrl(existingReceiptPath) : "")}
-                      alt="Ticket"
-                      className="h-24 w-24 rounded-lg object-cover border border-border"
-                    />
+                    {receiptPreview ? (
+                      <img
+                        src={receiptPreview}
+                        alt="Ticket"
+                        className="h-24 w-24 rounded-lg object-cover border border-border"
+                      />
+                    ) : existingReceiptPath ? (
+                      <SignedImg
+                        path={existingReceiptPath}
+                        alt="Ticket"
+                        className="h-24 w-24 rounded-lg object-cover border border-border"
+                      />
+                    ) : null}
                     <button
                       type="button"
                       onClick={removeReceipt}
