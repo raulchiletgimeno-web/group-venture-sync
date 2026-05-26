@@ -31,3 +31,7 @@ project_id = "oktrzxlwaflyirjfjlad"
     verify_jwt = false
   [functions.translate]
     verify_jwt = false
+  [functions.internal-alert]
+    verify_jwt = false
+  [functions.internal-alert-digest]
+    verify_jwt = false
