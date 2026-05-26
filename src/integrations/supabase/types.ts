@@ -1010,6 +1010,7 @@ export type Database = {
         Args: { payload: Json; queue_name: string }
         Returns: number
       }
+      find_trip_id_by_invite_code: { Args: { _code: string }; Returns: string }
       get_unseen_counts: {
         Args: { p_user_id: string }
         Returns: {

@@ -17,8 +17,9 @@ const JoinTrip = () => {
   useEffect(() => {
     if (!user || !inviteCode) return;
     const joinTrip = async () => {
-      const { data: trip } = await supabase.from("trips").select("id").eq("invite_code", inviteCode.toUpperCase().trim()).single();
-      if (!trip) { setError(t.joinErrorInvalid); return; }
+      const { data: tripId } = await supabase.rpc("find_trip_id_by_invite_code", { _code: inviteCode });
+      if (!tripId) { setError(t.joinErrorInvalid); return; }
+      const trip = { id: tripId as string };
       const { data: existing } = await supabase.from("trip_members").select("id, status").eq("trip_id", trip.id).eq("user_id", user.id).maybeSingle();
       if (!existing) {
         const { error: insertError } = await supabase.from("trip_members").insert({ trip_id: trip.id, user_id: user.id, role: "member", status: "pending" });
