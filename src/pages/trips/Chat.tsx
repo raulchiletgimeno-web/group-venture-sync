@@ -105,7 +105,7 @@ const Chat = () => {
 
   useEffect(() => {
     if (!tripId) return;
-    const channel = supabase.channel(`chat-${tripId}`)
+    const channel = supabase.channel(`trip:${tripId}:chat`, { config: { private: true } })
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "trip_messages", filter: `trip_id=eq.${tripId}` },
         (payload) => { setMessages((prev) => prev.some((m) => m.id === payload.new.id) ? prev : [...prev, payload.new as Message]); })
       .subscribe();
