@@ -52,7 +52,7 @@ const TicketManager = ({ transportId, tripId, isCreator }: Props) => {
   const fetchMembers = async () => {
     const { data } = await supabase
       .from("trip_members")
-      .select("user_id, profiles(name, email)")
+      .select("user_id, profiles(name)")
       .eq("trip_id", tripId);
     setMembers((data as unknown as Member[]) ?? []);
   };
