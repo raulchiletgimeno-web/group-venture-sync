@@ -1012,7 +1012,7 @@ const Expenses = () => {
                       {exp.receipt_path && (
                         <button
                           type="button"
-                          onClick={() => window.open(getReceiptUrl(exp.receipt_path!), '_blank')}
+                          onClick={() => openReceipt(exp.receipt_path!)}
                           className="mt-2 inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
                         >
                           <ImageIcon className="h-4 w-4" />
