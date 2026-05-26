@@ -827,7 +827,7 @@ const PollCard = ({ messageId, tripId, currentUserId, t }: PollCardProps) => {
     };
     loadVotes();
     const channel = supabase
-      .channel(`poll-votes-${poll.id}`)
+      .channel(`trip:${tripId}:poll:${poll.id}`, { config: { private: true } })
       .on("postgres_changes",
         { event: "*", schema: "public", table: "trip_poll_votes", filter: `poll_id=eq.${poll.id}` },
         () => loadVotes()
