@@ -373,7 +373,7 @@ const Photos = () => {
     try {
       for (const p of selectedPhotos) {
         try {
-          const url = getPublicUrl(p.file_path);
+          const url = await getSignedUrl(p.file_path);
           const res = await fetch(url);
           const blob = await res.blob();
           downloadBlob(blob, fileNameFromPath(p.file_path));
@@ -406,7 +406,7 @@ const Photos = () => {
       const files: File[] = [];
       for (const p of selectedPhotos) {
         try {
-          const url = getPublicUrl(p.file_path);
+          const url = await getSignedUrl(p.file_path);
           const f = await fetchAsFile(url, fileNameFromPath(p.file_path));
           files.push(f);
         } catch { /* skip */ }
@@ -474,7 +474,7 @@ const Photos = () => {
     setBulkBusy(true);
     try {
       const target = imagesOnly[0];
-      const url = getPublicUrl(target.file_path);
+      const url = await getSignedUrl(target.file_path);
       const res = await fetch(url);
       const blob = await res.blob();
       // Some browsers only accept image/png in clipboard. Convert if needed.
@@ -590,7 +590,7 @@ const Photos = () => {
                   {video ? (
                     <>
                       <video
-                        src={getPublicUrl(photo.file_path)}
+                        src={getUrl(photo.file_path)}
                         muted
                         preload="metadata"
                         playsInline
@@ -604,7 +604,7 @@ const Photos = () => {
                     </>
                   ) : (
                     <img
-                      src={getPublicUrl(photo.file_path)}
+                      src={getUrl(photo.file_path)}
                       alt={t.tripPhoto}
                       className="w-full h-full object-cover transition-opacity duration-300 pointer-events-none"
                       loading="lazy"
@@ -746,7 +746,7 @@ const Photos = () => {
           {isVideoFile(currentPhoto) ? (
             <video
               key={fadeKey}
-              src={getPublicUrl(currentPhoto.file_path)}
+              src={getUrl(currentPhoto.file_path)}
               controls
               autoPlay
               playsInline
@@ -756,7 +756,7 @@ const Photos = () => {
           ) : (
             <img
               key={fadeKey}
-              src={getPublicUrl(currentPhoto.file_path)}
+              src={getUrl(currentPhoto.file_path)}
               alt={t.tripPhoto}
               className="max-w-[95vw] max-h-[80vh] landscape:max-h-[88vh] landscape:max-w-[96vw] object-contain rounded-lg animate-fade-in transition-all duration-300"
               onClick={(e) => e.stopPropagation()}
