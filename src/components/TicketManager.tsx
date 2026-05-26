@@ -170,7 +170,7 @@ const TicketManager = ({ transportId, tripId, isCreator }: Props) => {
                 <SelectContent>
                   {members.map((m) => (
                     <SelectItem key={m.user_id} value={m.user_id}>
-                      {formatDisplayName(m.profiles?.name, m.profiles?.email || m.user_id.slice(0, 8))}
+                      {formatDisplayName(m.profiles?.name, m.user_id.slice(0, 8))}
                     </SelectItem>
                   ))}
                 </SelectContent>
