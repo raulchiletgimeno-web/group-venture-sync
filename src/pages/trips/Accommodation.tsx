@@ -114,10 +114,11 @@ const Accommodation = () => {
     fetchItems();
   };
 
-  const openDocView = (item: AccommodationItem) => {
+  const openDocView = async (item: AccommodationItem) => {
     if (!item.booking_file_path) return;
-    const { data } = supabase.storage.from("trip-photos").getPublicUrl(item.booking_file_path);
-    setViewUrl(data.publicUrl);
+    const url = await getSignedUrl(item.booking_file_path);
+    if (!url) return;
+    setViewUrl(url);
     setViewOpen(true);
   };
 
