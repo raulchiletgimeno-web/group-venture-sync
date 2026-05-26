@@ -118,11 +118,8 @@ const MemberApprovalManager = ({ tripId }: MemberApprovalManagerProps) => {
           >
             <div>
               <p className="text-sm font-medium text-card-foreground">
-                {formatDisplayName(member.name, member.email || t.usuario)}
+                {formatDisplayName(member.name, t.usuario)}
               </p>
-              {member.name && member.email && (
-                <p className="text-xs text-muted-foreground">{member.email}</p>
-              )}
             </div>
             <div className="flex gap-1.5">
               <Button
