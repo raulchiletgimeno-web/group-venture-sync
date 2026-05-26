@@ -462,25 +462,22 @@ const Expenses = () => {
       (async () => {
         try {
           const { data: tripData } = await supabase.from("trips").select("title").eq("id", tripId).single();
-          const { data: creditorData } = await supabase.from("profiles").select("email").eq("id", debt.to).single();
 
-          if (creditorData?.email) {
-            await supabase.functions.invoke("send-transactional-email", {
-              body: {
-                templateName: "payment-notification",
-                recipientEmail: creditorData.email,
-                idempotencyKey: `payment-notif-${debt.from}-${debt.to}-${debt.amount}-${Math.floor(Date.now() / 60000)}`,
-                templateData: {
-                  debtorName: debtorProfile?.name || "Tu compañero/a",
-                  creditorName: creditorProfile?.name || "amigo/a",
-                  amount: debt.amount.toFixed(2),
-                  tripName: tripData?.title || "el viaje",
-                  paymentMethod: method,
-                  paidAt: new Date().toISOString(),
-                },
+          await supabase.functions.invoke("send-transactional-email", {
+            body: {
+              templateName: "payment-notification",
+              recipientUserId: debt.to,
+              idempotencyKey: `payment-notif-${debt.from}-${debt.to}-${debt.amount}-${Math.floor(Date.now() / 60000)}`,
+              templateData: {
+                debtorName: debtorProfile?.name || "Tu compañero/a",
+                creditorName: creditorProfile?.name || "amigo/a",
+                amount: debt.amount.toFixed(2),
+                tripName: tripData?.title || "el viaje",
+                paymentMethod: method,
+                paidAt: new Date().toISOString(),
               },
-            });
-          }
+            },
+          });
         } catch (emailErr) {
           console.error("Failed to send payment notification email:", emailErr);
         }
