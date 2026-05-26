@@ -156,7 +156,7 @@ const ActivityTicketManager = ({ scheduleId, tripId, isCreator }: Props) => {
 
   const memberName = (userId: string) => {
     const m = members.find((m) => m.user_id === userId);
-    return formatDisplayName(m?.profiles?.name, m?.profiles?.email || userId.slice(0, 8));
+    return formatDisplayName(m?.profiles?.name, userId.slice(0, 8));
   };
 
   // Non-creator: show ticket icon only if they have a personal or group ticket
