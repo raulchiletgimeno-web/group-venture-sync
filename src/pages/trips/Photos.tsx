@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { useMarkSectionSeen } from "@/hooks/use-mark-section-seen";
+import { getSignedUrl, getSignedUrls } from "@/lib/signedUrl";
 
 const isVideoFile = (photo: { media_type?: string; file_path: string }) => {
   if (photo.media_type === "video") return true;
