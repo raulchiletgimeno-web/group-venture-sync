@@ -16,6 +16,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { getLocale } from "@/i18n/translations";
 import { useMarkSectionSeen } from "@/hooks/use-mark-section-seen";
 import { notifyTripEvent } from "@/lib/notifyTripEvent";
+import { getSignedUrl } from "@/lib/signedUrl";
 
 interface AccommodationItem {
   id: string;
