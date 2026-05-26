@@ -1,117 +1,127 @@
-# Auditoría final de seguridad — YORMIT
 
-Revisión read-only sobre la base de datos publicada, el storage, las RLS y el linter. Resultado: **prácticamente todo está cerrado correctamente**, pero hay **1 hallazgo real pendiente** (email de usuarios visible a co-miembros del viaje) que conviene corregir ahora con un cambio mínimo.
+# Sistema interno de alertas YORMIT
 
----
+Objetivo: avisar automáticamente a **info@yormit.com** ante incidencias relevantes, con niveles, deduplicación, trazabilidad y resumen diario. Cero cambios para el usuario final.
 
-## Bloque por bloque
+## Alcance
 
-### 1. Visibilidad de viajes — **RESUELTO**
-- `trips` SELECT: `USING is_trip_member(id)`. Un usuario solo ve los viajes en los que es miembro aprobado.
-- `find_trip_id_by_invite_code` sigue operativo para el flujo de unirse por código.
+Se añade **solo** infraestructura interna nueva. No se toca diseño, navegación, auth, RLS existente, edge functions de negocio, frontend ni flujos de usuario.
 
-### 2. Suscripciones Realtime — **RESUELTO**
-- Canales privados por viaje (`trip:{id}:...`) y por usuario, todos con `config: { private: true }`.
-- Filtros realtime van por `trip_id` y la RLS de las tablas subyacentes (`is_trip_member`) corta el acceso a viajes ajenos.
+## 1. Tabla de incidencias (trazabilidad)
 
-### 3. Storage / fotos / archivos — **RESUELTO**
-- Único bucket: `trip-photos`, `public = false`. Sin URLs públicas.
-- Policies en `storage.objects`: SELECT solo `authenticated` + `is_trip_member`; INSERT solo miembros; DELETE solo autor o creator. Sin policies `USING (true)`, sin `anon`.
-- Frontend usa `getSignedUrl` con TTL y caché — funcionando.
+Nueva tabla `internal_alerts` (solo `service_role`, RLS denegando a `authenticated`/`anon`):
 
-### 4. Emails de usuarios — **PENDIENTE (ver acción al final)**
-- La policy `Trip members can view co-member profiles` en `profiles` permite a un co-miembro leer **todas** las columnas, incluida `email`. El scanner lo marca como ERROR y contradice la memoria de seguridad ("los emails de otros usuarios no deben ser legibles desde el cliente").
-- Propio usuario sigue viendo su email vía `Users can view own profile`.
+- `id`, `created_at`, `updated_at`
+- `severity` — `critical` | `warning` | `info`
+- `source` — módulo (`auth`, `storage`, `rls`, `edge_function`, `cron`, `email`, `security_scan`, `db`, `other`)
+- `event_key` — clave estable para deduplicar (ej. `edge:check-trip-debts:500`)
+- `title`, `description`, `impact`, `recommended_action`
+- `metadata` jsonb (función, request id, stack, etc.)
+- `occurrences` int (incrementa en duplicados dentro de ventana)
+- `first_seen_at`, `last_seen_at`
+- `status` — `open` | `resolved`
+- `resolved_at`, `resolution_notes`
+- `notified_immediately_at`, `included_in_digest_at`
 
-### 5. Funciones SECURITY DEFINER — **ACEPTADO / INTENCIONAL**
-EXECUTE comprobado en `pg_proc.proacl`. Las únicas accesibles a `authenticated` son exactamente las 5 esperadas, todas con `search_path = public` y scope vía `auth.uid()`:
-- `is_trip_member`, `is_trip_creator` — necesarias para que las RLS de toda la app funcionen.
-- `find_trip_id_by_invite_code` — necesaria para unirse por código.
-- `get_unseen_counts`, `get_unseen_section_counts` — endurecidas; ignoran `p_user_id` y usan `auth.uid()`.
+Índices por `event_key`, `status`, `severity`, `created_at`.
 
-Las funciones de email/cola (`enqueue_email`, `delete_email`, `read_email_batch`, `move_to_dlq`, `handle_new_user`) **no** son ejecutables por `authenticated` — solo `service_role`/`postgres`. Correcto.
+## 2. Edge function `internal-alert` (ingesta)
 
-### 6. search_path — **RESUELTO**
-Todas las funciones SECURITY DEFINER tienen `SET search_path` explícito. No hay funciones mutables en el linter.
+Endpoint interno (`verify_jwt = false`, protegido por header `x-internal-secret` contra secreto `INTERNAL_ALERT_SECRET`).
 
-### 7. Buckets / policies storage — **RESUELTO**
-Confirmado en bloque 3.
+Recibe: `{severity, source, event_key, title, description, impact?, recommended_action?, metadata?}`.
 
-### 8. Regresión funcional — **OK**
-Revisando policies y código: entrar a viaje, unirse por código, chat, fotos, gastos, tickets/recibos, realtime, emails automáticos (vía service_role), feedback (vía edge function con service_role) y recordatorios previos/posteriores (vía edge function con service_role) siguen operativos. Ninguna de las RLS endurecidas rompe estos flujos.
+Lógica:
+1. Busca incidencia abierta con mismo `event_key` en ventana de **24h**.
+2. Si existe → incrementa `occurrences`, actualiza `last_seen_at`. **No reenvía email.**
+3. Si no existe → inserta nueva.
+4. Si `severity = critical` y `notified_immediately_at IS NULL` → encola email inmediato vía `send-transactional-email` con template `internal-alert-critical` a `info@yormit.com` y marca `notified_immediately_at`.
+5. `warning` / `info` → solo se registra; irá en el resumen diario.
 
-### 9. Linter / panel de seguridad — estado actual
+Esto garantiza **deduplicación, idempotencia y no-spam**.
 
-**5 warnings del linter de Supabase (SECURITY DEFINER ejecutable por authenticated):**
-→ **ACEPTADOS / INTENCIONALES**. Son las 5 funciones del bloque 5. Documentadas en la security memory.
+## 3. Templates de email (registry transaccional)
 
-**4 hallazgos del scanner Lovable:**
+Tres templates nuevos premium, sobrios, sin tocar los existentes:
 
-| ID | Veredicto |
-|---|---|
-| `profiles_email_co_member_exposure` (ERROR) | **PENDIENTE real** — ver abajo |
-| `debt_reminders_write_missing` (WARN) | **Falso positivo** — RLS activo + sin policy INSERT/UPDATE/DELETE = bloqueado para `authenticated`. Solo `service_role` (edge functions) puede escribir. Seguro por defecto. |
-| `trip_pre_post_departure_reminders_write_missing` (WARN) | **Falso positivo** — mismo motivo. |
-| `trip_feedback_user_access` (WARN) | **ACEPTADO** — el flujo de feedback es 100% server-side vía edge function `submit-trip-feedback` con `service_role`. No hay token redemption desde cliente. |
+- `internal-alert-critical` — alerta inmediata individual.
+- `internal-alert-digest` — resumen diario agrupado por severidad/source.
+- `internal-alert-resolved` — notificación de resolución.
 
----
+Cada email incluye: nivel, fecha/hora, módulo, descripción, impacto, acción recomendada, nº de ocurrencias, enlace interno (opcional).
 
-## Acción única recomendada
+## 4. Cron de resumen diario
 
-**Ocultar `profiles.email` a co-miembros** sin romper nada. Cambio mínimo en SQL, cero cambios en frontend/edge functions:
+Edge function `internal-alert-digest` programada vía pg_cron (1 vez/día, 08:00 UTC):
 
-```sql
--- Sustituir la policy actual por dos:
-DROP POLICY "Trip members can view co-member profiles" ON public.profiles;
+- Agrupa `warning`/`info` abiertas o nuevas de las últimas 24h.
+- Si hay ≥1 incidencia → envía `internal-alert-digest` a `info@yormit.com`.
+- Marca `included_in_digest_at`.
+- Si no hay nada → **no envía email** (anti-spam).
 
--- Cada usuario sigue viendo su propio perfil completo (policy existente)
+## 5. Notificación de resolución
 
--- Co-miembros: ven todas las columnas EXCEPTO email, gracias a column-level GRANT
--- Recrear policy de co-miembros tal cual (necesaria para nombre/avatar en chat, etc.)
-CREATE POLICY "Trip members can view co-member profiles"
-ON public.profiles FOR SELECT TO authenticated
-USING (EXISTS (
-  SELECT 1 FROM trip_members tm1 JOIN trip_members tm2 ON tm1.trip_id = tm2.trip_id
-  WHERE tm1.user_id = auth.uid() AND tm2.user_id = profiles.id
-));
+Nueva función SQL `mark_alert_resolved(alert_id, notes)` (`service_role`):
 
--- Restringir el email a nivel de columna: revocar SELECT(email) a authenticated
-REVOKE SELECT (email) ON public.profiles FROM authenticated;
--- El dueño sigue accediendo a su email vía la policy "Users can view own profile"
--- + GRANT SELECT(email) explícito solo cuando id = auth.uid() no es expresable como GRANT,
--- así que usamos otra vía: mantener GRANT al rol y cubrirlo con una policy más estricta.
+- Marca `status='resolved'`, `resolved_at=now()`.
+- Si era `critical` → encola email `internal-alert-resolved` con detalle (qué, cuándo apareció, cuándo se resolvió, ocurrencias).
+
+## 6. Fuentes de señales conectadas
+
+Para que el sistema sea útil desde el día 1, se instrumentan estos puntos de emisión (llamadas a `internal-alert` desde cada origen) **sin modificar su lógica de negocio**:
+
+1. **Edge functions críticas** — wrapper try/catch que reporta excepciones no controladas en: `check-trip-debts`, `check-trip-pre-departure`, `check-trip-post-departure`, `process-email-queue`, `send-transactional-email`, `submit-trip-feedback`, `notify-trip`, `notify-creator-join`, `auth-email-hook`.
+   - Solo se añade un `reportInternalAlert(...)` en el bloque catch. No cambia comportamiento.
+2. **Email queue** — si una entrada pasa a `dlq` en `email_send_log` → trigger DB que llama vía `pg_net` al endpoint `internal-alert` con severidad `critical`.
+3. **Cron jobs** — comprobación diaria que verifica que `process-email-queue` y los cron de YORMIT (`check-trip-debts`, pre/post-departure) hayan ejecutado en la ventana esperada; si no, emite `critical`.
+4. **Security scan** — endpoint manual `internal-alert/sync-security` que puede llamarse para volcar nuevos findings críticos del escáner como alertas (opcional, se deja preparado).
+5. **DB health** — chequeo diario simple (conteo de errores en `postgres_logs` con `error_severity >= ERROR`) → si supera umbral → `warning`.
+
+## 7. Anti-spam — reglas duras
+
+- Deduplicación por `event_key` en ventana 24h.
+- Solo `critical` envía email inmediato; máximo **1 email por `event_key` cada 24h**.
+- Resumen diario solo se manda si hay contenido.
+- Resolución solo se manda para incidencias que fueron `critical`.
+
+## 8. Configuración
+
+- Nuevo secret `INTERNAL_ALERT_SECRET` (se pedirá al usuario al implementar).
+- Email destino fijo en código: `info@yormit.com` (constante, no editable por usuario final).
+- `verify_jwt = false` para `internal-alert` y `internal-alert-digest` (autenticación por secret header y por cron).
+
+## Detalles técnicos
+
+```text
+[origen] --reportInternalAlert--> [edge: internal-alert]
+                                        |
+                                        v
+                               [DB: internal_alerts]
+                              /                    \
+                  (critical, nuevo)            (warning/info)
+                          |                           |
+              [send-transactional-email]      [acumula en tabla]
+              template: critical                       |
+                                              [cron diario 08:00]
+                                                       |
+                                              [send-transactional-email]
+                                              template: digest
 ```
 
-> Nota técnica: PostgreSQL no permite GRANT condicional por fila sobre una columna. La forma robusta y mínima es: dejar el `GRANT SELECT (email)` solo para `service_role`, y servir el email al propio usuario desde el cliente vía `session.user.email` (que ya viene de `auth.users` y no de `profiles`). El frontend ya hace esto en `AuthContext.fetchProfile` (pasa `fallbackEmail` desde la sesión), así que **no hay regresión**.
+## Qué NO se toca
 
-Migración exacta propuesta:
+- UI / diseño / navegación.
+- Auth, perfiles, viajes, chat, fotos, gastos, transporte, alojamiento, agenda, i18n, PWA.
+- RLS ni grants existentes.
+- Edge functions existentes: solo se añade un `try/catch` + `reportInternalAlert` en el catch raíz, sin alterar lógica.
+- Templates de email existentes.
 
-```sql
-REVOKE SELECT (email) ON public.profiles FROM authenticated, anon;
--- service_role conserva acceso para edge functions (notify-creator-join, emails, etc.)
-```
+## Entregable de validación al terminar
 
-Ningún cambio de policies, ningún cambio de frontend. El email seguirá disponible para:
-- el propio usuario, vía `session.user.email` (ya en uso).
-- edge functions, vía `service_role`.
-
-Y dejará de ser legible para co-miembros desde el cliente.
-
----
-
-## Conclusión
-
-| Bloque | Estado |
-|---|---|
-| Visibilidad viajes | ✅ Resuelto |
-| Realtime | ✅ Resuelto |
-| Storage / fotos | ✅ Resuelto |
-| **Emails** | ⚠️ **1 acción pendiente (mínima)** |
-| SECURITY DEFINER | ✅ Aceptado/intencional |
-| search_path | ✅ Resuelto |
-| Buckets/policies | ✅ Resuelto |
-| Regresión funcional | ✅ Sin roturas |
-| Linter | 5 warnings aceptados |
-| Scanner Lovable | 1 real + 3 falsos positivos / aceptados |
-
-**¿Apruebas aplicar la única migración (REVOKE SELECT(email))?** Tras aplicarla y marcar los falsos positivos del scanner como tales, el bloque queda completamente cerrado.
+Al finalizar implementación responderé con:
+1. Qué se implementó (tabla, edge functions, templates, cron, instrumentación).
+2. Qué dispara email inmediato.
+3. Qué entra en resumen diario.
+4. Cómo se evita spam/duplicados.
+5. Confirmación de email a `info@yormit.com`.
+6. Confirmación de que no se tocó nada más de la app.
