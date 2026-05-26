@@ -228,7 +228,19 @@ const Photos = () => {
     }
   };
 
-  const getPublicUrl = (filePath: string) => supabase.storage.from("trip-photos").getPublicUrl(filePath).data.publicUrl;
+  const [urls, setUrls] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (!photos.length) return;
+    let cancelled = false;
+    const paths = photos.map((p) => p.file_path);
+    getSignedUrls(paths).then((map) => {
+      if (!cancelled) setUrls((prev) => ({ ...prev, ...map }));
+    }).catch(() => { /* ignore */ });
+    return () => { cancelled = true; };
+  }, [photos]);
+
+  const getUrl = (filePath: string) => urls[filePath] ?? "";
 
   const navigateTo = useCallback((newIndex: number) => {
     if (newIndex >= 0 && newIndex < photos.length) {
