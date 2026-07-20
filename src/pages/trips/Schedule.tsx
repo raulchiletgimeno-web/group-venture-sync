@@ -51,6 +51,11 @@ const Schedule = () => {
   const [tripDates, setTripDates] = useState<{ start: Date; end: Date } | null>(null);
 
   const [form, setForm] = useState({ date: "", time: "", title: "", description: "", location: "", address: "", website: "" });
+  const [gpxFile, setGpxFile] = useState<File | null>(null);
+  const [existingGpx, setExistingGpx] = useState<{ path: string; name: string } | null>(null);
+  const [removeGpx, setRemoveGpx] = useState(false);
+  const [uploadingGpx, setUploadingGpx] = useState(false);
+  const gpxInputRef = useRef<HTMLInputElement>(null);
 
   const fetchItems = async () => {
     if (!tripId) return;
