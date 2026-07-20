@@ -333,6 +333,11 @@ type TranslationKeys = {
   noActivitiesDay: string;
   activityUpdated: string;
   activityAdded: string;
+  gpxAttach: string;
+  gpxReplace: string;
+  gpxRemove: string;
+  gpxOpen: string;
+  gpxAttached: string;
   groupTicket: string;
   personalTicket: string;
   ticketType: string;
@@ -826,6 +831,11 @@ const translations: Record<Language, TranslationKeys> = {
     noActivitiesDay: "No hay actividades este día",
     activityUpdated: "Actividad actualizada",
     activityAdded: "Actividad añadida",
+    gpxAttach: "Adjuntar archivo GPX",
+    gpxReplace: "Reemplazar GPX",
+    gpxRemove: "Eliminar GPX",
+    gpxOpen: "Abrir GPX",
+    gpxAttached: "GPX adjuntado",
     groupTicket: "Grupal",
     personalTicket: "Personal",
     ticketType: "Tipo de entrada",
@@ -1292,6 +1302,11 @@ const translations: Record<Language, TranslationKeys> = {
     noActivitiesDay: "No activities this day",
     activityUpdated: "Activity updated",
     activityAdded: "Activity added",
+    gpxAttach: "Attach GPX file",
+    gpxReplace: "Replace GPX",
+    gpxRemove: "Remove GPX",
+    gpxOpen: "Open GPX",
+    gpxAttached: "GPX attached",
     groupTicket: "Group",
     personalTicket: "Personal",
     ticketType: "Ticket type",
@@ -1758,6 +1773,11 @@ const translations: Record<Language, TranslationKeys> = {
     noActivitiesDay: "Aucune activité ce jour",
     activityUpdated: "Activité mise à jour",
     activityAdded: "Activité ajoutée",
+    gpxAttach: "Joindre un fichier GPX",
+    gpxReplace: "Remplacer le GPX",
+    gpxRemove: "Supprimer le GPX",
+    gpxOpen: "Ouvrir le GPX",
+    gpxAttached: "GPX joint",
     groupTicket: "Groupe",
     personalTicket: "Personnel",
     ticketType: "Type de billet",
@@ -2224,6 +2244,11 @@ const translations: Record<Language, TranslationKeys> = {
     noActivitiesDay: "Sem atividades neste dia",
     activityUpdated: "Atividade atualizada",
     activityAdded: "Atividade adicionada",
+    gpxAttach: "Anexar arquivo GPX",
+    gpxReplace: "Substituir GPX",
+    gpxRemove: "Remover GPX",
+    gpxOpen: "Abrir GPX",
+    gpxAttached: "GPX anexado",
     groupTicket: "Grupo",
     personalTicket: "Pessoal",
     ticketType: "Tipo de bilhete",
@@ -2690,6 +2715,11 @@ const translations: Record<Language, TranslationKeys> = {
     noActivitiesDay: "Nessuna attività in questo giorno",
     activityUpdated: "Attività aggiornata",
     activityAdded: "Attività aggiunta",
+    gpxAttach: "Allega file GPX",
+    gpxReplace: "Sostituisci GPX",
+    gpxRemove: "Rimuovi GPX",
+    gpxOpen: "Apri GPX",
+    gpxAttached: "GPX allegato",
     groupTicket: "Gruppo",
     personalTicket: "Personale",
     ticketType: "Tipo di biglietto",
@@ -3156,6 +3186,11 @@ const translations: Record<Language, TranslationKeys> = {
     noActivitiesDay: "今天没有活动",
     activityUpdated: "活动已更新",
     activityAdded: "活动已添加",
+    gpxAttach: "附加 GPX 文件",
+    gpxReplace: "替换 GPX",
+    gpxRemove: "移除 GPX",
+    gpxOpen: "打开 GPX",
+    gpxAttached: "已附加 GPX",
     groupTicket: "团体",
     personalTicket: "个人",
     ticketType: "票券类型",
@@ -3622,6 +3657,11 @@ const translations: Record<Language, TranslationKeys> = {
     noActivitiesDay: "Keine Aktivitäten an diesem Tag",
     activityUpdated: "Aktivität aktualisiert",
     activityAdded: "Aktivität hinzugefügt",
+    gpxAttach: "GPX-Datei anhängen",
+    gpxReplace: "GPX ersetzen",
+    gpxRemove: "GPX entfernen",
+    gpxOpen: "GPX öffnen",
+    gpxAttached: "GPX angehängt",
     groupTicket: "Gruppe",
     personalTicket: "Persönlich",
     ticketType: "Ticketart",
