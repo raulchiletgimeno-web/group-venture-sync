@@ -321,6 +321,20 @@ const Schedule = () => {
                       </TooltipTrigger><TooltipContent>{t.web}</TooltipContent></Tooltip>
                     )}
                     <ActivityTicketManager scheduleId={item.id} tripId={tripId!} isCreator={isCreator} />
+                    {item.gpx_path && (
+                      <Tooltip><TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={async () => {
+                          try {
+                            const url = await getSignedUrl(item.gpx_path!);
+                            if (url) window.open(url, '_blank');
+                          } catch (e: any) {
+                            toast({ title: t.error, description: e.message, variant: "destructive" });
+                          }
+                        }}>
+                          <Route className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger><TooltipContent>{item.gpx_name || t.gpxOpen}</TooltipContent></Tooltip>
+                    )}
                     {item.location && (
                       <Tooltip><TooltipTrigger asChild>
                         <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent((item as any).address || item.location!)}`, '_blank')}>
