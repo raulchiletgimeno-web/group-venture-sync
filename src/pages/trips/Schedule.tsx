@@ -209,7 +209,44 @@ const Schedule = () => {
           <div><Label>{t.addressLabel}</Label><Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder={t.addressPlaceholder} /></div>
           <div><Label>{t.description}</Label><Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
           <div><Label>{t.webPage}</Label><Input type="url" value={form.website} onChange={(e) => setForm({ ...form, website: e.target.value })} placeholder="https://..." /></div>
-          <Button type="submit" className="w-full gradient-hero text-primary-foreground border-0">{editingId ? t.update : t.save}</Button>
+          <div className="space-y-2">
+            <Label>{t.gpxAttach}</Label>
+            <input
+              ref={gpxInputRef}
+              type="file"
+              accept=".gpx,application/gpx+xml"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (!f) return;
+                if (!f.name.toLowerCase().endsWith(".gpx")) {
+                  toast({ title: t.error, description: ".gpx", variant: "destructive" });
+                  return;
+                }
+                setGpxFile(f);
+                setRemoveGpx(false);
+              }}
+            />
+            {gpxFile ? (
+              <div className="flex items-center justify-between rounded-lg bg-muted p-2 text-sm">
+                <span className="flex items-center gap-2 truncate"><Route className="h-4 w-4 text-primary shrink-0" /><span className="truncate">{gpxFile.name}</span></span>
+                <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setGpxFile(null); if (gpxInputRef.current) gpxInputRef.current.value = ""; }}><X className="h-4 w-4" /></Button>
+              </div>
+            ) : existingGpx && !removeGpx ? (
+              <div className="flex items-center justify-between rounded-lg bg-muted p-2 text-sm">
+                <span className="flex items-center gap-2 truncate"><Route className="h-4 w-4 text-primary shrink-0" /><span className="truncate">{existingGpx.name}</span></span>
+                <div className="flex gap-1">
+                  <Button type="button" variant="ghost" size="sm" onClick={() => gpxInputRef.current?.click()}>{t.gpxReplace}</Button>
+                  <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setRemoveGpx(true)}><Trash2 className="h-4 w-4" /></Button>
+                </div>
+              </div>
+            ) : (
+              <Button type="button" variant="outline" size="sm" className="w-full" onClick={() => gpxInputRef.current?.click()}>
+                <Paperclip className="h-4 w-4 mr-1" /> {t.gpxAttach}
+              </Button>
+            )}
+          </div>
+          <Button type="submit" disabled={uploadingGpx} className="w-full gradient-hero text-primary-foreground border-0">{editingId ? t.update : t.save}</Button>
         </form>
       </DialogContent>
     </Dialog>
