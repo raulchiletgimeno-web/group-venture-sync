@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { useParams } from "react-router-dom";
-import { CalendarDays, Plus, Trash2, Pencil, Globe, MapPin, ArrowLeft } from "lucide-react";
+import { CalendarDays, Plus, Trash2, Pencil, Globe, MapPin, ArrowLeft, Route, Paperclip, X } from "lucide-react";
 import { format, parseISO, isSameDay, eachDayOfInterval } from "date-fns";
 import { es, enUS, fr, pt, it } from "date-fns/locale";
 import ActivityTicketManager from "@/components/ActivityTicketManager";
