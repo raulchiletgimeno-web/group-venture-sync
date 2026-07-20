@@ -20,6 +20,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { getLocale } from "@/i18n/translations";
 import { useMarkSectionSeen } from "@/hooks/use-mark-section-seen";
 import { notifyTripEvent } from "@/lib/notifyTripEvent";
+import { getSignedUrl } from "@/lib/signedUrl";
 
 const dateFnsLocales: Record<string, typeof es> = { es, en: enUS, fr, pt, it };
 
@@ -31,6 +32,8 @@ interface ScheduleItem {
   description: string | null;
   location: string | null;
   website: string | null;
+  gpx_path: string | null;
+  gpx_name: string | null;
 }
 
 const Schedule = () => {
