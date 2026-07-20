@@ -1,6 +1,6 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { useParams } from "react-router-dom";
-import { CalendarDays, Plus, Trash2, Pencil, Globe, MapPin, ArrowLeft } from "lucide-react";
+import { CalendarDays, Plus, Trash2, Pencil, Globe, MapPin, ArrowLeft, Route, Paperclip, X } from "lucide-react";
 import { format, parseISO, isSameDay, eachDayOfInterval } from "date-fns";
 import { es, enUS, fr, pt, it } from "date-fns/locale";
 import ActivityTicketManager from "@/components/ActivityTicketManager";
@@ -20,6 +20,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { getLocale } from "@/i18n/translations";
 import { useMarkSectionSeen } from "@/hooks/use-mark-section-seen";
 import { notifyTripEvent } from "@/lib/notifyTripEvent";
+import { getSignedUrl } from "@/lib/signedUrl";
 
 const dateFnsLocales: Record<string, typeof es> = { es, en: enUS, fr, pt, it };
 
@@ -31,6 +32,8 @@ interface ScheduleItem {
   description: string | null;
   location: string | null;
   website: string | null;
+  gpx_path: string | null;
+  gpx_name: string | null;
 }
 
 const Schedule = () => {
@@ -48,6 +51,11 @@ const Schedule = () => {
   const [tripDates, setTripDates] = useState<{ start: Date; end: Date } | null>(null);
 
   const [form, setForm] = useState({ date: "", time: "", title: "", description: "", location: "", address: "", website: "" });
+  const [gpxFile, setGpxFile] = useState<File | null>(null);
+  const [existingGpx, setExistingGpx] = useState<{ path: string; name: string } | null>(null);
+  const [removeGpx, setRemoveGpx] = useState(false);
+  const [uploadingGpx, setUploadingGpx] = useState(false);
+  const gpxInputRef = useRef<HTMLInputElement>(null);
 
   const fetchItems = async () => {
     if (!tripId) return;
@@ -89,24 +97,76 @@ const Schedule = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!tripId) return;
-    const payload = { trip_id: tripId, date: form.date, time: form.time || null, title: form.title, description: form.description || null, location: form.location || null, address: form.address || null, website: form.website || null };
-    const { error } = editingId
-      ? await supabase.from("trip_schedule").update(payload).eq("id", editingId)
-      : await supabase.from("trip_schedule").insert(payload);
-    if (error) { toast({ title: t.error, description: error.message, variant: "destructive" }); return; }
-    resetForm(); setOpen(false); fetchItems();
-    notifyTripEvent(tripId, "schedule", user?.id);
-    toast({ title: editingId ? t.activityUpdated : t.activityAdded });
+    setUploadingGpx(true);
+    try {
+      let gpx_path: string | null = existingGpx?.path ?? null;
+      let gpx_name: string | null = existingGpx?.name ?? null;
+
+      if (removeGpx && existingGpx) {
+        await supabase.storage.from("trip-photos").remove([existingGpx.path]);
+        gpx_path = null;
+        gpx_name = null;
+      }
+
+      const payload: any = { trip_id: tripId, date: form.date, time: form.time || null, title: form.title, description: form.description || null, location: form.location || null, address: form.address || null, website: form.website || null, gpx_path, gpx_name };
+
+      let recordId = editingId;
+      if (editingId) {
+        const { error } = await supabase.from("trip_schedule").update(payload).eq("id", editingId);
+        if (error) throw error;
+      } else {
+        const { data, error } = await supabase.from("trip_schedule").insert(payload).select("id").single();
+        if (error) throw error;
+        recordId = data.id;
+      }
+
+      if (gpxFile && recordId) {
+        const path = `${tripId}/activity-gpx/${recordId}.gpx`;
+        if (existingGpx && existingGpx.path !== path) {
+          await supabase.storage.from("trip-photos").remove([existingGpx.path]);
+        }
+        const { error: upErr } = await supabase.storage.from("trip-photos").upload(path, gpxFile, { upsert: true, contentType: "application/gpx+xml" });
+        if (upErr) throw upErr;
+        const { error: updErr } = await supabase.from("trip_schedule").update({ gpx_path: path, gpx_name: gpxFile.name }).eq("id", recordId);
+        if (updErr) throw updErr;
+      }
+
+      resetForm(); setOpen(false); fetchItems();
+      notifyTripEvent(tripId, "schedule", user?.id);
+      toast({ title: editingId ? t.activityUpdated : t.activityAdded });
+    } catch (error: any) {
+      toast({ title: t.error, description: error.message, variant: "destructive" });
+    } finally {
+      setUploadingGpx(false);
+    }
   };
 
-  const resetForm = () => { setForm({ date: "", time: "", title: "", description: "", location: "", address: "", website: "" }); setEditingId(null); };
+  const resetForm = () => {
+    setForm({ date: "", time: "", title: "", description: "", location: "", address: "", website: "" });
+    setEditingId(null);
+    setGpxFile(null);
+    setExistingGpx(null);
+    setRemoveGpx(false);
+    if (gpxInputRef.current) gpxInputRef.current.value = "";
+  };
 
   const startEdit = (item: ScheduleItem) => {
     setForm({ date: item.date, time: item.time || "", title: item.title, description: item.description || "", location: item.location || "", address: (item as any).address || "", website: item.website || "" });
-    setEditingId(item.id); setOpen(true);
+    setEditingId(item.id);
+    setGpxFile(null);
+    setRemoveGpx(false);
+    setExistingGpx(item.gpx_path && item.gpx_name ? { path: item.gpx_path, name: item.gpx_name } : null);
+    setOpen(true);
   };
 
-  const handleDelete = async (id: string) => { await supabase.from("trip_schedule").delete().eq("id", id); fetchItems(); };
+  const handleDelete = async (id: string) => {
+    const item = items.find((i) => i.id === id);
+    if (item?.gpx_path) {
+      await supabase.storage.from("trip-photos").remove([item.gpx_path]);
+    }
+    await supabase.from("trip_schedule").delete().eq("id", id);
+    fetchItems();
+  };
 
   const handleAddClick = () => {
     if (selectedDate) {
@@ -149,7 +209,44 @@ const Schedule = () => {
           <div><Label>{t.addressLabel}</Label><Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder={t.addressPlaceholder} /></div>
           <div><Label>{t.description}</Label><Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
           <div><Label>{t.webPage}</Label><Input type="url" value={form.website} onChange={(e) => setForm({ ...form, website: e.target.value })} placeholder="https://..." /></div>
-          <Button type="submit" className="w-full gradient-hero text-primary-foreground border-0">{editingId ? t.update : t.save}</Button>
+          <div className="space-y-2">
+            <Label>{t.gpxAttach}</Label>
+            <input
+              ref={gpxInputRef}
+              type="file"
+              accept=".gpx,application/gpx+xml"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (!f) return;
+                if (!f.name.toLowerCase().endsWith(".gpx")) {
+                  toast({ title: t.error, description: ".gpx", variant: "destructive" });
+                  return;
+                }
+                setGpxFile(f);
+                setRemoveGpx(false);
+              }}
+            />
+            {gpxFile ? (
+              <div className="flex items-center justify-between rounded-lg bg-muted p-2 text-sm">
+                <span className="flex items-center gap-2 truncate"><Route className="h-4 w-4 text-primary shrink-0" /><span className="truncate">{gpxFile.name}</span></span>
+                <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setGpxFile(null); if (gpxInputRef.current) gpxInputRef.current.value = ""; }}><X className="h-4 w-4" /></Button>
+              </div>
+            ) : existingGpx && !removeGpx ? (
+              <div className="flex items-center justify-between rounded-lg bg-muted p-2 text-sm">
+                <span className="flex items-center gap-2 truncate"><Route className="h-4 w-4 text-primary shrink-0" /><span className="truncate">{existingGpx.name}</span></span>
+                <div className="flex gap-1">
+                  <Button type="button" variant="ghost" size="sm" onClick={() => gpxInputRef.current?.click()}>{t.gpxReplace}</Button>
+                  <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setRemoveGpx(true)}><Trash2 className="h-4 w-4" /></Button>
+                </div>
+              </div>
+            ) : (
+              <Button type="button" variant="outline" size="sm" className="w-full" onClick={() => gpxInputRef.current?.click()}>
+                <Paperclip className="h-4 w-4 mr-1" /> {t.gpxAttach}
+              </Button>
+            )}
+          </div>
+          <Button type="submit" disabled={uploadingGpx} className="w-full gradient-hero text-primary-foreground border-0">{editingId ? t.update : t.save}</Button>
         </form>
       </DialogContent>
     </Dialog>
@@ -224,6 +321,20 @@ const Schedule = () => {
                       </TooltipTrigger><TooltipContent>{t.web}</TooltipContent></Tooltip>
                     )}
                     <ActivityTicketManager scheduleId={item.id} tripId={tripId!} isCreator={isCreator} />
+                    {item.gpx_path && (
+                      <Tooltip><TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={async () => {
+                          try {
+                            const url = await getSignedUrl(item.gpx_path!);
+                            if (url) window.open(url, '_blank');
+                          } catch (e: any) {
+                            toast({ title: t.error, description: e.message, variant: "destructive" });
+                          }
+                        }}>
+                          <Route className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger><TooltipContent>{item.gpx_name || t.gpxOpen}</TooltipContent></Tooltip>
+                    )}
                     {item.location && (
                       <Tooltip><TooltipTrigger asChild>
                         <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent((item as any).address || item.location!)}`, '_blank')}>

@@ -1,0 +1,1 @@
+ALTER TABLE public.trip_schedule ADD COLUMN IF NOT EXISTS gpx_path text, ADD COLUMN IF NOT EXISTS gpx_name text;

@@ -847,6 +847,8 @@ export type Database = {
           created_at: string
           date: string
           description: string | null
+          gpx_name: string | null
+          gpx_path: string | null
           id: string
           location: string | null
           time: string | null
@@ -859,6 +861,8 @@ export type Database = {
           created_at?: string
           date: string
           description?: string | null
+          gpx_name?: string | null
+          gpx_path?: string | null
           id?: string
           location?: string | null
           time?: string | null
@@ -871,6 +875,8 @@ export type Database = {
           created_at?: string
           date?: string
           description?: string | null
+          gpx_name?: string | null
+          gpx_path?: string | null
           id?: string
           location?: string | null
           time?: string | null

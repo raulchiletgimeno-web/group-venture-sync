@@ -1,60 +1,43 @@
-## Diagnóstico
+## Objetivo
+Añadir la posibilidad de adjuntar **un archivo `.gpx`** a cada actividad del itinerario, sin tocar nada más de la app.
 
-El error `new row violates row-level security policy for table trips` no se debe a la policy de INSERT (que es correcta: `WITH CHECK (auth.uid() = created_by)`), sino a la policy de **SELECT** sobre `trips`.
+## 1. Base de datos (migración)
+Añadir dos columnas a `public.trip_schedule`:
+- `gpx_path text` — ruta en Storage
+- `gpx_name text` — nombre original del archivo
 
-### Causa raíz
+No se crea tabla nueva ni se cambian policies existentes de `trip_schedule` (los miembros aprobados ya pueden leerla; solo el creador puede escribir — perfecto para este caso).
 
-`CreateTripDialog.tsx` ejecuta:
+## 2. Almacenamiento
+Reutilizar el bucket privado existente `trip-photos` (mismo patrón que tickets).
+- Ruta: `{tripId}/activity-gpx/{scheduleId}.gpx`
+- Acceso mediante `getSignedUrl` (helper ya existente). La policy de `storage.objects` que exige ser miembro del viaje ya cubre este prefijo (misma carpeta `{tripId}/...`).
 
-```ts
-supabase.from("trips").insert({...}).select().single()
-```
+## 3. UI — formulario de actividad (`src/pages/trips/Schedule.tsx`)
+Solo para el creador (que ya es quien puede crear/editar actividades):
+- Añadir en el diálogo de crear/editar un bloque **"Track GPX"** con:
+  - Botón "Adjuntar archivo GPX" (`accept=".gpx,application/gpx+xml"`)
+  - Si ya hay uno: mostrar el nombre y botón para reemplazarlo o eliminarlo
+- Flujo al guardar: si hay archivo nuevo → subir a Storage → guardar `gpx_path` + `gpx_name` en el `INSERT`/`UPDATE` de la actividad. Si se marcó eliminar → `remove` del Storage + set a null.
 
-El `.select()` añade `Prefer: return=representation` y PostgREST devuelve la fila insertada aplicando la policy de **SELECT**. La policy actual es:
+## 4. Visualización dentro de la actividad
+En la tarjeta de actividad (día detalle), junto a los iconos de web/tickets/mapa, añadir un botón "Abrir GPX" (icono `Route` o `Map`) visible **para cualquier miembro** si `gpx_path` existe.
+- Al pulsarlo: firmar URL y abrir en nueva pestaña (`window.open`). El navegador móvil ofrece las opciones nativas (descargar/compartir/abrir con app de mapas).
+- Tooltip con el nombre del archivo.
 
-```
-SELECT  USING is_trip_member(id)
-```
+## 5. i18n
+Añadir claves a `src/i18n/translations.ts` en los 5 idiomas: `gpxAttach`, `gpxReplace`, `gpxRemove`, `gpxOpen`, `gpxAttached`.
 
-En el momento del INSERT, el usuario **todavía no es miembro** (la fila en `trip_members` se crea justo después). Por tanto la fila recién creada no pasa el USING de SELECT y PostgREST devuelve exactamente el mismo mensaje confuso: `new row violates row-level security policy for table trips`.
+## 6. Seguridad
+- Bucket privado (ya).
+- RLS de `storage.objects` restringe lectura a miembros del viaje (ya).
+- RLS de `trip_schedule` restringe lectura a miembros y escritura al creador (ya).
+- Solo se usan URLs firmadas temporales.
 
-Esto explica por qué falla en todos los dispositivos: es estructural, no depende del cliente.
+## Alcance — lo que NO se toca
+Ni chat, ni fotos, ni gastos, ni tickets, ni transporte, ni alojamiento, ni auth, ni edge functions, ni emails, ni cualquier otra vista. Solo el archivo `Schedule.tsx`, `translations.ts` y una migración pequeña.
 
-### Comprobaciones realizadas
-- Policy INSERT correcta y segura: `auth.uid() = created_by`.
-- Columna `created_by` NOT NULL, frontend la envía con `user.id`.
-- GRANTs sobre `public.trips` correctos para `authenticated`.
-- No hay triggers en `trips` que rompan el flujo.
-- La policy INSERT de `trip_members` ya permite al propio usuario auto-añadirse (`user_id = auth.uid()`), por lo que el segundo paso del flujo seguirá funcionando.
-
-## Solución (mínima, segura, sin tocar nada más)
-
-Añadir una segunda policy de SELECT en `trips` que permita al creador ver su propio viaje. No se modifica ni se relaja ninguna otra policy.
-
-### Migración
-
-```sql
-CREATE POLICY "Creator can view own trip"
-ON public.trips
-FOR SELECT
-TO authenticated
-USING (auth.uid() = created_by);
-```
-
-Con esto:
-- El creador ve su viaje recién insertado → `.select().single()` devuelve la fila → no más error de RLS al crear.
-- El resto de miembros lo siguen viendo vía `is_trip_member(id)` (policy existente sin cambios).
-- Ningún usuario puede ver viajes ajenos: solo se amplía visibilidad al propio creador.
-- La policy de INSERT sigue siendo `auth.uid() = created_by` (no se abre `WITH CHECK (true)` ni nada similar).
-
-### Validación post-migración
-
-1. Verificar que la nueva policy existe sobre `trips` (cmd=SELECT, roles=authenticated).
-2. Confirmar que el flujo de `CreateTripDialog` deja de devolver el error de RLS.
-3. Confirmar que un usuario autenticado solo puede crear viajes con `created_by = auth.uid()` (intento con otro uuid debe seguir fallando).
-4. Confirmar que ningún archivo de frontend, edge function, otra tabla u otra policy ha sido modificado.
-
-## Alcance
-
-- **Cambia:** una sola migración SQL que añade una policy SELECT en `trips`.
-- **No cambia:** UI, componentes, edge functions, otras tablas, otras policies, triggers, secrets, ni el sistema de alertas internas.
+## Detalles técnicos
+- Migración: `ALTER TABLE public.trip_schedule ADD COLUMN gpx_path text, ADD COLUMN gpx_name text;` (sin cambios de policies/GRANTs).
+- Tipos Supabase se regeneran tras la migración.
+- Sin límite explícito de tamaño (bucket ya limitado por Supabase). Validación cliente: extensión `.gpx`.
