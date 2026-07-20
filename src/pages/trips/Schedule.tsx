@@ -97,24 +97,76 @@ const Schedule = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!tripId) return;
-    const payload = { trip_id: tripId, date: form.date, time: form.time || null, title: form.title, description: form.description || null, location: form.location || null, address: form.address || null, website: form.website || null };
-    const { error } = editingId
-      ? await supabase.from("trip_schedule").update(payload).eq("id", editingId)
-      : await supabase.from("trip_schedule").insert(payload);
-    if (error) { toast({ title: t.error, description: error.message, variant: "destructive" }); return; }
-    resetForm(); setOpen(false); fetchItems();
-    notifyTripEvent(tripId, "schedule", user?.id);
-    toast({ title: editingId ? t.activityUpdated : t.activityAdded });
+    setUploadingGpx(true);
+    try {
+      let gpx_path: string | null = existingGpx?.path ?? null;
+      let gpx_name: string | null = existingGpx?.name ?? null;
+
+      if (removeGpx && existingGpx) {
+        await supabase.storage.from("trip-photos").remove([existingGpx.path]);
+        gpx_path = null;
+        gpx_name = null;
+      }
+
+      const payload: any = { trip_id: tripId, date: form.date, time: form.time || null, title: form.title, description: form.description || null, location: form.location || null, address: form.address || null, website: form.website || null, gpx_path, gpx_name };
+
+      let recordId = editingId;
+      if (editingId) {
+        const { error } = await supabase.from("trip_schedule").update(payload).eq("id", editingId);
+        if (error) throw error;
+      } else {
+        const { data, error } = await supabase.from("trip_schedule").insert(payload).select("id").single();
+        if (error) throw error;
+        recordId = data.id;
+      }
+
+      if (gpxFile && recordId) {
+        const path = `${tripId}/activity-gpx/${recordId}.gpx`;
+        if (existingGpx && existingGpx.path !== path) {
+          await supabase.storage.from("trip-photos").remove([existingGpx.path]);
+        }
+        const { error: upErr } = await supabase.storage.from("trip-photos").upload(path, gpxFile, { upsert: true, contentType: "application/gpx+xml" });
+        if (upErr) throw upErr;
+        const { error: updErr } = await supabase.from("trip_schedule").update({ gpx_path: path, gpx_name: gpxFile.name }).eq("id", recordId);
+        if (updErr) throw updErr;
+      }
+
+      resetForm(); setOpen(false); fetchItems();
+      notifyTripEvent(tripId, "schedule", user?.id);
+      toast({ title: editingId ? t.activityUpdated : t.activityAdded });
+    } catch (error: any) {
+      toast({ title: t.error, description: error.message, variant: "destructive" });
+    } finally {
+      setUploadingGpx(false);
+    }
   };
 
-  const resetForm = () => { setForm({ date: "", time: "", title: "", description: "", location: "", address: "", website: "" }); setEditingId(null); };
+  const resetForm = () => {
+    setForm({ date: "", time: "", title: "", description: "", location: "", address: "", website: "" });
+    setEditingId(null);
+    setGpxFile(null);
+    setExistingGpx(null);
+    setRemoveGpx(false);
+    if (gpxInputRef.current) gpxInputRef.current.value = "";
+  };
 
   const startEdit = (item: ScheduleItem) => {
     setForm({ date: item.date, time: item.time || "", title: item.title, description: item.description || "", location: item.location || "", address: (item as any).address || "", website: item.website || "" });
-    setEditingId(item.id); setOpen(true);
+    setEditingId(item.id);
+    setGpxFile(null);
+    setRemoveGpx(false);
+    setExistingGpx(item.gpx_path && item.gpx_name ? { path: item.gpx_path, name: item.gpx_name } : null);
+    setOpen(true);
   };
 
-  const handleDelete = async (id: string) => { await supabase.from("trip_schedule").delete().eq("id", id); fetchItems(); };
+  const handleDelete = async (id: string) => {
+    const item = items.find((i) => i.id === id);
+    if (item?.gpx_path) {
+      await supabase.storage.from("trip-photos").remove([item.gpx_path]);
+    }
+    await supabase.from("trip_schedule").delete().eq("id", id);
+    fetchItems();
+  };
 
   const handleAddClick = () => {
     if (selectedDate) {
