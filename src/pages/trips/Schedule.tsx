@@ -57,6 +57,8 @@ const Schedule = () => {
   const [removeGpx, setRemoveGpx] = useState(false);
   const [uploadingGpx, setUploadingGpx] = useState(false);
   const gpxInputRef = useRef<HTMLInputElement>(null);
+  const [gpxShare, setGpxShare] = useState<{ path: string; name: string | null } | null>(null);
+
 
   const fetchItems = async () => {
     if (!tripId) return;
