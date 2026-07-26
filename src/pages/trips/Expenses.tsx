@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useRef } from "react";
 import { useParams } from "react-router-dom";
-import { Receipt, Plus, Trash2, Users, Pencil, Camera, ImageIcon, X, ArrowRight, CheckCircle2, History, Eye, Undo2, Lock, Flag } from "lucide-react";
+import { Receipt, Plus, Trash2, Users, Pencil, Camera, ImageIcon, X, ArrowRight, CheckCircle2, History, Eye, Undo2, Lock, Flag, Unlock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -70,7 +70,11 @@ const Expenses = () => {
   const [settlementReleasedAt, setSettlementReleasedAt] = useState<string | null>(null);
   const [finishOpen, setFinishOpen] = useState(false);
   const [finishing, setFinishing] = useState(false);
+  const [reopenOpen, setReopenOpen] = useState(false);
+  const [reopening, setReopening] = useState(false);
+  const [lockedNoticeOpen, setLockedNoticeOpen] = useState(false);
   const { isCreator } = useTripRole(tripId);
+  const isLocked = settlementReleasedAt !== null;
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -210,8 +214,21 @@ const Expenses = () => {
     fetchSettlement();
   };
 
+  const handleReopenTrip = async () => {
+    if (!tripId || reopening) return;
+    setReopening(true);
+    const { error } = await supabase.rpc("reopen_trip_settlement", { p_trip_id: tripId });
+    setReopening(false);
+    if (error) {
+      toast({ title: t.error, description: error.message, variant: "destructive" });
+      return;
+    }
+    setReopenOpen(false);
+    fetchSettlement();
+  };
 
   const openCreate = () => {
+    if (isLocked) { setLockedNoticeOpen(true); return; }
     setEditingId(null);
     setTitle("");
     setAmount2("");
@@ -225,6 +242,7 @@ const Expenses = () => {
   };
 
   const openEdit = (exp: Expense) => {
+    if (isLocked) { setLockedNoticeOpen(true); return; }
     setEditingId(exp.id);
     setTitle(exp.title);
     setAmount2(exp.amount.toString());
@@ -373,6 +391,7 @@ const Expenses = () => {
   };
 
   const handleDelete = async (id: string) => {
+    if (isLocked) { setLockedNoticeOpen(true); return; }
     await supabase.from("trip_expenses").delete().eq("id", id);
     fetchExpenses();
   };
@@ -898,6 +917,19 @@ const Expenses = () => {
                   ))}
                 </div>
               ) : null}
+              {settlementReleasedAt !== null && isCreator && (
+                <div className="mt-4 pt-3 border-t border-border flex justify-center">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5"
+                    onClick={() => setReopenOpen(true)}
+                  >
+                    <Unlock className="h-3.5 w-3.5" />
+                    {t.reopenTrip}
+                  </Button>
+                </div>
+              )}
             </div>
 
             {/* Payment history — hidden while settlement is locked */}
@@ -965,6 +997,36 @@ const Expenses = () => {
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
+
+            {/* Reopen trip confirmation */}
+            <AlertDialog open={reopenOpen} onOpenChange={setReopenOpen}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>{t.reopenTripConfirmTitle}</AlertDialogTitle>
+                  <AlertDialogDescription>{t.reopenTripConfirmBody}</AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel disabled={reopening}>{t.cancel}</AlertDialogCancel>
+                  <AlertDialogAction onClick={(e) => { e.preventDefault(); handleReopenTrip(); }} disabled={reopening}>
+                    {reopening ? t.loading : t.reopenTrip}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+
+            {/* Trip closed notice */}
+            <AlertDialog open={lockedNoticeOpen} onOpenChange={setLockedNoticeOpen}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>{t.tripClosedTitle}</AlertDialogTitle>
+                  <AlertDialogDescription>{t.tripClosedBody}</AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogAction onClick={() => setLockedNoticeOpen(false)}>{t.understood}</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+
 
 
             {/* Payment detail dialog */}

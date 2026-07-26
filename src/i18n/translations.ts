@@ -216,6 +216,12 @@ type TranslationKeys = {
   finishTrip: string;
   finishTripConfirmTitle: string;
   finishTripConfirmBody: string;
+  tripClosedTitle: string;
+  tripClosedBody: string;
+  understood: string;
+  reopenTrip: string;
+  reopenTripConfirmTitle: string;
+  reopenTripConfirmBody: string;
   expenseUpdated: string;
   expenseAdded: string;
   edit: string;
@@ -727,6 +733,12 @@ const translations: Record<Language, TranslationKeys> = {
     finishTrip: "Finalizar viaje",
     finishTripConfirmTitle: "¿Finalizar el viaje y mostrar la liquidación definitiva?",
     finishTripConfirmBody: "A partir de este momento, todos los miembros podrán ver quién debe a quién y registrar sus pagos.",
+    tripClosedTitle: "Viaje cerrado",
+    tripClosedBody: "No es posible añadir ni modificar gastos mientras el viaje está finalizado. El creador o co-creador debe volver a abrirlo para modificar los gastos.",
+    understood: "Entendido",
+    reopenTrip: "Volver a abrir viaje",
+    reopenTripConfirmTitle: "¿Volver a abrir el viaje?",
+    reopenTripConfirmBody: "La liquidación volverá a quedar oculta y los participantes podrán añadir o modificar gastos. Los pagos ya registrados no se eliminarán.",
     expenseUpdated: "Gasto actualizado",
     expenseAdded: "Gasto añadido",
     edit: "Editar",
@@ -1203,6 +1215,12 @@ const translations: Record<Language, TranslationKeys> = {
     finishTrip: "Finalize trip",
     finishTripConfirmTitle: "Finalize the trip and show the final settlement?",
     finishTripConfirmBody: "From this moment, all members will be able to see who owes whom and record their payments.",
+    tripClosedTitle: "Trip closed",
+    tripClosedBody: "You cannot add or modify expenses while the trip is finalized. The creator or co-creator must reopen it to modify expenses.",
+    understood: "Got it",
+    reopenTrip: "Reopen trip",
+    reopenTripConfirmTitle: "Reopen the trip?",
+    reopenTripConfirmBody: "The settlement will be hidden again and participants will be able to add or modify expenses. Payments already recorded will not be deleted.",
     expenseUpdated: "Expense updated",
     expenseAdded: "Expense added",
     edit: "Edit",
@@ -1679,6 +1697,12 @@ const translations: Record<Language, TranslationKeys> = {
     finishTrip: "Finaliser le voyage",
     finishTripConfirmTitle: "Finaliser le voyage et afficher le règlement définitif ?",
     finishTripConfirmBody: "À partir de ce moment, tous les membres pourront voir qui doit à qui et enregistrer leurs paiements.",
+    tripClosedTitle: "Voyage clôturé",
+    tripClosedBody: "Impossible d'ajouter ou de modifier des dépenses tant que le voyage est finalisé. Le créateur ou le co-créateur doit le rouvrir pour modifier les dépenses.",
+    understood: "Compris",
+    reopenTrip: "Rouvrir le voyage",
+    reopenTripConfirmTitle: "Rouvrir le voyage ?",
+    reopenTripConfirmBody: "Le règlement sera à nouveau masqué et les participants pourront ajouter ou modifier des dépenses. Les paiements déjà enregistrés ne seront pas supprimés.",
     expenseUpdated: "Dépense mise à jour",
     expenseAdded: "Dépense ajoutée",
     edit: "Modifier",
@@ -2155,6 +2179,12 @@ const translations: Record<Language, TranslationKeys> = {
     finishTrip: "Finalizar viagem",
     finishTripConfirmTitle: "Finalizar a viagem e mostrar a liquidação definitiva?",
     finishTripConfirmBody: "A partir deste momento, todos os membros poderão ver quem deve a quem e registar os seus pagamentos.",
+    tripClosedTitle: "Viagem encerrada",
+    tripClosedBody: "Não é possível adicionar nem modificar despesas enquanto a viagem estiver finalizada. O criador ou co-criador deve reabri-la para modificar as despesas.",
+    understood: "Entendido",
+    reopenTrip: "Reabrir viagem",
+    reopenTripConfirmTitle: "Reabrir a viagem?",
+    reopenTripConfirmBody: "A liquidação voltará a ficar oculta e os participantes poderão adicionar ou modificar despesas. Os pagamentos já registados não serão eliminados.",
     expenseUpdated: "Despesa atualizada",
     expenseAdded: "Despesa adicionada",
     edit: "Editar",
@@ -2631,6 +2661,12 @@ const translations: Record<Language, TranslationKeys> = {
     finishTrip: "Finalizza viaggio",
     finishTripConfirmTitle: "Finalizzare il viaggio e mostrare la liquidazione definitiva?",
     finishTripConfirmBody: "Da questo momento, tutti i membri potranno vedere chi deve a chi e registrare i propri pagamenti.",
+    tripClosedTitle: "Viaggio chiuso",
+    tripClosedBody: "Non è possibile aggiungere o modificare le spese mentre il viaggio è finalizzato. Il creatore o co-creatore deve riaprirlo per modificare le spese.",
+    understood: "Ho capito",
+    reopenTrip: "Riapri viaggio",
+    reopenTripConfirmTitle: "Riaprire il viaggio?",
+    reopenTripConfirmBody: "La liquidazione tornerà a essere nascosta e i partecipanti potranno aggiungere o modificare le spese. I pagamenti già registrati non verranno eliminati.",
     expenseUpdated: "Spesa aggiornata",
     expenseAdded: "Spesa aggiunta",
     edit: "Modifica",
@@ -3107,6 +3143,12 @@ const translations: Record<Language, TranslationKeys> = {
     finishTrip: "结束行程",
     finishTripConfirmTitle: "结束行程并显示最终结算？",
     finishTripConfirmBody: "从此刻起，所有成员都可以查看谁欠谁多少，并登记他们的付款。",
+    tripClosedTitle: "行程已关闭",
+    tripClosedBody: "行程结束后无法添加或修改支出。创建者或联合创建者必须重新打开行程才能修改支出。",
+    understood: "知道了",
+    reopenTrip: "重新打开行程",
+    reopenTripConfirmTitle: "重新打开行程？",
+    reopenTripConfirmBody: "结算将再次隐藏，参与者可以添加或修改支出。已记录的付款不会被删除。",
     expenseUpdated: "费用已更新",
     expenseAdded: "费用已添加",
     edit: "编辑",
@@ -3583,6 +3625,12 @@ const translations: Record<Language, TranslationKeys> = {
     finishTrip: "Reise abschließen",
     finishTripConfirmTitle: "Reise abschließen und die endgültige Abrechnung anzeigen?",
     finishTripConfirmBody: "Ab diesem Moment können alle Mitglieder sehen, wer wem etwas schuldet, und ihre Zahlungen erfassen.",
+    tripClosedTitle: "Reise geschlossen",
+    tripClosedBody: "Solange die Reise abgeschlossen ist, können keine Ausgaben hinzugefügt oder geändert werden. Der Ersteller oder Co-Ersteller muss sie erneut öffnen, um Ausgaben zu ändern.",
+    understood: "Verstanden",
+    reopenTrip: "Reise erneut öffnen",
+    reopenTripConfirmTitle: "Reise erneut öffnen?",
+    reopenTripConfirmBody: "Die Abrechnung wird wieder ausgeblendet und die Teilnehmer können Ausgaben hinzufügen oder ändern. Bereits erfasste Zahlungen werden nicht gelöscht.",
     expenseUpdated: "Ausgabe aktualisiert",
     expenseAdded: "Ausgabe hinzugefügt",
     edit: "Bearbeiten",
