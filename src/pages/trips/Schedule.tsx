@@ -359,6 +359,12 @@ const Schedule = () => {
           ))}
         </div>
       )}
+      <GpxShareDialog
+        open={!!gpxShare}
+        onOpenChange={(o) => { if (!o) setGpxShare(null); }}
+        gpxPath={gpxShare?.path ?? null}
+        gpxName={gpxShare?.name ?? null}
+      />
     </div>
   );
 };
