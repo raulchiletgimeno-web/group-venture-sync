@@ -3078,6 +3078,7 @@ const translations: Record<Language, TranslationKeys> = {
     paidByLabel: "付款人",
     sharedBetween: "分摊人",
     perPerson: "/ 人",
+    refund: "退款",
     expenseUpdated: "费用已更新",
     expenseAdded: "费用已添加",
     edit: "编辑",
