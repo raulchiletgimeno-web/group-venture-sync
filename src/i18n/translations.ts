@@ -212,6 +212,10 @@ type TranslationKeys = {
   sharedBetween: string;
   perPerson: string;
   refund: string;
+  settlementLockedTitle: string;
+  finishTrip: string;
+  finishTripConfirmTitle: string;
+  finishTripConfirmBody: string;
   expenseUpdated: string;
   expenseAdded: string;
   edit: string;
