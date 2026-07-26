@@ -391,6 +391,7 @@ const Expenses = () => {
   };
 
   const handleDelete = async (id: string) => {
+    if (isLocked) { setLockedNoticeOpen(true); return; }
     await supabase.from("trip_expenses").delete().eq("id", id);
     fetchExpenses();
   };
