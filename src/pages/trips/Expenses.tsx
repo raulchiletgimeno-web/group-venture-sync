@@ -998,6 +998,36 @@ const Expenses = () => {
               </AlertDialogContent>
             </AlertDialog>
 
+            {/* Reopen trip confirmation */}
+            <AlertDialog open={reopenOpen} onOpenChange={setReopenOpen}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>{t.reopenTripConfirmTitle}</AlertDialogTitle>
+                  <AlertDialogDescription>{t.reopenTripConfirmBody}</AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel disabled={reopening}>{t.cancel}</AlertDialogCancel>
+                  <AlertDialogAction onClick={(e) => { e.preventDefault(); handleReopenTrip(); }} disabled={reopening}>
+                    {reopening ? t.loading : t.reopenTrip}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+
+            {/* Trip closed notice */}
+            <AlertDialog open={lockedNoticeOpen} onOpenChange={setLockedNoticeOpen}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>{t.tripClosedTitle}</AlertDialogTitle>
+                  <AlertDialogDescription>{t.tripClosedBody}</AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogAction onClick={() => setLockedNoticeOpen(false)}>{t.understood}</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+
+
 
             {/* Payment detail dialog */}
             <Dialog open={!!detailPayment} onOpenChange={(o) => !o && setDetailPayment(null)}>
