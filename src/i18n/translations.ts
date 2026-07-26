@@ -211,6 +211,7 @@ type TranslationKeys = {
   paidByLabel: string;
   sharedBetween: string;
   perPerson: string;
+  refund: string;
   expenseUpdated: string;
   expenseAdded: string;
   edit: string;
