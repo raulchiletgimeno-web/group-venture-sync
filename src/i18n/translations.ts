@@ -718,6 +718,7 @@ const translations: Record<Language, TranslationKeys> = {
     paidByLabel: "Pagado por",
     sharedBetween: "Compartido entre",
     perPerson: "/ persona",
+    refund: "Reembolso",
     expenseUpdated: "Gasto actualizado",
     expenseAdded: "Gasto añadido",
     edit: "Editar",
