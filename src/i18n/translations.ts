@@ -349,6 +349,12 @@ type TranslationKeys = {
   gpxRemove: string;
   gpxOpen: string;
   gpxAttached: string;
+  gpxOpenOrShare: string;
+  gpxOpenWithApp: string;
+  gpxSaveFile: string;
+  gpxPrepareError: string;
+  gpxShareUnsupported: string;
+  gpxIosHint: string;
   groupTicket: string;
   personalTicket: string;
   ticketType: string;
