@@ -179,12 +179,37 @@ const Expenses = () => {
     );
   };
 
+  const fetchSettlement = async () => {
+    if (!tripId) return;
+    const { data } = await supabase
+      .from("trips")
+      .select("settlement_released_at")
+      .eq("id", tripId)
+      .maybeSingle();
+    setSettlementReleasedAt(data?.settlement_released_at ?? null);
+  };
+
   useEffect(() => {
     fetchMembers().then(() => {
       fetchExpenses();
       fetchPayments();
+      fetchSettlement();
     });
   }, [tripId]);
+
+  const handleFinishTrip = async () => {
+    if (!tripId || finishing) return;
+    setFinishing(true);
+    const { error } = await supabase.rpc("release_trip_settlement", { p_trip_id: tripId });
+    setFinishing(false);
+    if (error) {
+      toast({ title: t.error, description: error.message, variant: "destructive" });
+      return;
+    }
+    setFinishOpen(false);
+    fetchSettlement();
+  };
+
 
   const openCreate = () => {
     setEditingId(null);
