@@ -216,6 +216,12 @@ type TranslationKeys = {
   finishTrip: string;
   finishTripConfirmTitle: string;
   finishTripConfirmBody: string;
+  tripClosedTitle: string;
+  tripClosedBody: string;
+  understood: string;
+  reopenTrip: string;
+  reopenTripConfirmTitle: string;
+  reopenTripConfirmBody: string;
   expenseUpdated: string;
   expenseAdded: string;
   edit: string;
