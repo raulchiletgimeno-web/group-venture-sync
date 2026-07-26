@@ -917,6 +917,19 @@ const Expenses = () => {
                   ))}
                 </div>
               ) : null}
+              {settlementReleasedAt !== null && isCreator && (
+                <div className="mt-4 pt-3 border-t border-border flex justify-center">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5"
+                    onClick={() => setReopenOpen(true)}
+                  >
+                    <Unlock className="h-3.5 w-3.5" />
+                    {t.reopenTrip}
+                  </Button>
+                </div>
+              )}
             </div>
 
             {/* Payment history — hidden while settlement is locked */}
