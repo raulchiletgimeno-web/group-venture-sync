@@ -67,6 +67,10 @@ const Expenses = () => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
   const [payments, setPayments] = useState<DebtPayment[]>([]);
+  const [settlementReleasedAt, setSettlementReleasedAt] = useState<string | null>(null);
+  const [finishOpen, setFinishOpen] = useState(false);
+  const [finishing, setFinishing] = useState(false);
+  const { isCreator } = useTripRole(tripId);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
