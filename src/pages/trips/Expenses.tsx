@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useRef } from "react";
 import { useParams } from "react-router-dom";
-import { Receipt, Plus, Trash2, Users, Pencil, Camera, ImageIcon, X, ArrowRight, CheckCircle2, History, Eye } from "lucide-react";
+import { Receipt, Plus, Trash2, Users, Pencil, Camera, ImageIcon, X, ArrowRight, CheckCircle2, History, Eye, Undo2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
