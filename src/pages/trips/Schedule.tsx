@@ -4,6 +4,7 @@ import { CalendarDays, Plus, Trash2, Pencil, Globe, MapPin, ArrowLeft, Route, Pa
 import { format, parseISO, isSameDay, eachDayOfInterval } from "date-fns";
 import { es, enUS, fr, pt, it } from "date-fns/locale";
 import ActivityTicketManager from "@/components/ActivityTicketManager";
+import GpxShareDialog from "@/components/GpxShareDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
