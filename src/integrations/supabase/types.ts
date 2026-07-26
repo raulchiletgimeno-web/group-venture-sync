@@ -1151,6 +1151,10 @@ export type Database = {
         }[]
       }
       release_trip_settlement: { Args: { p_trip_id: string }; Returns: string }
+      reopen_trip_settlement: {
+        Args: { p_trip_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
