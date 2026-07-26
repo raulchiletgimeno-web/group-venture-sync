@@ -212,6 +212,10 @@ type TranslationKeys = {
   sharedBetween: string;
   perPerson: string;
   refund: string;
+  settlementLockedTitle: string;
+  finishTrip: string;
+  finishTripConfirmTitle: string;
+  finishTripConfirmBody: string;
   expenseUpdated: string;
   expenseAdded: string;
   edit: string;
@@ -719,6 +723,10 @@ const translations: Record<Language, TranslationKeys> = {
     sharedBetween: "Compartido entre",
     perPerson: "/ persona",
     refund: "Reembolso",
+    settlementLockedTitle: "La liquidación estará disponible cuando el organizador finalice el viaje.",
+    finishTrip: "Finalizar viaje",
+    finishTripConfirmTitle: "¿Finalizar el viaje y mostrar la liquidación definitiva?",
+    finishTripConfirmBody: "A partir de este momento, todos los miembros podrán ver quién debe a quién y registrar sus pagos.",
     expenseUpdated: "Gasto actualizado",
     expenseAdded: "Gasto añadido",
     edit: "Editar",
@@ -1191,6 +1199,10 @@ const translations: Record<Language, TranslationKeys> = {
     sharedBetween: "Shared between",
     perPerson: "/ person",
     refund: "Refund",
+    settlementLockedTitle: "The settlement will be available once the organizer finalizes the trip.",
+    finishTrip: "Finalize trip",
+    finishTripConfirmTitle: "Finalize the trip and show the final settlement?",
+    finishTripConfirmBody: "From this moment, all members will be able to see who owes whom and record their payments.",
     expenseUpdated: "Expense updated",
     expenseAdded: "Expense added",
     edit: "Edit",
@@ -1663,6 +1675,10 @@ const translations: Record<Language, TranslationKeys> = {
     sharedBetween: "Partagé entre",
     perPerson: "/ personne",
     refund: "Remboursement",
+    settlementLockedTitle: "Le règlement sera disponible lorsque l'organisateur finalisera le voyage.",
+    finishTrip: "Finaliser le voyage",
+    finishTripConfirmTitle: "Finaliser le voyage et afficher le règlement définitif ?",
+    finishTripConfirmBody: "À partir de ce moment, tous les membres pourront voir qui doit à qui et enregistrer leurs paiements.",
     expenseUpdated: "Dépense mise à jour",
     expenseAdded: "Dépense ajoutée",
     edit: "Modifier",
@@ -2135,6 +2151,10 @@ const translations: Record<Language, TranslationKeys> = {
     sharedBetween: "Partilhado entre",
     perPerson: "/ pessoa",
     refund: "Reembolso",
+    settlementLockedTitle: "A liquidação estará disponível quando o organizador finalizar a viagem.",
+    finishTrip: "Finalizar viagem",
+    finishTripConfirmTitle: "Finalizar a viagem e mostrar a liquidação definitiva?",
+    finishTripConfirmBody: "A partir deste momento, todos os membros poderão ver quem deve a quem e registar os seus pagamentos.",
     expenseUpdated: "Despesa atualizada",
     expenseAdded: "Despesa adicionada",
     edit: "Editar",
@@ -2607,6 +2627,10 @@ const translations: Record<Language, TranslationKeys> = {
     sharedBetween: "Condiviso tra",
     perPerson: "/ persona",
     refund: "Rimborso",
+    settlementLockedTitle: "La liquidazione sarà disponibile quando l'organizzatore finalizzerà il viaggio.",
+    finishTrip: "Finalizza viaggio",
+    finishTripConfirmTitle: "Finalizzare il viaggio e mostrare la liquidazione definitiva?",
+    finishTripConfirmBody: "Da questo momento, tutti i membri potranno vedere chi deve a chi e registrare i propri pagamenti.",
     expenseUpdated: "Spesa aggiornata",
     expenseAdded: "Spesa aggiunta",
     edit: "Modifica",
@@ -3079,6 +3103,10 @@ const translations: Record<Language, TranslationKeys> = {
     sharedBetween: "分摊人",
     perPerson: "/ 人",
     refund: "退款",
+    settlementLockedTitle: "结算将在组织者结束行程后可用。",
+    finishTrip: "结束行程",
+    finishTripConfirmTitle: "结束行程并显示最终结算？",
+    finishTripConfirmBody: "从此刻起，所有成员都可以查看谁欠谁多少，并登记他们的付款。",
     expenseUpdated: "费用已更新",
     expenseAdded: "费用已添加",
     edit: "编辑",
@@ -3551,6 +3579,10 @@ const translations: Record<Language, TranslationKeys> = {
     sharedBetween: "Geteilt zwischen",
     perPerson: "/ Person",
     refund: "Rückzahlung",
+    settlementLockedTitle: "Die Abrechnung ist verfügbar, sobald der Organisator die Reise abschließt.",
+    finishTrip: "Reise abschließen",
+    finishTripConfirmTitle: "Reise abschließen und die endgültige Abrechnung anzeigen?",
+    finishTripConfirmBody: "Ab diesem Moment können alle Mitglieder sehen, wer wem etwas schuldet, und ihre Zahlungen erfassen.",
     expenseUpdated: "Ausgabe aktualisiert",
     expenseAdded: "Ausgabe hinzugefügt",
     edit: "Bearbeiten",

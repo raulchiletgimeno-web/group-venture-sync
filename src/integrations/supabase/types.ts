@@ -1033,6 +1033,7 @@ export type Database = {
           end_date: string
           id: string
           invite_code: string
+          settlement_released_at: string | null
           start_date: string
           status: string
           title: string
@@ -1044,6 +1045,7 @@ export type Database = {
           end_date: string
           id?: string
           invite_code: string
+          settlement_released_at?: string | null
           start_date: string
           status?: string
           title: string
@@ -1055,6 +1057,7 @@ export type Database = {
           end_date?: string
           id?: string
           invite_code?: string
+          settlement_released_at?: string | null
           start_date?: string
           status?: string
           title?: string
@@ -1147,6 +1150,7 @@ export type Database = {
           read_ct: number
         }[]
       }
+      release_trip_settlement: { Args: { p_trip_id: string }; Returns: string }
     }
     Enums: {
       [_ in never]: never
