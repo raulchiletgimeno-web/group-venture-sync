@@ -326,14 +326,7 @@ const Schedule = () => {
                     <ActivityTicketManager scheduleId={item.id} tripId={tripId!} isCreator={isCreator} />
                     {item.gpx_path && (
                       <Tooltip><TooltipTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={async () => {
-                          try {
-                            const url = await getSignedUrl(item.gpx_path!);
-                            if (url) window.open(url, '_blank');
-                          } catch (e: any) {
-                            toast({ title: t.error, description: e.message, variant: "destructive" });
-                          }
-                        }}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={() => setGpxShare({ path: item.gpx_path!, name: item.gpx_name })}>
                           <Route className="h-4 w-4" />
                         </Button>
                       </TooltipTrigger><TooltipContent>{item.gpx_name || t.gpxOpen}</TooltipContent></Tooltip>
