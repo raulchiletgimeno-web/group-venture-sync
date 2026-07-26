@@ -853,10 +853,29 @@ const Expenses = () => {
               </div>
             </div>
 
-            {/* Who owes whom */}
-            {debts.length > 0 && (
-              <div className="rounded-xl bg-card p-4 shadow-card">
-                <p className="text-sm font-semibold text-card-foreground mb-3">{t.whoOwesWhom}</p>
+            {/* Who owes whom — locked until organizer finalizes the trip */}
+            <div className="rounded-xl bg-card p-4 shadow-card">
+              <p className="text-sm font-semibold text-card-foreground mb-3">{t.whoOwesWhom}</p>
+              {settlementReleasedAt === null ? (
+                <div className="flex flex-col items-center text-center gap-3 py-4">
+                  <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
+                    <Lock className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                  <p className="text-sm text-muted-foreground max-w-xs">
+                    {t.settlementLockedTitle}
+                  </p>
+                  {isCreator && (
+                    <Button
+                      size="sm"
+                      className="gradient-hero text-primary-foreground border-0 gap-1.5"
+                      onClick={() => setFinishOpen(true)}
+                    >
+                      <Flag className="h-3.5 w-3.5" />
+                      {t.finishTrip}
+                    </Button>
+                  )}
+                </div>
+              ) : debts.length > 0 ? (
                 <div className="space-y-2">
                   {debts.map((d, i) => (
                     <div key={i} className="flex items-center gap-2 text-sm">
@@ -878,11 +897,11 @@ const Expenses = () => {
                     </div>
                   ))}
                 </div>
-              </div>
-            )}
+              ) : null}
+            </div>
 
-            {/* Payment history */}
-            {payments.length > 0 && (
+            {/* Payment history — hidden while settlement is locked */}
+            {settlementReleasedAt !== null && payments.length > 0 && (
               <div className="rounded-xl bg-card p-4 shadow-card">
                 <div className="flex items-center gap-2 mb-3">
                   <History className="h-4 w-4 text-muted-foreground" />
@@ -930,6 +949,23 @@ const Expenses = () => {
                 </div>
               </div>
             )}
+
+            {/* Finalize trip confirmation */}
+            <AlertDialog open={finishOpen} onOpenChange={setFinishOpen}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>{t.finishTripConfirmTitle}</AlertDialogTitle>
+                  <AlertDialogDescription>{t.finishTripConfirmBody}</AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel disabled={finishing}>{t.cancel}</AlertDialogCancel>
+                  <AlertDialogAction onClick={(e) => { e.preventDefault(); handleFinishTrip(); }} disabled={finishing}>
+                    {finishing ? t.loading : t.finishTrip}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+
 
             {/* Payment detail dialog */}
             <Dialog open={!!detailPayment} onOpenChange={(o) => !o && setDetailPayment(null)}>
