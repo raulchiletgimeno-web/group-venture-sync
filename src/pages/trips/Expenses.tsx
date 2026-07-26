@@ -214,8 +214,21 @@ const Expenses = () => {
     fetchSettlement();
   };
 
+  const handleReopenTrip = async () => {
+    if (!tripId || reopening) return;
+    setReopening(true);
+    const { error } = await supabase.rpc("reopen_trip_settlement", { p_trip_id: tripId });
+    setReopening(false);
+    if (error) {
+      toast({ title: t.error, description: error.message, variant: "destructive" });
+      return;
+    }
+    setReopenOpen(false);
+    fetchSettlement();
+  };
 
   const openCreate = () => {
+    if (isLocked) { setLockedNoticeOpen(true); return; }
     setEditingId(null);
     setTitle("");
     setAmount2("");
