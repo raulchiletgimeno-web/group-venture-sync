@@ -70,7 +70,11 @@ const Expenses = () => {
   const [settlementReleasedAt, setSettlementReleasedAt] = useState<string | null>(null);
   const [finishOpen, setFinishOpen] = useState(false);
   const [finishing, setFinishing] = useState(false);
+  const [reopenOpen, setReopenOpen] = useState(false);
+  const [reopening, setReopening] = useState(false);
+  const [lockedNoticeOpen, setLockedNoticeOpen] = useState(false);
   const { isCreator } = useTripRole(tripId);
+  const isLocked = settlementReleasedAt !== null;
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
