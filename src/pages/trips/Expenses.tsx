@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useRef } from "react";
 import { useParams } from "react-router-dom";
-import { Receipt, Plus, Trash2, Users, Pencil, Camera, ImageIcon, X, ArrowRight, CheckCircle2, History, Eye } from "lucide-react";
+import { Receipt, Plus, Trash2, Users, Pencil, Camera, ImageIcon, X, ArrowRight, CheckCircle2, History, Eye, Undo2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -989,27 +989,32 @@ const Expenses = () => {
 
           <TabsContent value="gastos">
             <div className="space-y-3">
-              {expenses.map((exp) => (
-                <div key={exp.id} className="rounded-xl bg-card p-4 shadow-card">
+              {[
+                ...expenses.map((e) => ({ kind: "expense" as const, ts: e.created_at, data: e })),
+                ...payments.map((p) => ({ kind: "refund" as const, ts: p.paid_at, data: p })),
+              ]
+                .sort((a, b) => new Date(b.ts).getTime() - new Date(a.ts).getTime())
+                .map((item) => item.kind === "expense" ? (
+                <div key={`e-${item.data.id}`} className="rounded-xl bg-card p-4 shadow-card">
                   <div className="flex items-start justify-between">
                     <div>
-                      <p className="text-sm font-semibold text-card-foreground">{exp.title}</p>
+                      <p className="text-sm font-semibold text-card-foreground">{item.data.title}</p>
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        {new Date(exp.created_at).toLocaleDateString(getLocale(language), { day: "numeric", month: "short", year: "numeric" })}
+                        {new Date(item.data.created_at).toLocaleDateString(getLocale(language), { day: "numeric", month: "short", year: "numeric" })}
                       </p>
                        <p className="text-xs text-muted-foreground mt-1">
-                         {t.paidByLabel} {memberName(exp.paid_by)} — {exp.amount.toFixed(2)} €
+                         {t.paidByLabel} {memberName(item.data.paid_by)} — {item.data.amount.toFixed(2)} €
                        </p>
                        <p className="text-xs text-muted-foreground mt-0.5">
-                         {t.sharedBetween}: {exp.splits.map(memberName).join(", ")}
+                         {t.sharedBetween}: {item.data.splits.map(memberName).join(", ")}
                        </p>
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        {(exp.amount / (exp.splits.length || 1)).toFixed(2)} € / {t.perPerson}
+                        {(item.data.amount / (item.data.splits.length || 1)).toFixed(2)} € / {t.perPerson}
                       </p>
-                      {exp.receipt_path && (
+                      {item.data.receipt_path && (
                         <button
                           type="button"
-                          onClick={() => openReceipt(exp.receipt_path!)}
+                          onClick={() => openReceipt(item.data.receipt_path!)}
                           className="mt-2 inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
                         >
                           <ImageIcon className="h-4 w-4" />
@@ -1017,7 +1022,7 @@ const Expenses = () => {
                         </button>
                       )}
                     </div>
-                    {(exp.paid_by === user?.id) && (
+                    {(item.data.paid_by === user?.id) && (
                       <div className="flex gap-1">
                         <Tooltip>
                           <TooltipTrigger asChild>
@@ -1025,7 +1030,7 @@ const Expenses = () => {
                               variant="ghost"
                               size="icon"
                               className="text-muted-foreground h-8 w-8"
-                              onClick={() => openEdit(exp)}
+                              onClick={() => openEdit(item.data)}
                             >
                               <Pencil className="h-4 w-4" />
                             </Button>
@@ -1038,7 +1043,7 @@ const Expenses = () => {
                               variant="ghost"
                               size="icon"
                               className="text-destructive h-8 w-8"
-                              onClick={() => handleDelete(exp.id)}
+                              onClick={() => handleDelete(item.data.id)}
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -1047,6 +1052,42 @@ const Expenses = () => {
                         </Tooltip>
                       </div>
                     )}
+                  </div>
+                </div>
+              ) : (
+                <div
+                  key={`r-${item.data.id}`}
+                  className="rounded-xl bg-card p-4 shadow-card border-l-4"
+                  style={{ borderLeftColor: "hsl(var(--chart-2))" }}
+                >
+                  <div className="flex items-start gap-3">
+                    <div
+                      className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30"
+                      style={{ color: "hsl(var(--chart-2))" }}
+                    >
+                      <Undo2 className="h-4 w-4" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="text-sm font-semibold text-card-foreground">{t.refund}</p>
+                        <Badge
+                          variant="secondary"
+                          className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border-0 text-[10px] px-1.5 py-0"
+                        >
+                          {t.settled}
+                        </Badge>
+                      </div>
+                      <div className="mt-1 flex items-center gap-1.5 text-sm text-card-foreground flex-wrap">
+                        <span className="font-medium">{memberName(item.data.from_user)}</span>
+                        <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span className="font-medium">{memberName(item.data.to_user)}</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        <span className="font-semibold" style={{ color: "hsl(var(--chart-2))" }}>{item.data.amount.toFixed(2)} €</span>
+                        {" · "}{paymentMethodLabel(item.data.payment_method)}
+                        {" · "}{new Date(item.data.paid_at).toLocaleDateString(getLocale(language), { day: "numeric", month: "short", year: "numeric" })}
+                      </p>
+                    </div>
                   </div>
                 </div>
               ))}

@@ -211,6 +211,7 @@ type TranslationKeys = {
   paidByLabel: string;
   sharedBetween: string;
   perPerson: string;
+  refund: string;
   expenseUpdated: string;
   expenseAdded: string;
   edit: string;
@@ -717,6 +718,7 @@ const translations: Record<Language, TranslationKeys> = {
     paidByLabel: "Pagado por",
     sharedBetween: "Compartido entre",
     perPerson: "/ persona",
+    refund: "Reembolso",
     expenseUpdated: "Gasto actualizado",
     expenseAdded: "Gasto añadido",
     edit: "Editar",
@@ -1188,6 +1190,7 @@ const translations: Record<Language, TranslationKeys> = {
     paidByLabel: "Paid by",
     sharedBetween: "Shared between",
     perPerson: "/ person",
+    refund: "Refund",
     expenseUpdated: "Expense updated",
     expenseAdded: "Expense added",
     edit: "Edit",
@@ -1659,6 +1662,7 @@ const translations: Record<Language, TranslationKeys> = {
     paidByLabel: "Payé par",
     sharedBetween: "Partagé entre",
     perPerson: "/ personne",
+    refund: "Remboursement",
     expenseUpdated: "Dépense mise à jour",
     expenseAdded: "Dépense ajoutée",
     edit: "Modifier",
@@ -2130,6 +2134,7 @@ const translations: Record<Language, TranslationKeys> = {
     paidByLabel: "Pago por",
     sharedBetween: "Partilhado entre",
     perPerson: "/ pessoa",
+    refund: "Reembolso",
     expenseUpdated: "Despesa atualizada",
     expenseAdded: "Despesa adicionada",
     edit: "Editar",
@@ -2601,6 +2606,7 @@ const translations: Record<Language, TranslationKeys> = {
     paidByLabel: "Pagato da",
     sharedBetween: "Condiviso tra",
     perPerson: "/ persona",
+    refund: "Rimborso",
     expenseUpdated: "Spesa aggiornata",
     expenseAdded: "Spesa aggiunta",
     edit: "Modifica",
@@ -3072,6 +3078,7 @@ const translations: Record<Language, TranslationKeys> = {
     paidByLabel: "付款人",
     sharedBetween: "分摊人",
     perPerson: "/ 人",
+    refund: "退款",
     expenseUpdated: "费用已更新",
     expenseAdded: "费用已添加",
     edit: "编辑",
@@ -3543,6 +3550,7 @@ const translations: Record<Language, TranslationKeys> = {
     paidByLabel: "Bezahlt von",
     sharedBetween: "Geteilt zwischen",
     perPerson: "/ Person",
+    refund: "Rückzahlung",
     expenseUpdated: "Ausgabe aktualisiert",
     expenseAdded: "Ausgabe hinzugefügt",
     edit: "Bearbeiten",
