@@ -349,6 +349,12 @@ type TranslationKeys = {
   gpxRemove: string;
   gpxOpen: string;
   gpxAttached: string;
+  gpxOpenOrShare: string;
+  gpxOpenWithApp: string;
+  gpxSaveFile: string;
+  gpxPrepareError: string;
+  gpxShareUnsupported: string;
+  gpxIosHint: string;
   groupTicket: string;
   personalTicket: string;
   ticketType: string;
@@ -858,6 +864,12 @@ const translations: Record<Language, TranslationKeys> = {
     gpxRemove: "Eliminar GPX",
     gpxOpen: "Abrir GPX",
     gpxAttached: "GPX adjuntado",
+    gpxOpenOrShare: "Abrir o compartir GPX",
+    gpxOpenWithApp: "Abrir con otra aplicación",
+    gpxSaveFile: "Guardar archivo GPX",
+    gpxPrepareError: "No se ha podido preparar el archivo GPX",
+    gpxShareUnsupported: "Este dispositivo no permite compartir el archivo directamente",
+    gpxIosHint: "Pulsa Compartir y selecciona 'Guardar en Archivos' o una aplicación compatible",
     groupTicket: "Grupal",
     personalTicket: "Personal",
     ticketType: "Tipo de entrada",
@@ -1340,6 +1352,12 @@ const translations: Record<Language, TranslationKeys> = {
     gpxRemove: "Remove GPX",
     gpxOpen: "Open GPX",
     gpxAttached: "GPX attached",
+    gpxOpenOrShare: "Open or share GPX",
+    gpxOpenWithApp: "Open with another app",
+    gpxSaveFile: "Save GPX file",
+    gpxPrepareError: "Could not prepare the GPX file",
+    gpxShareUnsupported: "This device does not support sharing the file directly",
+    gpxIosHint: "Tap Share and choose 'Save to Files' or a compatible app",
     groupTicket: "Group",
     personalTicket: "Personal",
     ticketType: "Ticket type",
@@ -1822,6 +1840,12 @@ const translations: Record<Language, TranslationKeys> = {
     gpxRemove: "Supprimer le GPX",
     gpxOpen: "Ouvrir le GPX",
     gpxAttached: "GPX joint",
+    gpxOpenOrShare: "Ouvrir ou partager le GPX",
+    gpxOpenWithApp: "Ouvrir avec une autre application",
+    gpxSaveFile: "Enregistrer le fichier GPX",
+    gpxPrepareError: "Impossible de préparer le fichier GPX",
+    gpxShareUnsupported: "Cet appareil ne permet pas de partager le fichier directement",
+    gpxIosHint: "Appuyez sur Partager et choisissez « Enregistrer dans Fichiers » ou une application compatible",
     groupTicket: "Groupe",
     personalTicket: "Personnel",
     ticketType: "Type de billet",
@@ -2304,6 +2328,12 @@ const translations: Record<Language, TranslationKeys> = {
     gpxRemove: "Remover GPX",
     gpxOpen: "Abrir GPX",
     gpxAttached: "GPX anexado",
+    gpxOpenOrShare: "Abrir ou partilhar GPX",
+    gpxOpenWithApp: "Abrir com outra aplicação",
+    gpxSaveFile: "Guardar ficheiro GPX",
+    gpxPrepareError: "Não foi possível preparar o ficheiro GPX",
+    gpxShareUnsupported: "Este dispositivo não permite partilhar o ficheiro diretamente",
+    gpxIosHint: "Toque em Partilhar e escolha 'Guardar em Ficheiros' ou uma aplicação compatível",
     groupTicket: "Grupo",
     personalTicket: "Pessoal",
     ticketType: "Tipo de bilhete",
@@ -2786,6 +2816,12 @@ const translations: Record<Language, TranslationKeys> = {
     gpxRemove: "Rimuovi GPX",
     gpxOpen: "Apri GPX",
     gpxAttached: "GPX allegato",
+    gpxOpenOrShare: "Apri o condividi GPX",
+    gpxOpenWithApp: "Apri con un'altra app",
+    gpxSaveFile: "Salva file GPX",
+    gpxPrepareError: "Impossibile preparare il file GPX",
+    gpxShareUnsupported: "Questo dispositivo non permette di condividere il file direttamente",
+    gpxIosHint: "Tocca Condividi e scegli 'Salva su File' o un'app compatibile",
     groupTicket: "Gruppo",
     personalTicket: "Personale",
     ticketType: "Tipo di biglietto",
@@ -3268,6 +3304,12 @@ const translations: Record<Language, TranslationKeys> = {
     gpxRemove: "移除 GPX",
     gpxOpen: "打开 GPX",
     gpxAttached: "已附加 GPX",
+    gpxOpenOrShare: "打开或分享 GPX",
+    gpxOpenWithApp: "用其他应用打开",
+    gpxSaveFile: "保存 GPX 文件",
+    gpxPrepareError: "无法准备 GPX 文件",
+    gpxShareUnsupported: "此设备不支持直接分享文件",
+    gpxIosHint: "点击“分享”并选择“存储到文件”或兼容的应用",
     groupTicket: "团体",
     personalTicket: "个人",
     ticketType: "票券类型",
@@ -3750,6 +3792,12 @@ const translations: Record<Language, TranslationKeys> = {
     gpxRemove: "GPX entfernen",
     gpxOpen: "GPX öffnen",
     gpxAttached: "GPX angehängt",
+    gpxOpenOrShare: "GPX öffnen oder teilen",
+    gpxOpenWithApp: "Mit anderer App öffnen",
+    gpxSaveFile: "GPX-Datei speichern",
+    gpxPrepareError: "GPX-Datei konnte nicht vorbereitet werden",
+    gpxShareUnsupported: "Dieses Gerät unterstützt das direkte Teilen der Datei nicht",
+    gpxIosHint: "Tippe auf Teilen und wähle „In Dateien sichern“ oder eine kompatible App",
     groupTicket: "Gruppe",
     personalTicket: "Persönlich",
     ticketType: "Ticketart",

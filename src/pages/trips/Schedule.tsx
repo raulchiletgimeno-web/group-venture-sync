@@ -4,6 +4,7 @@ import { CalendarDays, Plus, Trash2, Pencil, Globe, MapPin, ArrowLeft, Route, Pa
 import { format, parseISO, isSameDay, eachDayOfInterval } from "date-fns";
 import { es, enUS, fr, pt, it } from "date-fns/locale";
 import ActivityTicketManager from "@/components/ActivityTicketManager";
+import GpxShareDialog from "@/components/GpxShareDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -56,6 +57,8 @@ const Schedule = () => {
   const [removeGpx, setRemoveGpx] = useState(false);
   const [uploadingGpx, setUploadingGpx] = useState(false);
   const gpxInputRef = useRef<HTMLInputElement>(null);
+  const [gpxShare, setGpxShare] = useState<{ path: string; name: string | null } | null>(null);
+
 
   const fetchItems = async () => {
     if (!tripId) return;
@@ -323,14 +326,7 @@ const Schedule = () => {
                     <ActivityTicketManager scheduleId={item.id} tripId={tripId!} isCreator={isCreator} />
                     {item.gpx_path && (
                       <Tooltip><TooltipTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={async () => {
-                          try {
-                            const url = await getSignedUrl(item.gpx_path!);
-                            if (url) window.open(url, '_blank');
-                          } catch (e: any) {
-                            toast({ title: t.error, description: e.message, variant: "destructive" });
-                          }
-                        }}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={() => setGpxShare({ path: item.gpx_path!, name: item.gpx_name })}>
                           <Route className="h-4 w-4" />
                         </Button>
                       </TooltipTrigger><TooltipContent>{item.gpx_name || t.gpxOpen}</TooltipContent></Tooltip>
@@ -363,6 +359,12 @@ const Schedule = () => {
           ))}
         </div>
       )}
+      <GpxShareDialog
+        open={!!gpxShare}
+        onOpenChange={(o) => { if (!o) setGpxShare(null); }}
+        gpxPath={gpxShare?.path ?? null}
+        gpxName={gpxShare?.name ?? null}
+      />
     </div>
   );
 };

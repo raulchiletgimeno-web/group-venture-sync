@@ -1,71 +1,124 @@
-## Alcance
-Ampliación mínima del sistema Finalizar viaje. Solo se toca:
-- Una migración aditiva (endurecer policies de `trip_expenses` + nuevo RPC `reopen_trip_settlement`).
-- `src/pages/trips/Expenses.tsx` (gating de acciones + botón/diálogo de reapertura + diálogo "Viaje cerrado").
-- `src/i18n/translations.ts` (nuevas claves × 7 idiomas).
+## Objetivo
 
-Nada más se modifica. Fórmulas de balances/deudas, reembolsos, historial, emails, chat y demás secciones quedan intactas.
+Corregir el flujo de apertura del GPX ya adjunto a una actividad, específicamente en iPhone (Safari y PWA), sin cambiar creación/edición, almacenamiento, bucket, policies, ni ninguna otra sección de YORMIT.
 
-## Backend — una sola migración
+## Causa del bloqueo actual
 
-Policies actuales de `trip_expenses`:
-- INSERT `Members can insert expenses` — `with_check: is_trip_member(trip_id) AND paid_by = auth.uid()`
-- UPDATE `Creator or payer can update expenses` — `using: is_trip_creator(trip_id) OR paid_by = auth.uid()`
-- DELETE `Creator or payer can delete expenses` — misma expresión
-- SELECT sin cambios.
+En `src/pages/trips/Schedule.tsx` (línea 326-333) el botón GPX hace `getSignedUrl(...)` y luego `window.open(url, '_blank')`. En iOS:
+- el `await` rompe la "user activation" antes del `window.open`, por lo que Safari bloquea la pestaña o abre una vacía;
+- aunque abra, Safari no descarga `.gpx` a Archivos de forma fiable — muestra XML plano o queda colgado;
+- en la PWA instalada, `window.open` con URL cross-origin firmada se comporta peor todavía.
 
-Se reemplazan las tres policies de escritura añadiendo `AND EXISTS (SELECT 1 FROM public.trips t WHERE t.id = trip_id AND t.settlement_released_at IS NULL)`. Las condiciones existentes se conservan íntegras — solo se AÑADE la comprobación de viaje abierto. SELECT no se toca.
+## Archivos a modificar
 
-Nuevo RPC:
-```sql
-create or replace function public.reopen_trip_settlement(p_trip_id uuid)
-returns void
-language plpgsql
-security definer
-set search_path = public
-as $$
-begin
-  if not public.is_trip_creator(p_trip_id) then
-    raise exception 'not_authorized' using errcode = '42501';
-  end if;
-  update public.trips set settlement_released_at = null where id = p_trip_id;
-end;
-$$;
+Únicamente dos, sin cambios de backend ni de policies:
 
-revoke all on function public.reopen_trip_settlement(uuid) from public, anon;
-grant execute on function public.reopen_trip_settlement(uuid) to authenticated;
+1. `src/pages/trips/Schedule.tsx` — sustituir el `onClick` del botón `Route` por la apertura de un nuevo diálogo de acciones (pasando `gpx_path` y `gpx_name`).
+2. `src/i18n/translations.ts` — añadir 6 claves nuevas para el diálogo y los mensajes de error/instrucciones (ES/EN/FR/PT/IT/ZH/DE).
+
+Y un archivo nuevo:
+
+3. `src/components/GpxShareDialog.tsx` — componente autocontenido con la lógica de share/descarga.
+
+No se toca: `signedUrl.ts`, storage, bucket, RLS, ActivityTicketManager, chat, fotos, gastos, alojamiento, transporte, emails, notificaciones.
+
+## Comportamiento del nuevo diálogo
+
+Al pulsar el icono `Route` se abre un `Dialog` con el nombre del archivo y dos acciones:
+
+- **Abrir con otra aplicación** (principal)
+- **Guardar archivo GPX** (secundaria)
+
+Debajo, una nota discreta con la instrucción para iOS ("Pulsa Compartir y selecciona Guardar en Archivos o una app compatible") solo si detectamos iOS.
+
+### Preparación del archivo (una sola vez por apertura del diálogo)
+
+Al abrir el diálogo se precarga el `File` para preservar la activación de usuario en el clic posterior:
+
+1. `getSignedUrl(gpx_path)` (mismo helper actual, TTL corto ya existente).
+2. `fetch(url)` → si `!ok`, mostrar "No se ha podido preparar el archivo GPX".
+3. `await res.blob()` → `new File([blob], gpx_name || 'track.gpx', { type: 'application/gpx+xml' })`.
+4. Guardar `file` y `objectUrl = URL.createObjectURL(blob)` en estado. Revocar `objectUrl` al cerrar el diálogo.
+
+Mientras se prepara, los botones están deshabilitados con spinner. Así, cuando el usuario pulse, el handler es síncrono respecto a la user activation.
+
+### Acción "Abrir con otra aplicación"
+
+```
+if (navigator.canShare && navigator.canShare({ files: [file] }) && navigator.share) {
+  try { await navigator.share({ files: [file], title: file.name }); return; }
+  catch (e) { /* AbortError => silencio; otro => cae al fallback */ }
+}
+// Fallback: intentar descarga (ver siguiente sección).
 ```
 
-No toca `trip_expenses`, `trip_expense_splits`, `debt_payments` ni ninguna otra tabla. Idempotente. Los pagos existentes se conservan y siguen contabilizando saldos.
+El `await navigator.share(...)` se llama directamente dentro del onClick, sin `await` previo, porque el `file` ya está preparado.
 
-## Frontend — solo `src/pages/trips/Expenses.tsx`
+### Acción "Guardar archivo GPX" (fallback también)
 
-Deriva `const isLocked = settlementReleasedAt !== null;`.
+Descarga vía Object URL sin depender de la URL firmada:
 
-1. **Botón "Añadir gasto"**: permanece visible. `openCreate` comprueba `isLocked`; si está cerrado, no abre el `Dialog` de creación y en su lugar abre un `AlertDialog` "Viaje cerrado" (ver abajo).
-2. **Editar/eliminar gasto**: los handlers actuales (`handleEdit`, `handleDelete`) comprueban `isLocked` y muestran el mismo `AlertDialog` "Viaje cerrado" sin ejecutar la acción. No se cambia ninguna lógica de cálculo ni de UI de la lista.
-3. **AlertDialog "Viaje cerrado"** (shadcn ya usado): título `t.tripClosedTitle`, cuerpo `t.tripClosedBody`, botón único `t.understood`.
-4. **Bloque "Quién debe a quién"** (viaje ya liberado): debajo de la lista de deudas, si `isCreator`, botón secundario `Volver a abrir viaje` con icono `Unlock`. Al pulsar abre `AlertDialog` con título `t.reopenTripConfirmTitle`, cuerpo `t.reopenTripConfirmBody`, acciones Cancelar / Volver a abrir viaje. Confirmar → `supabase.rpc('reopen_trip_settlement', { p_trip_id: tripId })` → refresca `settlementReleasedAt` → la UI vuelve al estado bloqueado sin recargar.
-5. Miembros normales no ven el botón (mismo `isCreator` que ya se usa para Finalizar viaje).
+```
+const a = document.createElement('a');
+a.href = objectUrl;
+a.download = file.name.endsWith('.gpx') ? file.name : `${file.name}.gpx`;
+a.rel = 'noopener';
+document.body.appendChild(a);
+a.click();
+a.remove();
+```
 
-No se cambian: cálculo de saldos, `debts`, totales, `payments`, reembolsos, historial, formulario, dialogs existentes ni el flujo actual de Finalizar viaje.
+En iOS Safari, si tras el clic detectamos que probablemente no ha descargado (iOS + no-standalone-PWA), mostramos un aviso persistente en el propio diálogo:
 
-## i18n — 4 claves nuevas × 7 idiomas
-`tripClosedTitle`, `tripClosedBody`, `understood`, `reopenTrip`, `reopenTripConfirmTitle`, `reopenTripConfirmBody`. (Reusar `cancel` existente.)
+> "Pulsa Compartir y selecciona 'Guardar en Archivos' o una aplicación compatible."
 
-## Ciclo abrir → cerrar → reabrir → cerrar
-- Como `reopen_trip_settlement` solo setea `settlement_released_at = NULL` y `release_trip_settlement` es idempotente (`COALESCE(settlement_released_at, now())`), el ciclo puede repetirse N veces.
-- Pagos ya registrados persisten (no se borran ni se reenvían emails/mensajes — nada los toca).
-- Al segundo cierre, `debts` se recalcula en cliente a partir de `expenses + splits + payments` como ya hace hoy, descontando pagos previos automáticamente.
+No se muestra nunca un falso "archivo descargado".
+
+### Detección iOS
+
+```
+const ua = navigator.userAgent;
+const isIOS = /iPad|iPhone|iPod/.test(ua) || (ua.includes('Mac') && 'ontouchend' in document);
+```
+
+Se usa solo para mostrar la nota informativa y para preferir Web Share sobre descarga cuando ambos existan.
+
+## Seguridad y privacidad
+
+- Se sigue usando `getSignedUrl` sobre el bucket privado; no se cambia TTL, ni policies, ni se hace público nada.
+- La URL firmada no se loguea; solo `console.warn` con mensajes genéricos ("gpx share failed", "gpx fetch failed"), sin URL ni tokens.
+- El `Blob`/`File` vive solo en memoria del cliente autorizado; el `objectUrl` se revoca al cerrar el diálogo.
+
+## Manejo de errores (toasts / textos en diálogo)
+
+Nuevas claves i18n:
+
+- `gpxOpenOrShare` — "Abrir o compartir GPX"
+- `gpxOpenWithApp` — "Abrir con otra aplicación"
+- `gpxSaveFile` — "Guardar archivo GPX"
+- `gpxPrepareError` — "No se ha podido preparar el archivo GPX"
+- `gpxShareUnsupported` — "Este dispositivo no permite compartir el archivo directamente"
+- `gpxIosHint` — "Pulsa Compartir y selecciona 'Guardar en Archivos' o una aplicación compatible"
+
+No se exponen mensajes técnicos de Supabase/JS.
+
+## Android
+
+Android mantiene exactamente el flujo, pero con mejor UX:
+- Chrome Android soporta `navigator.canShare({ files })` → se abre el selector nativo con Wikiloc, Drive, Gmail, etc.
+- Si no lo soporta (WebView antiguo), el fallback de descarga vía Object URL funciona igual que hoy.
+- No se modifica ninguna preferencia de app predeterminada (imposible desde web, tal y como pide el usuario).
 
 ## Validación
-1. Miembro normal, viaje cerrado (locked): "Añadir gasto" abre modal Viaje cerrado; editar/eliminar igual; no ve deudas ni botón reabrir.
-2. Creador, viaje cerrado: mismo bloqueo de gastos; ve Finalizar viaje.
-3. Creador finaliza: aparecen deudas + botón "Volver a abrir viaje". Intento manual `insert`/`update`/`delete` en `trip_expenses` vía API → error RLS.
-4. Creador reabre: deudas ocultas, pagos deshabilitados, gastos editables de nuevo, pagos históricos conservados y visibles como reembolsos.
-5. Segundo Finalizar: deudas recalculadas restando pagos previos, sin duplicados ni reenvío de nada.
 
-## Archivos tocados
-- Migración SQL (3 policies replace + 1 RPC).
-- `src/pages/trips/Expenses.tsx`.
-- `src/i18n/translations.ts`.
+Casos a comprobar tras el cambio:
+
+1. iPhone Safari: abrir actividad con GPX → icono → diálogo → "Abrir con otra aplicación" abre la hoja nativa → "Guardar en Archivos" conserva `nombre.gpx`.
+2. iPhone PWA instalada: mismo flujo, sin pestaña vacía ni descarga colgada.
+3. Android Chrome: hoja nativa con apps compatibles; fallback descarga si procede.
+4. Seguridad: usuario no miembro sigue sin poder resolver `getSignedUrl` (RLS del bucket intacta).
+5. La URL firmada no aparece en logs.
+
+## Fuera de alcance (confirmado)
+
+Sin cambios en: creación/edición de actividades, subida y borrado del GPX, `trip_schedule`, bucket `trip-photos`, policies, chat, fotos, gastos, alojamiento, transporte, emails, notificaciones, ni ninguna otra pantalla.
