@@ -242,6 +242,7 @@ const Expenses = () => {
   };
 
   const openEdit = (exp: Expense) => {
+    if (isLocked) { setLockedNoticeOpen(true); return; }
     setEditingId(exp.id);
     setTitle(exp.title);
     setAmount2(exp.amount.toString());
