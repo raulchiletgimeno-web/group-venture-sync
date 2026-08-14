@@ -564,7 +564,7 @@ const Photos = () => {
           </div>
         </div>
         <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFileUpload} />
-        <input ref={galleryInputRef} type="file" accept="image/*,video/*" className="hidden" onChange={handleFileUpload} />
+        <input ref={galleryInputRef} type="file" accept="image/*,video/*" multiple className="hidden" onChange={handleFileUpload} />
         <input ref={videoInputRef} type="file" accept="video/*" capture="environment" className="hidden" onChange={handleFileUpload} />
       </div>
 
