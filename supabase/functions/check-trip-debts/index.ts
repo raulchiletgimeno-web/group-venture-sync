@@ -206,6 +206,18 @@ Deno.serve(async (req) => {
 
       const profileMap = new Map(profiles?.map((p) => [p.id, p]) || []);
 
+      // Re-check right before generating any economic communication.
+      const { data: freshTrip } = await supabase
+        .from("trips")
+        .select("settlement_released_at")
+        .eq("id", trip.id)
+        .maybeSingle();
+      if (!freshTrip?.settlement_released_at) continue;
+
+      // Reminders sent before the current settlement release never count.
+      const dedupeCutoff =
+        new Date(releasedAt) > twentyFourHoursAgo ? releasedAt : twentyFourHoursAgo.toISOString();
+
       for (const debt of debts) {
         // Check if we already sent a reminder in the last 24h for this specific debt
         const { data: recentReminders } = await supabase
@@ -214,10 +226,11 @@ Deno.serve(async (req) => {
           .eq("trip_id", trip.id)
           .eq("debtor_id", debt.from)
           .eq("creditor_id", debt.to)
-          .gte("sent_at", twentyFourHoursAgo.toISOString())
+          .gte("sent_at", dedupeCutoff)
           .limit(1);
 
         if (recentReminders && recentReminders.length > 0) continue;
+
 
         const debtorProfile = profileMap.get(debt.from);
         const creditorProfile = profileMap.get(debt.to);
