@@ -128,19 +128,21 @@ Deno.serve(async (req) => {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceKey);
 
-    // Find trips that ended >= 24h ago
+    // Only trips whose settlement has been explicitly released by the
+    // creator/co-creator ("Finalizar viaje") at least 24h ago.
+    // end_date is NOT a trigger for economic communications.
     const now = new Date();
     const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-    const cutoffDate = twentyFourHoursAgo.toISOString().split("T")[0]; // YYYY-MM-DD
 
     const { data: trips, error: tripsErr } = await supabase
       .from("trips")
-      .select("id, title, end_date")
-      .lte("end_date", cutoffDate);
+      .select("id, title, end_date, settlement_released_at")
+      .not("settlement_released_at", "is", null)
+      .lte("settlement_released_at", twentyFourHoursAgo.toISOString());
 
     if (tripsErr) throw tripsErr;
     if (!trips || trips.length === 0) {
-      return new Response(JSON.stringify({ message: "No finished trips with pending debts", processed: 0 }), {
+      return new Response(JSON.stringify({ message: "No released settlements with pending debts", processed: 0 }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -148,6 +150,11 @@ Deno.serve(async (req) => {
     let totalReminders = 0;
 
     for (const trip of trips) {
+      // Backend safety check: never communicate anything economic while the
+      // settlement is not released (trip reopened between query and processing).
+      if (!trip.settlement_released_at) continue;
+      const releasedAt = trip.settlement_released_at as string;
+
       // Get approved members
       const { data: members } = await supabase
         .from("trip_members")
@@ -158,6 +165,7 @@ Deno.serve(async (req) => {
       if (!members || members.length < 2) continue;
 
       const memberIds = members.map((m) => m.user_id);
+
 
       // Get expenses with splits
       const { data: expenses } = await supabase
@@ -198,6 +206,18 @@ Deno.serve(async (req) => {
 
       const profileMap = new Map(profiles?.map((p) => [p.id, p]) || []);
 
+      // Re-check right before generating any economic communication.
+      const { data: freshTrip } = await supabase
+        .from("trips")
+        .select("settlement_released_at")
+        .eq("id", trip.id)
+        .maybeSingle();
+      if (!freshTrip?.settlement_released_at) continue;
+
+      // Reminders sent before the current settlement release never count.
+      const dedupeCutoff =
+        new Date(releasedAt) > twentyFourHoursAgo ? releasedAt : twentyFourHoursAgo.toISOString();
+
       for (const debt of debts) {
         // Check if we already sent a reminder in the last 24h for this specific debt
         const { data: recentReminders } = await supabase
@@ -206,10 +226,11 @@ Deno.serve(async (req) => {
           .eq("trip_id", trip.id)
           .eq("debtor_id", debt.from)
           .eq("creditor_id", debt.to)
-          .gte("sent_at", twentyFourHoursAgo.toISOString())
+          .gte("sent_at", dedupeCutoff)
           .limit(1);
 
         if (recentReminders && recentReminders.length > 0) continue;
+
 
         const debtorProfile = profileMap.get(debt.from);
         const creditorProfile = profileMap.get(debt.to);
