@@ -160,73 +160,91 @@ const Photos = () => {
     onError: () => toast.error(t.errorDeletingPhoto),
   });
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !tripId || !user) return;
-    setUploading(true);
-    setUploadProgress(10);
+  const uploadSingleFile = async (file: File) => {
+    if (!tripId || !user) return;
     const isVideo = file.type.startsWith("video/");
+    let uploadBlob: Blob = file;
+    let ext = file.name.split(".").pop() || (isVideo ? "mp4" : "jpg");
 
-    try {
-      let uploadBlob: Blob = file;
-      let ext = file.name.split(".").pop() || (isVideo ? "mp4" : "jpg");
-
-      if (!isVideo) {
-        setUploadStatus("Optimizando…");
-        setUploadProgress(20);
-        try {
-          uploadBlob = await compressImage(file);
-          ext = "jpg";
-        } catch {
-          uploadBlob = file;
-        }
-        setUploadProgress(40);
-      } else {
-        setUploadProgress(30);
+    if (!isVideo) {
+      try {
+        uploadBlob = await compressImage(file);
+        ext = "jpg";
+      } catch {
+        uploadBlob = file;
       }
+    }
 
-      setUploadStatus("Subiendo…");
-      const filePath = `${tripId}/${user.id}/${crypto.randomUUID()}.${ext}`;
-      setUploadProgress(50);
+    const filePath = `${tripId}/${user.id}/${crypto.randomUUID()}.${ext}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from("trip-photos")
-        .upload(filePath, uploadBlob, { contentType: isVideo ? file.type : "image/jpeg" });
-      if (uploadError) throw uploadError;
+    const { error: uploadError } = await supabase.storage
+      .from("trip-photos")
+      .upload(filePath, uploadBlob, { contentType: isVideo ? file.type : "image/jpeg" });
+    if (uploadError) throw uploadError;
 
-      setUploadProgress(80);
-      setUploadStatus("Guardando…");
+    const { error: insertError } = await supabase.from("trip_photos").insert({
+      trip_id: tripId,
+      user_id: user.id,
+      file_path: filePath,
+      media_type: isVideo ? "video" : "image",
+    });
+    if (insertError) throw insertError;
+  };
 
-      const { error: insertError } = await supabase.from("trip_photos").insert({
-        trip_id: tripId,
-        user_id: user.id,
-        file_path: filePath,
-        media_type: isVideo ? "video" : "image",
-      });
-      if (insertError) throw insertError;
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    if (!files.length || !tripId || !user) return;
 
-      setUploadProgress(100);
+    const total = files.length;
+    const lastIsVideo = files[total - 1].type.startsWith("video/");
+    setUploading(true);
+    setUploadProgress(5);
+
+    let ok = 0;
+    let failed = 0;
+    let lastError = "";
+
+    for (let i = 0; i < total; i++) {
+      const file = files[i];
+      setUploadStatus(total > 1 ? `Subiendo ${i + 1}/${total}…` : "Subiendo…");
+      setUploadProgress(Math.round(((i + 0.2) / total) * 100));
+      try {
+        await uploadSingleFile(file);
+        ok++;
+      } catch (err: unknown) {
+        failed++;
+        lastError = err instanceof Error ? err.message : "";
+      }
+      setUploadProgress(Math.round(((i + 1) / total) * 100));
+    }
+
+    if (ok > 0) {
       queryClient.invalidateQueries({ queryKey: ["trip-photos", tripId] });
       notifyTripEvent(tripId, "photos", user.id);
-      toast.success(isVideo ? t.videoUploaded : t.photoUploaded);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "";
-      if (msg.includes("exceeded") || msg.includes("too large") || msg.includes("413")) {
-        toast.error("Archivo demasiado grande");
-      } else if (msg.includes("network") || msg.includes("Failed to fetch")) {
-        toast.error("Error de conexión. Inténtalo de nuevo.");
-      } else {
-        toast.error(isVideo ? t.errorUploadingVideo : t.errorUploadingPhoto);
-      }
-    } finally {
-      setUploading(false);
-      setUploadStatus("");
-      setUploadProgress(0);
-      if (cameraInputRef.current) cameraInputRef.current.value = "";
-      if (galleryInputRef.current) galleryInputRef.current.value = "";
-      if (videoInputRef.current) videoInputRef.current.value = "";
     }
+
+    if (failed === 0) {
+      if (total > 1) toast.success(`${ok} archivos subidos`);
+      else toast.success(lastIsVideo ? t.videoUploaded : t.photoUploaded);
+    } else if (ok > 0) {
+      toast.warning(`${ok} subidos, ${failed} con error`);
+    } else if (lastError.includes("exceeded") || lastError.includes("too large") || lastError.includes("413")) {
+      toast.error("Archivo demasiado grande");
+    } else if (lastError.includes("network") || lastError.includes("Failed to fetch")) {
+      toast.error("Error de conexión. Inténtalo de nuevo.");
+    } else {
+      toast.error(lastIsVideo ? t.errorUploadingVideo : t.errorUploadingPhoto);
+    }
+
+    setUploading(false);
+    setUploadStatus("");
+    setUploadProgress(0);
+    if (cameraInputRef.current) cameraInputRef.current.value = "";
+    if (galleryInputRef.current) galleryInputRef.current.value = "";
+    if (videoInputRef.current) videoInputRef.current.value = "";
   };
+
+
 
   const [urls, setUrls] = useState<Record<string, string>>({});
 
