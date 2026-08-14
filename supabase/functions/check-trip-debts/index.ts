@@ -128,19 +128,21 @@ Deno.serve(async (req) => {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceKey);
 
-    // Find trips that ended >= 24h ago
+    // Only trips whose settlement has been explicitly released by the
+    // creator/co-creator ("Finalizar viaje") at least 24h ago.
+    // end_date is NOT a trigger for economic communications.
     const now = new Date();
     const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-    const cutoffDate = twentyFourHoursAgo.toISOString().split("T")[0]; // YYYY-MM-DD
 
     const { data: trips, error: tripsErr } = await supabase
       .from("trips")
-      .select("id, title, end_date")
-      .lte("end_date", cutoffDate);
+      .select("id, title, end_date, settlement_released_at")
+      .not("settlement_released_at", "is", null)
+      .lte("settlement_released_at", twentyFourHoursAgo.toISOString());
 
     if (tripsErr) throw tripsErr;
     if (!trips || trips.length === 0) {
-      return new Response(JSON.stringify({ message: "No finished trips with pending debts", processed: 0 }), {
+      return new Response(JSON.stringify({ message: "No released settlements with pending debts", processed: 0 }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -148,6 +150,11 @@ Deno.serve(async (req) => {
     let totalReminders = 0;
 
     for (const trip of trips) {
+      // Backend safety check: never communicate anything economic while the
+      // settlement is not released (trip reopened between query and processing).
+      if (!trip.settlement_released_at) continue;
+      const releasedAt = trip.settlement_released_at as string;
+
       // Get approved members
       const { data: members } = await supabase
         .from("trip_members")
@@ -158,6 +165,7 @@ Deno.serve(async (req) => {
       if (!members || members.length < 2) continue;
 
       const memberIds = members.map((m) => m.user_id);
+
 
       // Get expenses with splits
       const { data: expenses } = await supabase
