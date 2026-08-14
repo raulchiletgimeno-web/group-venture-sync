@@ -34,14 +34,32 @@ function buildDestinationCandidates(destination: string): string[] {
   return [...new Set(ordered)]
 }
 
+// Presupuesto máximo de tiempo dedicado a la meteorología por viaje.
+// Si se agota, el email se envía igualmente (sin bloque de tiempo) para no
+// poner en riesgo el envío al resto de destinatarios.
+const WEATHER_TOTAL_BUDGET_MS = 12000
+const WEATHER_REQUEST_TIMEOUT_MS = 5000
+
+async function fetchWithTimeout(url: string, timeoutMs: number): Promise<Response> {
+  return await fetch(url, { signal: AbortSignal.timeout(timeoutMs) })
+}
+
 async function geocodeDestination(
-  destination: string
+  destination: string,
+  deadline: number
 ): Promise<{ latitude: number; longitude: number } | null> {
   const candidates = buildDestinationCandidates(destination)
   for (const candidate of candidates) {
+    if (Date.now() >= deadline) {
+      console.warn('Geocoding budget exhausted', { destination })
+      return null
+    }
     try {
       const geoUrl = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(candidate)}&count=1&language=es&format=json`
-      const geoRes = await fetch(geoUrl)
+      const geoRes = await fetchWithTimeout(
+        geoUrl,
+        Math.min(WEATHER_REQUEST_TIMEOUT_MS, Math.max(500, deadline - Date.now()))
+      )
       if (!geoRes.ok) continue
       const geoData = await geoRes.json()
       const place = geoData?.results?.[0]
@@ -61,13 +79,21 @@ async function fetchForecast(
   startDate: string,
   endDate: string
 ): Promise<DailyForecast[] | null> {
+  const deadline = Date.now() + WEATHER_TOTAL_BUDGET_MS
   try {
-    const place = await geocodeDestination(destination)
+    const place = await geocodeDestination(destination, deadline)
     if (!place) return null
+    if (Date.now() >= deadline) {
+      console.warn('Weather budget exhausted before forecast', { destination })
+      return null
+    }
 
     // 2. Forecast (Open-Meteo supports up to 16 days ahead)
     const fcUrl = `https://api.open-meteo.com/v1/forecast?latitude=${place.latitude}&longitude=${place.longitude}&daily=temperature_2m_max,temperature_2m_min,weathercode&start_date=${startDate}&end_date=${endDate}&timezone=auto`
-    const fcRes = await fetch(fcUrl)
+    const fcRes = await fetchWithTimeout(
+      fcUrl,
+      Math.min(WEATHER_REQUEST_TIMEOUT_MS, Math.max(500, deadline - Date.now()))
+    )
     if (!fcRes.ok) return null
     const fcData = await fcRes.json()
     const daily = fcData?.daily
@@ -88,6 +114,7 @@ async function fetchForecast(
     return null
   }
 }
+
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
