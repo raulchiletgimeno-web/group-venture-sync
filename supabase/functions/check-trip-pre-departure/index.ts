@@ -301,7 +301,23 @@ Deno.serve(async (req) => {
           console.error('Per-recipient failure', e)
         }
       }
+
+      // Visibilidad de fallos parciales: destinatarios previstos vs registrados
+      const { data: recordedAfter } = await supabase
+        .from('trip_pre_departure_reminders')
+        .select('user_id')
+        .eq('trip_id', trip.id)
+      const recordedSet = new Set((recordedAfter ?? []).map((r) => r.user_id))
+      const pending = recipients.filter((r) => !recordedSet.has(r.id)).map((r) => r.id)
+      if (pending.length) {
+        console.error('Pre-departure incomplete for trip', {
+          trip: trip.id,
+          expected: recipients.length,
+          pending,
+        })
+      }
     }
+
 
     return new Response(
       JSON.stringify({ ok: true, processed: totalSent, details }),
