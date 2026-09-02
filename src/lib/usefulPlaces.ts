@@ -510,9 +510,12 @@ export async function geocodeAddress(query: string): Promise<LatLon | null> {
 }
 
 
+// Build a Google Maps URL that opens the EXACT place selected, not a new
+// text search near the user's current location. The destination is always
+// the place's exact coordinates from Overpass; the name is never the sole
+// reference, otherwise Maps re-resolves it against the user's position.
 export function googleMapsUrlFor(place: Place): string {
-  const q = encodeURIComponent(`${place.name} ${place.address ?? ""}`.trim());
-  return `https://www.google.com/maps/search/?api=1&query=${q}&query_place_id=&center=${place.lat},${place.lon}`;
+  return `https://www.google.com/maps/search/?api=1&query=${place.lat},${place.lon}`;
 }
 
 export function formatDistance(meters: number): string {
