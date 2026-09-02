@@ -642,7 +642,7 @@ const Expenses = () => {
     <div className="animate-fade-in">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-bold text-foreground">{t.sharedExpenses}</h2>
-        <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setEditingId(null); setSplitsError(false); } }}>
+        <Dialog open={open} onOpenChange={(v) => { if (submittingExpense) return; setOpen(v); if (!v) { setEditingId(null); setSplitsError(false); } }}>
           <Button size="sm" className="gradient-hero text-primary-foreground border-0" onClick={openCreate}>
             <Plus className="h-4 w-4 mr-1" /> {t.addExpense}
           </Button>
