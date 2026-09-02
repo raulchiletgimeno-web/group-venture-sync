@@ -259,7 +259,7 @@ const UsefulPlacesCategory = () => {
       <div className="animate-fade-in">
         <button
           onClick={() => navigate(`/trip/${tripId}/places`)}
-          className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-3"
+          className="flex items-center gap-1 text-sm text-foreground/80 hover:text-foreground mb-3"
         >
           <ArrowLeft className="h-4 w-4" />
           {t.back}
@@ -311,7 +311,7 @@ const UsefulPlacesCategory = () => {
     <div className="animate-fade-in">
       <button
         onClick={handleReset}
-        className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-3"
+        className="flex items-center gap-1 text-sm text-foreground/80 hover:text-foreground mb-3"
       >
         <ArrowLeft className="h-4 w-4" />
         {t.back}

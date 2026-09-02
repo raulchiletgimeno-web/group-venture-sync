@@ -291,7 +291,7 @@ const Schedule = () => {
   return (
     <div className="animate-fade-in">
       <div className="flex items-center justify-between mb-4">
-        <Button variant="ghost" size="sm" onClick={() => setSelectedDate(null)} className="text-muted-foreground -ml-2">
+        <Button variant="ghost" size="sm" onClick={() => setSelectedDate(null)} className="text-foreground/80 hover:text-foreground -ml-2">
           <ArrowLeft className="h-4 w-4 mr-1" /> {t.backToCalendar}
         </Button>
         {addButton}
