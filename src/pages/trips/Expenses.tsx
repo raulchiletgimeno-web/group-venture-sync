@@ -319,34 +319,21 @@ const Expenses = () => {
 
     if (editingId) {
       const receiptPath = await uploadReceipt(editingId);
-      const { error } = await supabase
-        .from("trip_expenses")
-        .update({ title: title.trim(), amount: parsedAmount, paid_by: paidBy, receipt_path: receiptPath })
-        .eq("id", editingId);
+
+      const { error } = await supabase.rpc("save_trip_expense", {
+        p_trip_id: tripId,
+        p_title: title.trim(),
+        p_amount: parsedAmount,
+        p_paid_by: paidBy,
+        p_member_ids: selectedMembers,
+        p_expense_id: editingId,
+        p_receipt_path: receiptPath ?? null,
+      });
 
       if (error) {
-        toast({ title: "Error", description: error.message, variant: "destructive" });
-        return;
-      }
-
-      // Insert new splits first, then remove old ones not in the new set,
-      // so the expense never has zero splits (DB trigger guard).
-      const newSplitRows = selectedMembers.map((uid) => ({ expense_id: editingId, user_id: uid }));
-      const { error: insertSplitErr } = await supabase
-        .from("trip_expense_splits")
-        .upsert(newSplitRows, { onConflict: "expense_id,user_id", ignoreDuplicates: true });
-      if (insertSplitErr) {
-        toast({ title: t.error, description: insertSplitErr.message, variant: "destructive" });
-        return;
-      }
-      const { error: delSplitErr } = await supabase
-        .from("trip_expense_splits")
-        .delete()
-        .eq("expense_id", editingId)
-        .not("user_id", "in", `(${selectedMembers.join(",")})`);
-      if (delSplitErr) {
-        const msg = delSplitErr.message ?? "";
-        if (delSplitErr.code === "23514" || msg.includes("expense_requires_at_least_one_member")) {
+        const msg = error.message ?? "";
+        if (msg.includes("expense_requires_at_least_one_member")) {
+          setSplitsError(true);
           toast({ title: t.error, description: t.expenseNeedsAtLeastOneMember, variant: "destructive" });
           return;
         }
@@ -359,29 +346,32 @@ const Expenses = () => {
       fetchExpenses();
       toast({ title: t.expenseUpdated });
     } else {
+      const { data: newId, error } = await supabase.rpc("save_trip_expense", {
+        p_trip_id: tripId,
+        p_title: title.trim(),
+        p_amount: parsedAmount,
+        p_paid_by: paidBy,
+        p_member_ids: selectedMembers,
+        p_expense_id: null,
+        p_receipt_path: null,
+      });
+
+      if (error || !newId) {
+        const msg = error?.message ?? "";
+        if (msg.includes("expense_requires_at_least_one_member")) {
+          setSplitsError(true);
+          toast({ title: t.error, description: t.expenseNeedsAtLeastOneMember, variant: "destructive" });
+          return;
+        }
+        toast({ title: t.error, description: msg || t.error, variant: "destructive" });
+        return;
+      }
+
       setOpen(false);
 
-      const { data: inserted, error } = await supabase
-        .from("trip_expenses")
-        .insert({ trip_id: tripId, title: title.trim(), amount: parsedAmount, paid_by: paidBy })
-        .select("id")
-        .single();
-
-      if (error || !inserted) {
-        toast({ title: t.error, description: error?.message ?? t.error, variant: "destructive" });
-        return;
-      }
-
-      const receiptPath = await uploadReceipt(inserted.id);
+      const receiptPath = await uploadReceipt(newId as string);
       if (receiptPath) {
-        await supabase.from("trip_expenses").update({ receipt_path: receiptPath }).eq("id", inserted.id);
-      }
-
-      const splits = selectedMembers.map((uid) => ({ expense_id: inserted.id, user_id: uid }));
-      const { error: splitError } = await supabase.from("trip_expense_splits").insert(splits);
-      if (splitError) {
-        toast({ title: t.error, description: splitError.message, variant: "destructive" });
-        return;
+        await supabase.from("trip_expenses").update({ receipt_path: receiptPath }).eq("id", newId as string);
       }
 
       fetchExpenses();
