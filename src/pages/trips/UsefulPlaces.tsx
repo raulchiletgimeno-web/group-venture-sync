@@ -7,6 +7,7 @@ import {
   Pill,
   Hotel,
   Landmark,
+  Banknote,
 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import type { PlaceCategory } from "@/lib/usefulPlaces";
@@ -27,6 +28,7 @@ const UsefulPlaces = () => {
     { key: "pharmacies", label: t.placesPharmacies, icon: Pill, color: "bg-accent/10 text-accent" },
     { key: "hotels", label: t.placesHotels, icon: Hotel, color: "bg-primary/10 text-primary" },
     { key: "touristic", label: t.placesTouristic, icon: Landmark, color: "bg-accent/10 text-accent" },
+    { key: "atms", label: t.placesAtmsBanks, icon: Banknote, color: "bg-primary/10 text-primary" },
   ];
 
   return (
