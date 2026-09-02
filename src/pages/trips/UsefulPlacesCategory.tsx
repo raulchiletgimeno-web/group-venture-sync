@@ -253,10 +253,53 @@ const UsefulPlacesCategory = () => {
     setPlaces([]);
     setError(null);
     setLoading(false);
+    setAccOptions(null);
   };
+
+  // Step 1b: accommodation picker (only when the trip has more than one)
+  if (source === "accommodation" && accOptions && accOptions.length > 1) {
+    return (
+      <div className="animate-fade-in">
+        <button
+          onClick={handleReset}
+          className="flex items-center gap-1 text-sm text-foreground/80 hover:text-foreground mb-3"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          {t.back}
+        </button>
+
+        <div className="flex items-center gap-2 mb-1">
+          <Icon className="h-5 w-5 text-primary" />
+          <h2 className="text-lg font-bold text-card-foreground">{categoryLabel}</h2>
+        </div>
+        <p className="text-sm text-muted-foreground mb-4">{t.placesChooseAccommodation}</p>
+
+        <div className="space-y-2">
+          {accOptions.map((a) => (
+            <button
+              key={a.id}
+              onClick={() => resolveAccommodation(a)}
+              className="w-full flex items-center gap-3 rounded-xl bg-card p-4 shadow-card hover:shadow-card-hover transition-all duration-300 active:scale-[0.98] text-left"
+            >
+              <div className="rounded-lg p-2.5 bg-accent/10 text-accent flex-shrink-0">
+                <Home className="h-5 w-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-card-foreground truncate">{a.name}</p>
+                {a.address && (
+                  <p className="text-xs text-muted-foreground truncate">{a.address}</p>
+                )}
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   // Step 1: location selector
   if (!source) {
+
     return (
       <div className="animate-fade-in">
         <button
