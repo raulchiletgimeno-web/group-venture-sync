@@ -101,6 +101,8 @@ const UsefulPlacesCategory = () => {
   const [places, setPlaces] = useState<Place[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [accOptions, setAccOptions] = useState<Accommodation[] | null>(null);
+
 
   const handleNearMe = () => {
     setError(null);
