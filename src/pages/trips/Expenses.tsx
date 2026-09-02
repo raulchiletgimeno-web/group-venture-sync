@@ -102,6 +102,14 @@ const Expenses = () => {
   const [existingReceiptPath, setExistingReceiptPath] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
+  const [submittingExpense, setSubmittingExpense] = useState(false);
+  const expenseSubmitLockRef = useRef(false);
+  const expenseRequestIdRef = useRef<string | null>(null);
+
+  const newRequestId = () =>
+    typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
   const fetchMembers = async () => {
     if (!tripId) return;
@@ -238,6 +246,9 @@ const Expenses = () => {
     setReceiptPreview(null);
     setExistingReceiptPath(null);
     setSplitsError(false);
+    expenseRequestIdRef.current = newRequestId();
+    expenseSubmitLockRef.current = false;
+    setSubmittingExpense(false);
     setOpen(true);
   };
 
@@ -252,6 +263,9 @@ const Expenses = () => {
     setReceiptPreview(null);
     setExistingReceiptPath(exp.receipt_path);
     setSplitsError(false);
+    expenseRequestIdRef.current = null;
+    expenseSubmitLockRef.current = false;
+    setSubmittingExpense(false);
     setOpen(true);
   };
 
@@ -300,6 +314,7 @@ const Expenses = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!tripId || !paidBy) return;
+    if (expenseSubmitLockRef.current) return;
 
     if (selectedMembers.length === 0) {
       setSplitsError(true);
@@ -317,68 +332,82 @@ const Expenses = () => {
       return;
     }
 
-    if (editingId) {
-      const receiptPath = await uploadReceipt(editingId);
+    expenseSubmitLockRef.current = true;
+    setSubmittingExpense(true);
 
-      const { error } = await supabase.rpc("save_trip_expense", {
-        p_trip_id: tripId,
-        p_title: title.trim(),
-        p_amount: parsedAmount,
-        p_paid_by: paidBy,
-        p_member_ids: selectedMembers,
-        p_expense_id: editingId,
-        p_receipt_path: receiptPath ?? null,
-      });
+    try {
+      if (editingId) {
+        const receiptPath = await uploadReceipt(editingId);
 
-      if (error) {
-        const msg = error.message ?? "";
-        if (msg.includes("expense_requires_at_least_one_member")) {
-          setSplitsError(true);
-          toast({ title: t.error, description: t.expenseNeedsAtLeastOneMember, variant: "destructive" });
+        const { error } = await supabase.rpc("save_trip_expense", {
+          p_trip_id: tripId,
+          p_title: title.trim(),
+          p_amount: parsedAmount,
+          p_paid_by: paidBy,
+          p_member_ids: selectedMembers,
+          p_expense_id: editingId,
+          p_receipt_path: receiptPath ?? null,
+          p_request_id: null,
+        });
+
+        if (error) {
+          const msg = error.message ?? "";
+          if (msg.includes("expense_requires_at_least_one_member")) {
+            setSplitsError(true);
+            toast({ title: t.error, description: t.expenseNeedsAtLeastOneMember, variant: "destructive" });
+            return;
+          }
+          toast({ title: t.error, description: msg, variant: "destructive" });
           return;
         }
-        toast({ title: t.error, description: msg, variant: "destructive" });
-        return;
-      }
 
-      setOpen(false);
-      setEditingId(null);
-      fetchExpenses();
-      toast({ title: t.expenseUpdated });
-    } else {
-      const { data: newId, error } = await supabase.rpc("save_trip_expense", {
-        p_trip_id: tripId,
-        p_title: title.trim(),
-        p_amount: parsedAmount,
-        p_paid_by: paidBy,
-        p_member_ids: selectedMembers,
-        p_expense_id: null,
-        p_receipt_path: null,
-      });
+        setOpen(false);
+        setEditingId(null);
+        fetchExpenses();
+        toast({ title: t.expenseUpdated });
+      } else {
+        if (!expenseRequestIdRef.current) expenseRequestIdRef.current = newRequestId();
 
-      if (error || !newId) {
-        const msg = error?.message ?? "";
-        if (msg.includes("expense_requires_at_least_one_member")) {
-          setSplitsError(true);
-          toast({ title: t.error, description: t.expenseNeedsAtLeastOneMember, variant: "destructive" });
+        const { data: newId, error } = await supabase.rpc("save_trip_expense", {
+          p_trip_id: tripId,
+          p_title: title.trim(),
+          p_amount: parsedAmount,
+          p_paid_by: paidBy,
+          p_member_ids: selectedMembers,
+          p_expense_id: null,
+          p_receipt_path: null,
+          p_request_id: expenseRequestIdRef.current,
+        });
+
+        if (error || !newId) {
+          const msg = error?.message ?? "";
+          if (msg.includes("expense_requires_at_least_one_member")) {
+            setSplitsError(true);
+            toast({ title: t.error, description: t.expenseNeedsAtLeastOneMember, variant: "destructive" });
+            return;
+          }
+          toast({ title: t.error, description: msg || t.error, variant: "destructive" });
           return;
         }
-        toast({ title: t.error, description: msg || t.error, variant: "destructive" });
-        return;
+
+        expenseRequestIdRef.current = null;
+        setOpen(false);
+
+        const receiptPath = await uploadReceipt(newId as string);
+        if (receiptPath) {
+          await supabase.from("trip_expenses").update({ receipt_path: receiptPath }).eq("id", newId as string);
+        }
+
+        fetchExpenses();
+        notifyTripEvent(tripId, "expenses", user?.id);
+        toast({ title: t.expenseAdded });
       }
-
-      setOpen(false);
-
-      const receiptPath = await uploadReceipt(newId as string);
-      if (receiptPath) {
-        await supabase.from("trip_expenses").update({ receipt_path: receiptPath }).eq("id", newId as string);
-      }
-
-      fetchExpenses();
-      notifyTripEvent(tripId, "expenses", user?.id);
-      toast({ title: t.expenseAdded });
+    } finally {
+      expenseSubmitLockRef.current = false;
+      setSubmittingExpense(false);
     }
   };
+
 
   const handleDelete = async (id: string) => {
     if (isLocked) { setLockedNoticeOpen(true); return; }
@@ -613,7 +642,7 @@ const Expenses = () => {
     <div className="animate-fade-in">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-bold text-foreground">{t.sharedExpenses}</h2>
-        <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setEditingId(null); setSplitsError(false); } }}>
+        <Dialog open={open} onOpenChange={(v) => { if (submittingExpense) return; setOpen(v); if (!v) { setEditingId(null); setSplitsError(false); } }}>
           <Button size="sm" className="gradient-hero text-primary-foreground border-0" onClick={openCreate}>
             <Plus className="h-4 w-4 mr-1" /> {t.addExpense}
           </Button>
@@ -621,7 +650,8 @@ const Expenses = () => {
             <DialogHeader>
               <DialogTitle>{editingId ? t.editExpense : t.addExpense}</DialogTitle>
             </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit}>
+              <fieldset disabled={submittingExpense} className="space-y-4 min-w-0 border-0 p-0 m-0">
               <div>
                 <Label>{t.expenseTitle}</Label>
                 <Input
@@ -738,9 +768,22 @@ const Expenses = () => {
                   </div>
                 )}
               </div>
-               <Button type="submit" className="w-full gradient-hero text-primary-foreground border-0">
-                 {editingId ? t.update : t.save}
+               <Button
+                 type="submit"
+                 disabled={submittingExpense}
+                 aria-busy={submittingExpense}
+                 className="w-full gradient-hero text-primary-foreground border-0"
+               >
+                 {submittingExpense ? (
+                   <>
+                     <span className="h-4 w-4 mr-2 inline-block animate-spin rounded-full border-2 border-primary-foreground/40 border-t-primary-foreground" />
+                     {t.saving}
+                   </>
+                 ) : (
+                   editingId ? t.update : t.save
+                 )}
               </Button>
+              </fieldset>
             </form>
           </DialogContent>
         </Dialog>
