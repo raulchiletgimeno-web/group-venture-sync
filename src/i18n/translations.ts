@@ -410,6 +410,7 @@ type TranslationKeys = {
   placesSupermarkets: string;
   placesPharmacies: string;
   placesHotels: string;
+  placesAtmsBanks: string;
   placesTouristic: string;
   placesChooseLocation: string;
   placesNearMyLocation: string;
@@ -911,6 +912,7 @@ const translations: Record<Language, TranslationKeys> = {
     placesSupermarkets: "Supermercados",
     placesPharmacies: "Farmacias",
     placesHotels: "Hoteles",
+    placesAtmsBanks: "Cajeros y bancos",
     placesTouristic: "Sitios turísticos",
     placesChooseLocation: "Elige un punto de referencia",
     placesNearMyLocation: "Cerca de mi ubicación",
@@ -1399,6 +1401,7 @@ const translations: Record<Language, TranslationKeys> = {
     placesSupermarkets: "Supermarkets",
     placesPharmacies: "Pharmacies",
     placesHotels: "Hotels",
+    placesAtmsBanks: "ATMs & banks",
     placesTouristic: "Tourist spots",
     placesChooseLocation: "Choose a reference point",
     placesNearMyLocation: "Near my location",
@@ -1887,6 +1890,7 @@ const translations: Record<Language, TranslationKeys> = {
     placesSupermarkets: "Supermarchés",
     placesPharmacies: "Pharmacies",
     placesHotels: "Hôtels",
+    placesAtmsBanks: "DAB et banques",
     placesTouristic: "Sites touristiques",
     placesChooseLocation: "Choisissez un point de référence",
     placesNearMyLocation: "Près de moi",
@@ -2375,6 +2379,7 @@ const translations: Record<Language, TranslationKeys> = {
     placesSupermarkets: "Supermercados",
     placesPharmacies: "Farmácias",
     placesHotels: "Hotéis",
+    placesAtmsBanks: "Multibanco e bancos",
     placesTouristic: "Locais turísticos",
     placesChooseLocation: "Escolha um ponto de referência",
     placesNearMyLocation: "Perto de mim",
@@ -2863,6 +2868,7 @@ const translations: Record<Language, TranslationKeys> = {
     placesSupermarkets: "Supermercati",
     placesPharmacies: "Farmacie",
     placesHotels: "Hotel",
+    placesAtmsBanks: "Bancomat e banche",
     placesTouristic: "Luoghi turistici",
     placesChooseLocation: "Scegli un punto di riferimento",
     placesNearMyLocation: "Vicino a me",
@@ -3351,6 +3357,7 @@ const translations: Record<Language, TranslationKeys> = {
     placesSupermarkets: "超市",
     placesPharmacies: "药店",
     placesHotels: "酒店",
+    placesAtmsBanks: "ATM 和银行",
     placesTouristic: "旅游景点",
     placesChooseLocation: "选择参考点",
     placesNearMyLocation: "在我附近",
@@ -3839,6 +3846,7 @@ const translations: Record<Language, TranslationKeys> = {
     placesSupermarkets: "Supermärkte",
     placesPharmacies: "Apotheken",
     placesHotels: "Hotels",
+    placesAtmsBanks: "Geldautomaten & Banken",
     placesTouristic: "Sehenswürdigkeiten",
     placesChooseLocation: "Wähle einen Bezugspunkt",
     placesNearMyLocation: "In meiner Nähe",
