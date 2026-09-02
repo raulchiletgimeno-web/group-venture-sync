@@ -246,6 +246,9 @@ const Expenses = () => {
     setReceiptPreview(null);
     setExistingReceiptPath(null);
     setSplitsError(false);
+    expenseRequestIdRef.current = newRequestId();
+    expenseSubmitLockRef.current = false;
+    setSubmittingExpense(false);
     setOpen(true);
   };
 
