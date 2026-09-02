@@ -6,7 +6,8 @@ export type PlaceCategory =
   | "supermarkets"
   | "pharmacies"
   | "hotels"
-  | "touristic";
+  | "touristic"
+  | "atms";
 
 export interface Place {
   id: string;
@@ -43,6 +44,7 @@ const CATEGORY_FILTERS: Record<PlaceCategory, string> = {
     'nwr["tourism"~"^(hotel|hostel|guest_house|motel|apartment|chalet)$"]',
   touristic:
     'nwr["tourism"~"^(attraction|museum|monument|viewpoint|artwork)$"];nwr["historic"]',
+  atms: 'nwr["amenity"="atm"];nwr["amenity"="bank"]',
 };
 
 const OVERPASS_ENDPOINTS = [

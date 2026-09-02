@@ -11,6 +11,7 @@ import {
   Pill,
   Hotel,
   Landmark,
+  Banknote,
   AlertCircle,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -52,6 +53,7 @@ const CATEGORY_META: Record<
   pharmacies: { labelKey: "placesPharmacies", icon: Pill },
   hotels: { labelKey: "placesHotels", icon: Hotel },
   touristic: { labelKey: "placesTouristic", icon: Landmark },
+  atms: { labelKey: "placesAtmsBanks", icon: Banknote },
 };
 
 type LocationSource = "me" | "accommodation";
