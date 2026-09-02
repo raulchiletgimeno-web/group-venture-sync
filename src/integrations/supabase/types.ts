@@ -428,6 +428,7 @@ export type Database = {
           id: string
           paid_by: string
           receipt_path: string | null
+          request_id: string | null
           title: string
           trip_id: string
         }
@@ -437,6 +438,7 @@ export type Database = {
           id?: string
           paid_by: string
           receipt_path?: string | null
+          request_id?: string | null
           title: string
           trip_id: string
         }
@@ -446,6 +448,7 @@ export type Database = {
           id?: string
           paid_by?: string
           receipt_path?: string | null
+          request_id?: string | null
           title?: string
           trip_id?: string
         }
@@ -1162,6 +1165,7 @@ export type Database = {
           p_member_ids: string[]
           p_paid_by: string
           p_receipt_path?: string
+          p_request_id?: string
           p_title: string
           p_trip_id: string
         }
