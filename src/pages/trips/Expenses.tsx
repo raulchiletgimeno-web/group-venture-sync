@@ -314,6 +314,7 @@ const Expenses = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!tripId || !paidBy) return;
+    if (expenseSubmitLockRef.current) return;
 
     if (selectedMembers.length === 0) {
       setSplitsError(true);
@@ -331,68 +332,82 @@ const Expenses = () => {
       return;
     }
 
-    if (editingId) {
-      const receiptPath = await uploadReceipt(editingId);
+    expenseSubmitLockRef.current = true;
+    setSubmittingExpense(true);
 
-      const { error } = await supabase.rpc("save_trip_expense", {
-        p_trip_id: tripId,
-        p_title: title.trim(),
-        p_amount: parsedAmount,
-        p_paid_by: paidBy,
-        p_member_ids: selectedMembers,
-        p_expense_id: editingId,
-        p_receipt_path: receiptPath ?? null,
-      });
+    try {
+      if (editingId) {
+        const receiptPath = await uploadReceipt(editingId);
 
-      if (error) {
-        const msg = error.message ?? "";
-        if (msg.includes("expense_requires_at_least_one_member")) {
-          setSplitsError(true);
-          toast({ title: t.error, description: t.expenseNeedsAtLeastOneMember, variant: "destructive" });
+        const { error } = await supabase.rpc("save_trip_expense", {
+          p_trip_id: tripId,
+          p_title: title.trim(),
+          p_amount: parsedAmount,
+          p_paid_by: paidBy,
+          p_member_ids: selectedMembers,
+          p_expense_id: editingId,
+          p_receipt_path: receiptPath ?? null,
+          p_request_id: null,
+        });
+
+        if (error) {
+          const msg = error.message ?? "";
+          if (msg.includes("expense_requires_at_least_one_member")) {
+            setSplitsError(true);
+            toast({ title: t.error, description: t.expenseNeedsAtLeastOneMember, variant: "destructive" });
+            return;
+          }
+          toast({ title: t.error, description: msg, variant: "destructive" });
           return;
         }
-        toast({ title: t.error, description: msg, variant: "destructive" });
-        return;
-      }
 
-      setOpen(false);
-      setEditingId(null);
-      fetchExpenses();
-      toast({ title: t.expenseUpdated });
-    } else {
-      const { data: newId, error } = await supabase.rpc("save_trip_expense", {
-        p_trip_id: tripId,
-        p_title: title.trim(),
-        p_amount: parsedAmount,
-        p_paid_by: paidBy,
-        p_member_ids: selectedMembers,
-        p_expense_id: null,
-        p_receipt_path: null,
-      });
+        setOpen(false);
+        setEditingId(null);
+        fetchExpenses();
+        toast({ title: t.expenseUpdated });
+      } else {
+        if (!expenseRequestIdRef.current) expenseRequestIdRef.current = newRequestId();
 
-      if (error || !newId) {
-        const msg = error?.message ?? "";
-        if (msg.includes("expense_requires_at_least_one_member")) {
-          setSplitsError(true);
-          toast({ title: t.error, description: t.expenseNeedsAtLeastOneMember, variant: "destructive" });
+        const { data: newId, error } = await supabase.rpc("save_trip_expense", {
+          p_trip_id: tripId,
+          p_title: title.trim(),
+          p_amount: parsedAmount,
+          p_paid_by: paidBy,
+          p_member_ids: selectedMembers,
+          p_expense_id: null,
+          p_receipt_path: null,
+          p_request_id: expenseRequestIdRef.current,
+        });
+
+        if (error || !newId) {
+          const msg = error?.message ?? "";
+          if (msg.includes("expense_requires_at_least_one_member")) {
+            setSplitsError(true);
+            toast({ title: t.error, description: t.expenseNeedsAtLeastOneMember, variant: "destructive" });
+            return;
+          }
+          toast({ title: t.error, description: msg || t.error, variant: "destructive" });
           return;
         }
-        toast({ title: t.error, description: msg || t.error, variant: "destructive" });
-        return;
+
+        expenseRequestIdRef.current = null;
+        setOpen(false);
+
+        const receiptPath = await uploadReceipt(newId as string);
+        if (receiptPath) {
+          await supabase.from("trip_expenses").update({ receipt_path: receiptPath }).eq("id", newId as string);
+        }
+
+        fetchExpenses();
+        notifyTripEvent(tripId, "expenses", user?.id);
+        toast({ title: t.expenseAdded });
       }
-
-      setOpen(false);
-
-      const receiptPath = await uploadReceipt(newId as string);
-      if (receiptPath) {
-        await supabase.from("trip_expenses").update({ receipt_path: receiptPath }).eq("id", newId as string);
-      }
-
-      fetchExpenses();
-      notifyTripEvent(tripId, "expenses", user?.id);
-      toast({ title: t.expenseAdded });
+    } finally {
+      expenseSubmitLockRef.current = false;
+      setSubmittingExpense(false);
     }
   };
+
 
   const handleDelete = async (id: string) => {
     if (isLocked) { setLockedNoticeOpen(true); return; }
