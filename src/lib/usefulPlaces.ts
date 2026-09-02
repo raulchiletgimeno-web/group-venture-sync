@@ -382,27 +382,8 @@ function isUsefulHit(hit: NominatimHit): boolean {
   return true;
 }
 
-async function nominatimSearch(query: string, signal?: AbortSignal): Promise<LatLon | null> {
-  try {
-    const url = `https://nominatim.openstreetmap.org/search?format=json&limit=3&addressdetails=0&q=${encodeURIComponent(
-      query,
-    )}`;
-    const res = await fetch(url, {
-      headers: { "Accept-Language": "es,en" },
-      signal,
-    });
-    if (!res.ok) return null;
-    const json = (await res.json()) as NominatimHit[];
-    const first = (json ?? []).find(isUsefulHit);
-    if (!first) return null;
-    const lat = parseFloat(first.lat);
-    const lon = parseFloat(first.lon);
-    if (Number.isNaN(lat) || Number.isNaN(lon)) return null;
-    return { lat, lon };
-  } catch {
-    return null;
-  }
-}
+
+
 
 async function openMeteoSearch(query: string, signal?: AbortSignal): Promise<LatLon | null> {
   try {
@@ -448,51 +429,86 @@ function extractCity(query: string): string | null {
   return null;
 }
 
-// Geocode a free-form address — fires multiple strategies in PARALLEL,
-// returns the first non-null result.
+export type GeocodePrecision = "address" | "locality" | "approximate";
+
+export interface GeocodeResult {
+  coords: LatLon;
+  precision: GeocodePrecision;
+}
+
+async function nominatimSearchRanked(
+  query: string,
+): Promise<{ coords: LatLon; rank: number } | null> {
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?format=json&limit=3&addressdetails=0&q=${encodeURIComponent(
+      query,
+    )}`;
+    const res = await fetch(url, { headers: { "Accept-Language": "es,en" } });
+    if (!res.ok) return null;
+    const json = (await res.json()) as NominatimHit[];
+    const first = (json ?? []).find(isUsefulHit);
+    if (!first) return null;
+    const lat = parseFloat(first.lat);
+    const lon = parseFloat(first.lon);
+    if (Number.isNaN(lat) || Number.isNaN(lon)) return null;
+    return { coords: { lat, lon }, rank: typeof first.place_rank === "number" ? first.place_rank : 16 };
+  } catch {
+    return null;
+  }
+}
+
+// Geocode a free-form address by PRECISION, not by speed.
+// Tier 1: full address (raw, then normalized) via Nominatim → street/house level.
+// Tier 2: extracted city via Nominatim → locality level.
+// Tier 3: Open-Meteo (city or raw) → approximate, last resort.
+export async function geocodeAddressDetailed(
+  query: string,
+): Promise<GeocodeResult | null> {
+  const trimmed = query.trim();
+  if (!trimmed) return null;
+
+  const normalized = normalizeAddress(trimmed);
+  const city = extractCity(normalized || trimmed);
+
+  // Tier 1 — full address
+  const fullQueries = normalized && normalized !== trimmed ? [trimmed, normalized] : [trimmed];
+  for (const q of fullQueries) {
+    const hit = await nominatimSearchRanked(q);
+    if (hit) {
+      // rank >= 20 → suburb/street/house level: treat as a real address match
+      return { coords: hit.coords, precision: hit.rank >= 20 ? "address" : "locality" };
+    }
+  }
+
+  // Tier 2 — city via Nominatim
+  if (city) {
+    const hit = await nominatimSearchRanked(city);
+    if (hit) return { coords: hit.coords, precision: "locality" };
+  }
+
+  // Tier 3 — Open-Meteo, approximate only
+  const om = await openMeteoSearch(city || trimmed);
+  if (om) return { coords: om, precision: "approximate" };
+
+  return null;
+}
+
+// Backwards-compatible wrapper (cached).
 export async function geocodeAddress(query: string): Promise<LatLon | null> {
   const trimmed = query.trim();
   if (!trimmed) return null;
 
-  // Cache hit
   const cached = geocodeCache.get(trimmed);
   if (cached && Date.now() - cached.ts < GEOCODE_CACHE_TTL_MS) {
     return cached.data;
   }
 
-  const normalized = normalizeAddress(trimmed);
-  const city = extractCity(normalized || trimmed);
-
-  // Helper: a promise that resolves to a LatLon, REJECTS on null so Promise.any can pick a winner.
-  const tryStrategy = (p: Promise<LatLon | null>): Promise<LatLon> =>
-    p.then((r) => {
-      if (!r) throw new Error("no result");
-      return r;
-    });
-
-  const strategies: Promise<LatLon>[] = [
-    tryStrategy(nominatimSearch(trimmed)),
-  ];
-  if (normalized && normalized !== trimmed) {
-    strategies.push(tryStrategy(nominatimSearch(normalized)));
-  }
-  if (city) {
-    strategies.push(tryStrategy(nominatimSearch(city)));
-    strategies.push(tryStrategy(openMeteoSearch(city)));
-  } else {
-    strategies.push(tryStrategy(openMeteoSearch(trimmed)));
-  }
-
-  let result: LatLon | null = null;
-  try {
-    result = await promiseAny(strategies);
-  } catch {
-    result = null;
-  }
-
+  const detailed = await geocodeAddressDetailed(trimmed);
+  const result = detailed?.coords ?? null;
   geocodeCache.set(trimmed, { ts: Date.now(), data: result });
   return result;
 }
+
 
 export function googleMapsUrlFor(place: Place): string {
   const q = encodeURIComponent(`${place.name} ${place.address ?? ""}`.trim());

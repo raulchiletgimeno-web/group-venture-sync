@@ -20,8 +20,9 @@ import {
   type Place,
   type PlaceCategory,
   type LatLon,
+  type GeocodeResult,
   searchPlaces,
-  geocodeAddress,
+  geocodeAddressDetailed,
   googleMapsUrlFor,
   formatDistance,
   getCachedPosition,
@@ -58,6 +59,13 @@ const CATEGORY_META: Record<
 
 type LocationSource = "me" | "accommodation";
 
+interface Accommodation {
+  id: string;
+  name: string;
+  address: string | null;
+}
+
+
 const PlacesSkeleton = () => (
   <div className="space-y-3">
     <Skeleton className="w-full rounded-xl" style={{ height: 240 }} />
@@ -93,6 +101,8 @@ const UsefulPlacesCategory = () => {
   const [places, setPlaces] = useState<Place[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [accOptions, setAccOptions] = useState<Accommodation[] | null>(null);
+
 
   const handleNearMe = () => {
     setError(null);
@@ -142,74 +152,66 @@ const UsefulPlacesCategory = () => {
     );
   };
 
-  const handleNearAccommodation = async () => {
-    if (!tripId) return;
+  const resolveAccommodation = async (acc: Accommodation) => {
     setError(null);
-    setSource("accommodation");
     setLoading(true);
+    setAccOptions(null);
 
-    // Fetch accommodation + trip destination in parallel — destination is the safety net.
-    const [{ data: accData }, { data: tripData }] = await Promise.all([
-      supabase
-        .from("trip_accommodation")
-        .select("name, address")
-        .eq("trip_id", tripId)
-        .order("check_in", { ascending: true })
-        .limit(1),
-      supabase.from("trips").select("destination").eq("id", tripId).maybeSingle(),
-    ]);
-
-    const acc = accData?.[0];
-    if (!acc) {
-      setLoading(false);
-      setError(t.placesNoAccommodation);
-      return;
-    }
-
-    // Try a chain of geocoding strategies, picking the FIRST that returns coords.
+    // Prefer the most precise reference available: full address first,
+    // then "name, address", then the name alone. Never fall back to the trip city.
     const rawAddress = acc.address?.trim() ?? "";
     const attempts: string[] = [];
     if (rawAddress) attempts.push(rawAddress);
     if (acc.name && rawAddress) attempts.push(`${acc.name}, ${rawAddress}`);
     if (acc.name) attempts.push(acc.name);
 
-    let coords: LatLon | null = null;
+    let best: GeocodeResult | null = null;
     for (const q of attempts) {
-      coords = await geocodeAddress(q);
-      if (coords) break;
-    }
-
-    // Safety net: if geocoding failed OR result is suspiciously far (>50km) from
-    // the trip destination, fall back to the trip destination so the user gets
-    // real results instead of a false "no places".
-    const destination = tripData?.destination?.trim();
-    if (destination) {
-      const destCoords = await geocodeAddress(destination);
-      if (destCoords) {
-        if (!coords) {
-          coords = destCoords;
-        } else {
-          // Haversine quick-check — reuse same formula inline (km).
-          const R = 6371;
-          const toRad = (d: number) => (d * Math.PI) / 180;
-          const dLat = toRad(destCoords.lat - coords.lat);
-          const dLon = toRad(destCoords.lon - coords.lon);
-          const a =
-            Math.sin(dLat / 2) ** 2 +
-            Math.cos(toRad(coords.lat)) * Math.cos(toRad(destCoords.lat)) * Math.sin(dLon / 2) ** 2;
-          const distKm = 2 * R * Math.asin(Math.sqrt(a));
-          if (distKm > 50) coords = destCoords;
-        }
+      const res = await geocodeAddressDetailed(q);
+      if (res && res.precision === "address") {
+        best = res;
+        break;
       }
+      if (res && !best) best = res;
     }
 
-    if (!coords) {
+    if (!best || best.precision === "approximate") {
+      setLoading(false);
+      setError(t.placesAccommodationNotLocated);
+      return;
+    }
+
+    setCenter(best.coords);
+  };
+
+  const handleNearAccommodation = async () => {
+    if (!tripId) return;
+    setError(null);
+    setSource("accommodation");
+    setLoading(true);
+
+    const { data: accData } = await supabase
+      .from("trip_accommodation")
+      .select("id, name, address")
+      .eq("trip_id", tripId)
+      .order("check_in", { ascending: true });
+
+    const list = (accData ?? []) as Accommodation[];
+    if (list.length === 0) {
       setLoading(false);
       setError(t.placesNoAccommodation);
       return;
     }
-    setCenter(coords);
+
+    if (list.length === 1) {
+      await resolveAccommodation(list[0]);
+      return;
+    }
+
+    setLoading(false);
+    setAccOptions(list);
   };
+
 
   // When center becomes available, fetch places
   useEffect(() => {
@@ -251,10 +253,53 @@ const UsefulPlacesCategory = () => {
     setPlaces([]);
     setError(null);
     setLoading(false);
+    setAccOptions(null);
   };
+
+  // Step 1b: accommodation picker (only when the trip has more than one)
+  if (source === "accommodation" && accOptions && accOptions.length > 1) {
+    return (
+      <div className="animate-fade-in">
+        <button
+          onClick={handleReset}
+          className="flex items-center gap-1 text-sm text-foreground/80 hover:text-foreground mb-3"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          {t.back}
+        </button>
+
+        <div className="flex items-center gap-2 mb-1">
+          <Icon className="h-5 w-5 text-primary" />
+          <h2 className="text-lg font-bold text-card-foreground">{categoryLabel}</h2>
+        </div>
+        <p className="text-sm text-muted-foreground mb-4">{t.placesChooseAccommodation}</p>
+
+        <div className="space-y-2">
+          {accOptions.map((a) => (
+            <button
+              key={a.id}
+              onClick={() => resolveAccommodation(a)}
+              className="w-full flex items-center gap-3 rounded-xl bg-card p-4 shadow-card hover:shadow-card-hover transition-all duration-300 active:scale-[0.98] text-left"
+            >
+              <div className="rounded-lg p-2.5 bg-accent/10 text-accent flex-shrink-0">
+                <Home className="h-5 w-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-card-foreground truncate">{a.name}</p>
+                {a.address && (
+                  <p className="text-xs text-muted-foreground truncate">{a.address}</p>
+                )}
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   // Step 1: location selector
   if (!source) {
+
     return (
       <div className="animate-fade-in">
         <button
