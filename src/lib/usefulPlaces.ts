@@ -382,27 +382,8 @@ function isUsefulHit(hit: NominatimHit): boolean {
   return true;
 }
 
-async function nominatimSearch(query: string, signal?: AbortSignal): Promise<LatLon | null> {
-  try {
-    const url = `https://nominatim.openstreetmap.org/search?format=json&limit=3&addressdetails=0&q=${encodeURIComponent(
-      query,
-    )}`;
-    const res = await fetch(url, {
-      headers: { "Accept-Language": "es,en" },
-      signal,
-    });
-    if (!res.ok) return null;
-    const json = (await res.json()) as NominatimHit[];
-    const first = (json ?? []).find(isUsefulHit);
-    if (!first) return null;
-    const lat = parseFloat(first.lat);
-    const lon = parseFloat(first.lon);
-    if (Number.isNaN(lat) || Number.isNaN(lon)) return null;
-    return { lat, lon };
-  } catch {
-    return null;
-  }
-}
+
+
 
 async function openMeteoSearch(query: string, signal?: AbortSignal): Promise<LatLon | null> {
   try {
