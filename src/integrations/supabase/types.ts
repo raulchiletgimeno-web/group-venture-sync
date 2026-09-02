@@ -1158,19 +1158,34 @@ export type Database = {
         Args: { p_trip_id: string }
         Returns: undefined
       }
-      save_trip_expense: {
-        Args: {
-          p_amount: number
-          p_expense_id?: string
-          p_member_ids: string[]
-          p_paid_by: string
-          p_receipt_path?: string
-          p_request_id?: string
-          p_title: string
-          p_trip_id: string
-        }
-        Returns: string
-      }
+      save_trip_expense:
+        | {
+            Args: {
+              p_amount: number
+              p_expense_id?: string
+              p_member_ids: string[]
+              p_paid_by: string
+              p_receipt_path?: string
+              p_request_id?: string
+              p_title: string
+              p_trip_id: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_amount: number
+              p_clear_receipt?: boolean
+              p_expense_id?: string
+              p_member_ids: string[]
+              p_paid_by: string
+              p_receipt_path?: string
+              p_request_id?: string
+              p_title: string
+              p_trip_id: string
+            }
+            Returns: string
+          }
     }
     Enums: {
       [_ in never]: never

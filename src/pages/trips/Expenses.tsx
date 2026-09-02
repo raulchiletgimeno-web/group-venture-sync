@@ -99,6 +99,7 @@ const Expenses = () => {
   const [splitsError, setSplitsError] = useState(false);
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
+  const originalReceiptPathRef = useRef<string | null>(null);
   const [existingReceiptPath, setExistingReceiptPath] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
@@ -245,6 +246,7 @@ const Expenses = () => {
     setReceiptFile(null);
     setReceiptPreview(null);
     setExistingReceiptPath(null);
+    originalReceiptPathRef.current = null;
     setSplitsError(false);
     expenseRequestIdRef.current = newRequestId();
     expenseSubmitLockRef.current = false;
@@ -262,6 +264,7 @@ const Expenses = () => {
     setReceiptFile(null);
     setReceiptPreview(null);
     setExistingReceiptPath(exp.receipt_path);
+    originalReceiptPathRef.current = exp.receipt_path;
     setSplitsError(false);
     expenseRequestIdRef.current = null;
     expenseSubmitLockRef.current = false;
@@ -292,7 +295,7 @@ const Expenses = () => {
     const { error } = await supabase.storage.from("trip-photos").upload(path, receiptFile, { upsert: true });
     if (error) {
       toast({ title: t.errorUploading, description: error.message, variant: "destructive" });
-      return existingReceiptPath;
+      throw error;
     }
     return path;
   };
@@ -337,7 +340,15 @@ const Expenses = () => {
 
     try {
       if (editingId) {
-        const receiptPath = await uploadReceipt(editingId);
+        let receiptPath: string | null;
+        try {
+          receiptPath = await uploadReceipt(editingId);
+        } catch {
+          return;
+        }
+
+        const oldPath = originalReceiptPathRef.current;
+        const clearReceipt = !!oldPath && !receiptFile && !existingReceiptPath;
 
         const { error } = await supabase.rpc("save_trip_expense", {
           p_trip_id: tripId,
@@ -348,6 +359,7 @@ const Expenses = () => {
           p_expense_id: editingId,
           p_receipt_path: receiptPath ?? null,
           p_request_id: null,
+          p_clear_receipt: clearReceipt,
         });
 
         if (error) {
@@ -359,6 +371,11 @@ const Expenses = () => {
           }
           toast({ title: t.error, description: msg, variant: "destructive" });
           return;
+        }
+
+        // Best-effort cleanup of the previous ticket file when replaced or removed
+        if (oldPath && ((receiptPath && receiptPath !== oldPath) || clearReceipt)) {
+          await supabase.storage.from("trip-photos").remove([oldPath]);
         }
 
         setOpen(false);
@@ -393,7 +410,12 @@ const Expenses = () => {
         expenseRequestIdRef.current = null;
         setOpen(false);
 
-        const receiptPath = await uploadReceipt(newId as string);
+        let receiptPath: string | null = null;
+        try {
+          receiptPath = await uploadReceipt(newId as string);
+        } catch {
+          // El gasto ya se creó correctamente; solo falló la subida del ticket (ya se mostró el aviso).
+        }
         if (receiptPath) {
           await supabase.from("trip_expenses").update({ receipt_path: receiptPath }).eq("id", newId as string);
         }
