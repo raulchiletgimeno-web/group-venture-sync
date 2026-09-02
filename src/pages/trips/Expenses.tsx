@@ -768,9 +768,22 @@ const Expenses = () => {
                   </div>
                 )}
               </div>
-               <Button type="submit" className="w-full gradient-hero text-primary-foreground border-0">
-                 {editingId ? t.update : t.save}
+               <Button
+                 type="submit"
+                 disabled={submittingExpense}
+                 aria-busy={submittingExpense}
+                 className="w-full gradient-hero text-primary-foreground border-0"
+               >
+                 {submittingExpense ? (
+                   <>
+                     <span className="h-4 w-4 mr-2 inline-block animate-spin rounded-full border-2 border-primary-foreground/40 border-t-primary-foreground" />
+                     {t.saving}
+                   </>
+                 ) : (
+                   editingId ? t.update : t.save
+                 )}
               </Button>
+              </fieldset>
             </form>
           </DialogContent>
         </Dialog>
