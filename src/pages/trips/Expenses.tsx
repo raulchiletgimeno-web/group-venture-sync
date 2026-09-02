@@ -410,7 +410,12 @@ const Expenses = () => {
         expenseRequestIdRef.current = null;
         setOpen(false);
 
-        const receiptPath = await uploadReceipt(newId as string);
+        let receiptPath: string | null = null;
+        try {
+          receiptPath = await uploadReceipt(newId as string);
+        } catch {
+          // El gasto ya se creó correctamente; solo falló la subida del ticket (ya se mostró el aviso).
+        }
         if (receiptPath) {
           await supabase.from("trip_expenses").update({ receipt_path: receiptPath }).eq("id", newId as string);
         }
