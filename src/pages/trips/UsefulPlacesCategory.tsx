@@ -20,8 +20,9 @@ import {
   type Place,
   type PlaceCategory,
   type LatLon,
+  type GeocodeResult,
   searchPlaces,
-  geocodeAddress,
+  geocodeAddressDetailed,
   googleMapsUrlFor,
   formatDistance,
   getCachedPosition,
@@ -57,6 +58,13 @@ const CATEGORY_META: Record<
 };
 
 type LocationSource = "me" | "accommodation";
+
+interface Accommodation {
+  id: string;
+  name: string;
+  address: string | null;
+}
+
 
 const PlacesSkeleton = () => (
   <div className="space-y-3">
