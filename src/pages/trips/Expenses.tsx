@@ -102,6 +102,14 @@ const Expenses = () => {
   const [existingReceiptPath, setExistingReceiptPath] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
+  const [submittingExpense, setSubmittingExpense] = useState(false);
+  const expenseSubmitLockRef = useRef(false);
+  const expenseRequestIdRef = useRef<string | null>(null);
+
+  const newRequestId = () =>
+    typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
   const fetchMembers = async () => {
     if (!tripId) return;
