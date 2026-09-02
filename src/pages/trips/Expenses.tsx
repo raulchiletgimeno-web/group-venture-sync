@@ -650,7 +650,8 @@ const Expenses = () => {
             <DialogHeader>
               <DialogTitle>{editingId ? t.editExpense : t.addExpense}</DialogTitle>
             </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit}>
+              <fieldset disabled={submittingExpense} className="space-y-4 min-w-0 border-0 p-0 m-0">
               <div>
                 <Label>{t.expenseTitle}</Label>
                 <Input
