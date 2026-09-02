@@ -418,6 +418,8 @@ type TranslationKeys = {
   placesNearAccommodation: string;
   placesNearAccommodationDesc: string;
   placesNoAccommodation: string;
+  placesChooseAccommodation: string;
+  placesAccommodationNotLocated: string;
   placesLocationDenied: string;
   placesLoading: string;
   placesNoResults: string;
@@ -920,6 +922,8 @@ const translations: Record<Language, TranslationKeys> = {
     placesNearAccommodation: "Cerca del alojamiento",
     placesNearAccommodationDesc: "Usa el alojamiento guardado en el viaje",
     placesNoAccommodation: "Todavía no hay un alojamiento guardado en este viaje para usarlo como referencia.",
+    placesChooseAccommodation: "¿Cerca de qué alojamiento quieres buscar?",
+    placesAccommodationNotLocated: "No hemos podido localizar correctamente este alojamiento. Revisa su dirección para buscar lugares cercanos.",
     placesLocationDenied: "Acceso a la ubicación denegado. Actívalo para usar esta función.",
     placesLoading: "Cargando sitios cercanos…",
     placesNoResults: "Se han encontrado pocos sitios en esta zona.",
@@ -1409,6 +1413,8 @@ const translations: Record<Language, TranslationKeys> = {
     placesNearAccommodation: "Near the accommodation",
     placesNearAccommodationDesc: "Uses the accommodation saved in the trip",
     placesNoAccommodation: "There is no accommodation saved in this trip yet to use as a reference.",
+    placesChooseAccommodation: "Which accommodation do you want to search around?",
+    placesAccommodationNotLocated: "We could not locate this accommodation accurately. Check its address to search for nearby places.",
     placesLocationDenied: "Location access denied. Enable it to use this feature.",
     placesLoading: "Loading nearby places…",
     placesNoResults: "Few places found in this area.",
@@ -1898,6 +1904,8 @@ const translations: Record<Language, TranslationKeys> = {
     placesNearAccommodation: "Près du logement",
     placesNearAccommodationDesc: "Utilise le logement enregistré pour le voyage",
     placesNoAccommodation: "Il n'y a pas encore de logement enregistré pour ce voyage à utiliser comme référence.",
+    placesChooseAccommodation: "Près de quel logement veux-tu chercher ?",
+    placesAccommodationNotLocated: "Nous n'avons pas pu localiser correctement ce logement. Vérifie son adresse pour chercher des lieux à proximité.",
     placesLocationDenied: "Accès à la localisation refusé. Activez-le pour utiliser cette fonctionnalité.",
     placesLoading: "Chargement des lieux à proximité…",
     placesNoResults: "Peu de lieux trouvés dans cette zone.",
@@ -2387,6 +2395,8 @@ const translations: Record<Language, TranslationKeys> = {
     placesNearAccommodation: "Perto do alojamento",
     placesNearAccommodationDesc: "Usa o alojamento guardado na viagem",
     placesNoAccommodation: "Ainda não há um alojamento guardado nesta viagem para usar como referência.",
+    placesChooseAccommodation: "Perto de que alojamento queres procurar?",
+    placesAccommodationNotLocated: "Não conseguimos localizar corretamente este alojamento. Verifica a morada para procurar locais próximos.",
     placesLocationDenied: "Acesso à localização negado. Ative-o para usar esta funcionalidade.",
     placesLoading: "A carregar locais próximos…",
     placesNoResults: "Poucos locais encontrados nesta zona.",
@@ -2876,6 +2886,8 @@ const translations: Record<Language, TranslationKeys> = {
     placesNearAccommodation: "Vicino all'alloggio",
     placesNearAccommodationDesc: "Usa l'alloggio salvato nel viaggio",
     placesNoAccommodation: "Non c'è ancora un alloggio salvato in questo viaggio da usare come riferimento.",
+    placesChooseAccommodation: "Vicino a quale alloggio vuoi cercare?",
+    placesAccommodationNotLocated: "Non siamo riusciti a localizzare correttamente questo alloggio. Controlla il suo indirizzo per cercare luoghi vicini.",
     placesLocationDenied: "Accesso alla posizione negato. Abilitalo per usare questa funzione.",
     placesLoading: "Caricamento luoghi vicini…",
     placesNoResults: "Pochi luoghi trovati in questa zona.",
@@ -3365,6 +3377,8 @@ const translations: Record<Language, TranslationKeys> = {
     placesNearAccommodation: "在住宿附近",
     placesNearAccommodationDesc: "使用本次旅行保存的住宿",
     placesNoAccommodation: "本次旅行尚未保存住宿,无法用作参考。",
+    placesChooseAccommodation: "你想在哪个住宿附近搜索?",
+    placesAccommodationNotLocated: "我们无法准确定位该住宿。请检查其地址以搜索附近的地点。",
     placesLocationDenied: "位置访问被拒绝。请启用以使用此功能。",
     placesLoading: "正在加载附近的地点…",
     placesNoResults: "该区域找到的地点很少。",
@@ -3854,6 +3868,8 @@ const translations: Record<Language, TranslationKeys> = {
     placesNearAccommodation: "In der Nähe der Unterkunft",
     placesNearAccommodationDesc: "Verwendet die in der Reise gespeicherte Unterkunft",
     placesNoAccommodation: "Es ist noch keine Unterkunft für diese Reise gespeichert, die als Bezugspunkt verwendet werden kann.",
+    placesChooseAccommodation: "In der Nähe welcher Unterkunft möchtest du suchen?",
+    placesAccommodationNotLocated: "Wir konnten diese Unterkunft nicht genau lokalisieren. Überprüfe die Adresse, um Orte in der Nähe zu suchen.",
     placesLocationDenied: "Standortzugriff verweigert. Bitte aktiviere ihn, um diese Funktion zu nutzen.",
     placesLoading: "Orte in der Nähe werden geladen…",
     placesNoResults: "In dieser Gegend wurden nur wenige Orte gefunden.",
