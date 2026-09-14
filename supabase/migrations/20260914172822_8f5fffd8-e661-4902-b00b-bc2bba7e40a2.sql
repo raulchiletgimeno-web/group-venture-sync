@@ -1,0 +1,2 @@
+DROP FUNCTION public.save_trip_expense(uuid, text, numeric, uuid, uuid[], uuid, text, uuid);
+GRANT EXECUTE ON FUNCTION public.save_trip_expense(uuid, text, numeric, uuid, uuid[], uuid, text, uuid, boolean) TO authenticated;
