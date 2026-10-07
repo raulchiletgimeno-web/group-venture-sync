@@ -89,6 +89,7 @@ type TranslationKeys = {
   end: string;
   creating: string;
   tripCreated: string;
+  endBeforeStart: string;
   inviteCode: string;
   errorCreatingTrip: string;
 
@@ -629,6 +630,7 @@ const translations: Record<Language, TranslationKeys> = {
     end: "Fin",
     creating: "Creando...",
     tripCreated: "¡Viaje creado!",
+    endBeforeStart: "La fecha de fin no puede ser anterior a la de inicio",
     inviteCode: "Código de invitación",
     errorCreatingTrip: "Error al crear viaje",
     joinTripTitle: "Unirse a un viaje",
@@ -1120,6 +1122,7 @@ const translations: Record<Language, TranslationKeys> = {
     end: "End",
     creating: "Creating...",
     tripCreated: "Trip created!",
+    endBeforeStart: "End date cannot be before start date",
     inviteCode: "Invite code",
     errorCreatingTrip: "Error creating trip",
     joinTripTitle: "Join a trip",
@@ -1611,6 +1614,7 @@ const translations: Record<Language, TranslationKeys> = {
     end: "Fin",
     creating: "Création...",
     tripCreated: "Voyage créé !",
+    endBeforeStart: "La date de fin ne peut pas être antérieure à la date de début",
     inviteCode: "Code d'invitation",
     errorCreatingTrip: "Erreur lors de la création du voyage",
     joinTripTitle: "Rejoindre un voyage",
@@ -2102,6 +2106,7 @@ const translations: Record<Language, TranslationKeys> = {
     end: "Fim",
     creating: "A criar...",
     tripCreated: "Viagem criada!",
+    endBeforeStart: "A data de fim não pode ser anterior à data de início",
     inviteCode: "Código de convite",
     errorCreatingTrip: "Erro ao criar viagem",
     joinTripTitle: "Juntar-se a uma viagem",
@@ -2593,6 +2598,7 @@ const translations: Record<Language, TranslationKeys> = {
     end: "Fine",
     creating: "Creazione...",
     tripCreated: "Viaggio creato!",
+    endBeforeStart: "La data di fine non può essere precedente a quella di inizio",
     inviteCode: "Codice d'invito",
     errorCreatingTrip: "Errore nella creazione del viaggio",
     joinTripTitle: "Unisciti a un viaggio",
@@ -3084,6 +3090,7 @@ const translations: Record<Language, TranslationKeys> = {
     end: "结束",
     creating: "创建中...",
     tripCreated: "旅行已创建！",
+    endBeforeStart: "结束日期不能早于开始日期",
     inviteCode: "邀请码",
     errorCreatingTrip: "创建旅行时出错",
     joinTripTitle: "加入旅行",
@@ -3575,6 +3582,7 @@ const translations: Record<Language, TranslationKeys> = {
     end: "Ende",
     creating: "Erstellen...",
     tripCreated: "Reise erstellt!",
+    endBeforeStart: "Das Enddatum darf nicht vor dem Startdatum liegen",
     inviteCode: "Einladungscode",
     errorCreatingTrip: "Fehler beim Erstellen der Reise",
     joinTripTitle: "Einer Reise beitreten",

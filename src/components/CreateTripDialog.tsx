@@ -37,6 +37,10 @@ const CreateTripDialog = ({ open, onOpenChange }: CreateTripDialogProps) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
+    if (startDate && endDate && endDate < startDate) {
+      toast({ title: t.endBeforeStart, variant: "destructive" });
+      return;
+    }
     setSubmitting(true);
 
     const inviteCode = generateInviteCode();
@@ -107,13 +111,32 @@ const CreateTripDialog = ({ open, onOpenChange }: CreateTripDialogProps) => {
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 min-w-0">
               <Label htmlFor="trip-start">{t.start}</Label>
-              <Input id="trip-start" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} required />
+              <Input
+                id="trip-start"
+                type="date"
+                className="block w-full min-w-0 min-h-10 appearance-none text-left"
+                value={startDate}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setStartDate(v);
+                  if (v && endDate && endDate < v) setEndDate(v);
+                }}
+                required
+              />
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 min-w-0">
               <Label htmlFor="trip-end">{t.end}</Label>
-              <Input id="trip-end" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} required />
+              <Input
+                id="trip-end"
+                type="date"
+                className="block w-full min-w-0 min-h-10 appearance-none text-left"
+                min={startDate || undefined}
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                required
+              />
             </div>
           </div>
           <Button type="submit" className="w-full font-semibold" disabled={submitting}>
