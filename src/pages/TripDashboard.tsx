@@ -27,6 +27,7 @@ import PendingApproval from "@/components/PendingApproval";
 import MemberApprovalManager from "@/components/MemberApprovalManager";
 import { useUnseenSectionCounts } from "@/hooks/use-unseen-section-counts";
 import UnseenBadge from "@/components/UnseenBadge";
+import YormitDatePicker from "@/components/YormitDatePicker";
 
 interface TripData {
   title: string;
@@ -176,6 +177,10 @@ const TripDashboard = () => {
 
   const handleSave = async () => {
     if (!tripId || !trip) return;
+    if (editStartDate && editEndDate && editEndDate < editStartDate) {
+      toast({ title: t.endBeforeStart, variant: "destructive" });
+      return;
+    }
     setSaving(true);
     const { error } = await supabase
       .from("trips")
@@ -272,9 +277,9 @@ const TripDashboard = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   <Calendar className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                  <Input type="date" value={editStartDate} onChange={(e) => setEditStartDate(e.target.value)} className="text-sm w-auto" />
+                  <YormitDatePicker value={editStartDate} onChange={setEditStartDate} className="text-sm flex-1" />
                   <span className="text-muted-foreground">—</span>
-                  <Input type="date" value={editEndDate} onChange={(e) => setEditEndDate(e.target.value)} className="text-sm w-auto" />
+                  <YormitDatePicker value={editEndDate} onChange={setEditEndDate} minDate={editStartDate || undefined} className="text-sm flex-1" />
                 </div>
                 <div className="flex gap-2 pt-1">
                   <Button size="sm" onClick={handleSave} disabled={saving || !editTitle.trim() || !editDestination.trim()}>

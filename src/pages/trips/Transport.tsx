@@ -18,6 +18,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { getLocale } from "@/i18n/translations";
 import { useMarkSectionSeen } from "@/hooks/use-mark-section-seen";
 import { notifyTripEvent } from "@/lib/notifyTripEvent";
+import YormitDatePicker from "@/components/YormitDatePicker";
 
 interface TransportItem {
   id: string;
@@ -95,6 +96,8 @@ const Transport = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!tripId) return;
+    if (!form.departure_datetime) { toast({ title: t.departure, variant: "destructive" }); return; }
+    if (form.arrival_datetime && form.arrival_datetime < form.departure_datetime) { toast({ title: t.endBeforeStart, variant: "destructive" }); return; }
     const payload = {
       type: form.type,
       departure_location: form.departure_location,
@@ -153,9 +156,19 @@ const Transport = () => {
                   <div><Label>{t.arrivalLocation}</Label><Input required value={form.arrival_location} onChange={(e) => setForm({ ...form, arrival_location: e.target.value })} /></div>
                 </div>
                 <div><Label>{t.departureAddress}</Label><Input value={form.departure_address} onChange={(e) => setForm({ ...form, departure_address: e.target.value })} placeholder={t.departureAddressPlaceholder} /></div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div><Label>{t.departure}</Label><Input type="datetime-local" required value={form.departure_datetime} onChange={(e) => setForm({ ...form, departure_datetime: e.target.value })} /></div>
-                  <div><Label>{t.arrival}</Label><Input type="datetime-local" value={form.arrival_datetime} onChange={(e) => setForm({ ...form, arrival_datetime: e.target.value })} /></div>
+                <div>
+                  <Label>{t.departure}</Label>
+                  <div className="grid grid-cols-[1fr_auto] gap-2">
+                    <YormitDatePicker value={form.departure_datetime.slice(0, 10)} onChange={(v) => setForm({ ...form, departure_datetime: `${v}T${form.departure_datetime.slice(11, 16) || "00:00"}` })} />
+                    <Input type="time" aria-label={`${t.departure} ${t.time}`} className="w-28" value={form.departure_datetime.slice(11, 16)} disabled={!form.departure_datetime} onChange={(e) => setForm({ ...form, departure_datetime: `${form.departure_datetime.slice(0, 10)}T${e.target.value || "00:00"}` })} />
+                  </div>
+                </div>
+                <div>
+                  <Label>{t.arrival}</Label>
+                  <div className="grid grid-cols-[1fr_auto] gap-2">
+                    <YormitDatePicker value={form.arrival_datetime.slice(0, 10)} minDate={form.departure_datetime.slice(0, 10) || undefined} onChange={(v) => setForm({ ...form, arrival_datetime: `${v}T${form.arrival_datetime.slice(11, 16) || "00:00"}` })} />
+                    <Input type="time" aria-label={`${t.arrival} ${t.time}`} className="w-28" value={form.arrival_datetime.slice(11, 16)} disabled={!form.arrival_datetime} onChange={(e) => setForm({ ...form, arrival_datetime: `${form.arrival_datetime.slice(0, 10)}T${e.target.value || "00:00"}` })} />
+                  </div>
                 </div>
                 <div><Label>{t.bookingReference}</Label><Input value={form.booking_reference} onChange={(e) => setForm({ ...form, booking_reference: e.target.value })} /></div>
                 <div><Label>{t.notes}</Label><Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
