@@ -17,6 +17,7 @@ import { getLocale } from "@/i18n/translations";
 import { useMarkSectionSeen } from "@/hooks/use-mark-section-seen";
 import { notifyTripEvent } from "@/lib/notifyTripEvent";
 import { getSignedUrl } from "@/lib/signedUrl";
+import YormitDatePicker from "@/components/YormitDatePicker";
 
 interface AccommodationItem {
   id: string;
@@ -69,6 +70,8 @@ const Accommodation = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!tripId) return;
+    if (!form.check_in || !form.check_out) { toast({ title: `${t.checkIn} / ${t.checkOut}`, variant: "destructive" }); return; }
+    if (form.check_out < form.check_in) { toast({ title: t.endBeforeStart, variant: "destructive" }); return; }
     const payload = { name: form.name, address: form.address || null, check_in: form.check_in, check_out: form.check_out, booking_reference: form.booking_reference || null, notes: form.notes || null, website: form.website || null };
     const { error } = editingId
       ? await supabase.from("trip_accommodation").update(payload).eq("id", editingId)
@@ -143,8 +146,8 @@ const Accommodation = () => {
                 <div><Label>{t.accommodationName}</Label><Input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder={t.accommodationNamePlaceholder} /></div>
                 <div><Label>{t.address}</Label><Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} /></div>
                 <div className="grid grid-cols-2 gap-3">
-                  <div><Label>{t.checkIn}</Label><Input type="date" required value={form.check_in} onChange={(e) => setForm({ ...form, check_in: e.target.value })} /></div>
-                  <div><Label>{t.checkOut}</Label><Input type="date" required value={form.check_out} onChange={(e) => setForm({ ...form, check_out: e.target.value })} /></div>
+                  <div className="min-w-0"><Label>{t.checkIn}</Label><YormitDatePicker value={form.check_in} onChange={(v) => setForm({ ...form, check_in: v })} /></div>
+                  <div className="min-w-0"><Label>{t.checkOut}</Label><YormitDatePicker value={form.check_out} onChange={(v) => setForm({ ...form, check_out: v })} minDate={form.check_in || undefined} /></div>
                 </div>
                 <div><Label>{t.bookingReference}</Label><Input value={form.booking_reference} onChange={(e) => setForm({ ...form, booking_reference: e.target.value })} /></div>
                 <div><Label>{t.website}</Label><Input type="url" value={form.website} onChange={(e) => setForm({ ...form, website: e.target.value })} placeholder={t.websitePlaceholder} /></div>

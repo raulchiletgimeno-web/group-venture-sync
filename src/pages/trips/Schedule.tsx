@@ -22,6 +22,7 @@ import { getLocale } from "@/i18n/translations";
 import { useMarkSectionSeen } from "@/hooks/use-mark-section-seen";
 import { notifyTripEvent } from "@/lib/notifyTripEvent";
 import { getSignedUrl } from "@/lib/signedUrl";
+import YormitDatePicker from "@/components/YormitDatePicker";
 
 const dateFnsLocales: Record<string, typeof es> = { es, en: enUS, fr, pt, it };
 
@@ -100,6 +101,7 @@ const Schedule = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!tripId) return;
+    if (!form.date) { toast({ title: t.date, variant: "destructive" }); return; }
     setUploadingGpx(true);
     try {
       let gpx_path: string | null = existingGpx?.path ?? null;
@@ -205,7 +207,7 @@ const Schedule = () => {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div><Label>{t.activityTitle}</Label><Input required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder={t.activityPlaceholder} /></div>
           <div className="grid grid-cols-2 gap-3">
-            <div><Label>{t.date}</Label><Input type="date" required value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} /></div>
+            <div className="min-w-0"><Label>{t.date}</Label><YormitDatePicker value={form.date} onChange={(v) => setForm({ ...form, date: v })} /></div>
             <div><Label>{t.time}</Label><Input type="time" value={form.time} onChange={(e) => setForm({ ...form, time: e.target.value })} /></div>
           </div>
           <div><Label>{t.place}</Label><Input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} placeholder={t.placePlaceholder} /></div>

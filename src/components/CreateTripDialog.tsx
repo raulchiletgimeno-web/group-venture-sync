@@ -3,14 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon } from "lucide-react";
 import { getLocale } from "@/i18n/translations";
-import { cn } from "@/lib/utils";
-import { es, enGB, fr, pt, it, de, zhCN, type Locale } from "date-fns/locale";
-
-const CALENDAR_LOCALES: Record<string, Locale> = { es, en: enGB, fr, pt, it, de, zh: zhCN };
+import YormitDatePicker from "@/components/YormitDatePicker";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -24,13 +18,6 @@ const generateInviteCode = () =>
     .slice(0, 8)
     .toUpperCase();
 
-const toYmd = (d: Date) =>
-  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-const fromYmd = (v: string) => {
-  const [y, m, d] = v.split("-").map(Number);
-  return new Date(y, m - 1, d);
-};
-
 interface DateFieldProps {
   id: string;
   value: string;
@@ -40,49 +27,9 @@ interface DateFieldProps {
   minDate?: string;
 }
 
-const DateField = ({ id, value, onChange, locale, lang, minDate }: DateFieldProps) => {
-  const [open, setOpen] = useState(false);
-  const selected = value ? fromYmd(value) : undefined;
-  const min = minDate ? fromYmd(minDate) : undefined;
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <button
-          id={id}
-          type="button"
-          data-value={value}
-          className={cn(
-            "flex h-10 min-h-10 w-full min-w-0 items-center justify-between gap-2 rounded-md border border-input bg-background px-3 py-2 text-base text-left ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:text-sm",
-            !value && "text-muted-foreground",
-          )}
-        >
-          <span className="truncate">
-            {selected ? selected.toLocaleDateString(locale, { day: "2-digit", month: "2-digit", year: "numeric" }) : "--/--/----"}
-          </span>
-          <CalendarIcon className="h-4 w-4 shrink-0 opacity-60" />
-        </button>
-      </PopoverTrigger>
-      <PopoverContent className="w-auto p-0 pointer-events-auto" align="start">
-        <Calendar
-          mode="single"
-          locale={CALENDAR_LOCALES[lang] ?? enGB}
-          weekStartsOn={1}
-          selected={selected}
-          defaultMonth={selected ?? min}
-          disabled={min ? { before: min } : undefined}
-          onSelect={(d) => {
-            if (d) {
-              onChange(toYmd(d));
-              setOpen(false);
-            }
-          }}
-          initialFocus
-          className="p-3 pointer-events-auto"
-        />
-      </PopoverContent>
-    </Popover>
-  );
-};
+const DateField = ({ id, value, onChange, minDate }: DateFieldProps) => (
+  <YormitDatePicker id={id} value={value} onChange={onChange} minDate={minDate} />
+);
 
 interface CreateTripDialogProps {
   open: boolean;
