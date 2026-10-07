@@ -8,6 +8,9 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { CalendarIcon } from "lucide-react";
 import { getLocale } from "@/i18n/translations";
 import { cn } from "@/lib/utils";
+import { es, enGB, fr, pt, it, de, zhCN, type Locale } from "date-fns/locale";
+
+const CALENDAR_LOCALES: Record<string, Locale> = { es, en: enGB, fr, pt, it, de, zh: zhCN };
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -33,10 +36,11 @@ interface DateFieldProps {
   value: string;
   onChange: (v: string) => void;
   locale: string;
+  lang: string;
   minDate?: string;
 }
 
-const DateField = ({ id, value, onChange, locale, minDate }: DateFieldProps) => {
+const DateField = ({ id, value, onChange, locale, lang, minDate }: DateFieldProps) => {
   const [open, setOpen] = useState(false);
   const selected = value ? fromYmd(value) : undefined;
   const min = minDate ? fromYmd(minDate) : undefined;
@@ -61,6 +65,8 @@ const DateField = ({ id, value, onChange, locale, minDate }: DateFieldProps) => 
       <PopoverContent className="w-auto p-0 pointer-events-auto" align="start">
         <Calendar
           mode="single"
+          locale={CALENDAR_LOCALES[lang] ?? enGB}
+          weekStartsOn={1}
           selected={selected}
           defaultMonth={selected ?? min}
           disabled={min ? { before: min } : undefined}
@@ -183,6 +189,7 @@ const CreateTripDialog = ({ open, onOpenChange }: CreateTripDialogProps) => {
                 id="trip-start"
                 value={startDate}
                 locale={getLocale(language)}
+                lang={language}
                 onChange={(v) => {
                   setStartDate(v);
                   if (endDate && endDate < v) setEndDate(v);
@@ -195,6 +202,7 @@ const CreateTripDialog = ({ open, onOpenChange }: CreateTripDialogProps) => {
                 id="trip-end"
                 value={endDate}
                 locale={getLocale(language)}
+                lang={language}
                 minDate={startDate || undefined}
                 onChange={setEndDate}
               />
