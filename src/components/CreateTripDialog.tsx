@@ -3,6 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { CalendarIcon } from "lucide-react";
+import { getLocale } from "@/i18n/translations";
+import { cn } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -15,6 +20,63 @@ const generateInviteCode = () =>
     .join("")
     .slice(0, 8)
     .toUpperCase();
+
+const toYmd = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+const fromYmd = (v: string) => {
+  const [y, m, d] = v.split("-").map(Number);
+  return new Date(y, m - 1, d);
+};
+
+interface DateFieldProps {
+  id: string;
+  value: string;
+  onChange: (v: string) => void;
+  locale: string;
+  minDate?: string;
+}
+
+const DateField = ({ id, value, onChange, locale, minDate }: DateFieldProps) => {
+  const [open, setOpen] = useState(false);
+  const selected = value ? fromYmd(value) : undefined;
+  const min = minDate ? fromYmd(minDate) : undefined;
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          id={id}
+          type="button"
+          data-value={value}
+          className={cn(
+            "flex h-10 min-h-10 w-full min-w-0 items-center justify-between gap-2 rounded-md border border-input bg-background px-3 py-2 text-base text-left ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:text-sm",
+            !value && "text-muted-foreground",
+          )}
+        >
+          <span className="truncate">
+            {selected ? selected.toLocaleDateString(locale, { day: "2-digit", month: "2-digit", year: "numeric" }) : "--/--/----"}
+          </span>
+          <CalendarIcon className="h-4 w-4 shrink-0 opacity-60" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0 pointer-events-auto" align="start">
+        <Calendar
+          mode="single"
+          selected={selected}
+          defaultMonth={selected ?? min}
+          disabled={min ? { before: min } : undefined}
+          onSelect={(d) => {
+            if (d) {
+              onChange(toYmd(d));
+              setOpen(false);
+            }
+          }}
+          initialFocus
+          className="p-3 pointer-events-auto"
+        />
+      </PopoverContent>
+    </Popover>
+  );
+};
 
 interface CreateTripDialogProps {
   open: boolean;
@@ -30,14 +92,18 @@ const CreateTripDialog = ({ open, onOpenChange }: CreateTripDialogProps) => {
   const [endDate, setEndDate] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const { user } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const navigate = useNavigate();
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
-    if (startDate && endDate && endDate < startDate) {
+    if (!startDate || !endDate) {
+      toast({ title: `${t.start} / ${t.end}`, variant: "destructive" });
+      return;
+    }
+    if (endDate < startDate) {
       toast({ title: t.endBeforeStart, variant: "destructive" });
       return;
     }
@@ -113,29 +179,24 @@ const CreateTripDialog = ({ open, onOpenChange }: CreateTripDialogProps) => {
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5 min-w-0">
               <Label htmlFor="trip-start">{t.start}</Label>
-              <Input
+              <DateField
                 id="trip-start"
-                type="date"
-                className="block w-full min-w-0 min-h-10 appearance-none text-left"
                 value={startDate}
-                onChange={(e) => {
-                  const v = e.target.value;
+                locale={getLocale(language)}
+                onChange={(v) => {
                   setStartDate(v);
-                  if (v && endDate && endDate < v) setEndDate(v);
+                  if (endDate && endDate < v) setEndDate(v);
                 }}
-                required
               />
             </div>
             <div className="space-y-1.5 min-w-0">
               <Label htmlFor="trip-end">{t.end}</Label>
-              <Input
+              <DateField
                 id="trip-end"
-                type="date"
-                className="block w-full min-w-0 min-h-10 appearance-none text-left"
-                min={startDate || undefined}
                 value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                required
+                locale={getLocale(language)}
+                minDate={startDate || undefined}
+                onChange={setEndDate}
               />
             </div>
           </div>
